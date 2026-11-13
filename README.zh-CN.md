@@ -62,6 +62,8 @@ nsgo.Run(func(cx *core.Scope) core.Node {
 
 Agio 会向 Umami 发送匿名使用统计：何时打开和使用，以及消息发给了哪些智能体，从不包含提示词或文件夹。`nsgo dev` 运行的构建不发送，也可在设置中关闭。
 
+`go tool nsgo build cmd/agio` 为 macOS、Windows 和 Linux 构建 arm64 与 x64 的 Agio。构建时设置 `NSGO_UPDATES_KEY`（`cmd/agio/nsgo.yaml` 中 `updates.key` 对应的私钥），发布的版本就会从最新的 GitHub Release 自动更新。
+
 ## 文档
 
 [ARCHITECTURE.md](ARCHITECTURE.md) 说明各个包及它们之间的边界。

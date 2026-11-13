@@ -62,6 +62,8 @@ Agio, the app in `cmd/agio`, runs its agents in one process; the examples run as
 
 Agio sends anonymous usage statistics to Umami: when it is open and used, and which agents messages go to, never prompts or folders. Builds run with `nsgo dev` send nothing, and its settings turn them off.
 
+`go tool nsgo build cmd/agio` builds Agio for macOS, Windows and Linux, on arm64 and x64. Releases update themselves from the latest GitHub release when built with `NSGO_UPDATES_KEY`, the secret key of `updates.key` in `cmd/agio/nsgo.yaml`.
+
 ## Documentation
 
 [ARCHITECTURE.md](ARCHITECTURE.md) maps the packages and the boundaries between them.

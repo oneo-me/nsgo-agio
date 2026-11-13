@@ -61,6 +61,7 @@ var Parameters = map[string][]string{
 	"QuotaFailed":             {"error_"},
 	"QuotaOpenPage":           {"account"},
 	"QuotaRefresh":            {"account"},
+	"CurrentVersion":          {"version"},
 	"EnableAgent":             {"tool"},
 	"ModelsEnabled":           {"count", "enabled"},
 	"ToolModels":              {"tool"},
@@ -100,6 +101,7 @@ type Translation struct {
 	QuotaFailed             func(error_ string) string
 	QuotaOpenPage           func(account string) string
 	QuotaRefresh            func(account string) string
+	CurrentVersion          func(version string) string
 	EnableAgent             func(tool string) string
 	ModelsEnabled           func(count int, enabled int) string
 	ToolModels              func(tool string) string
@@ -170,6 +172,10 @@ const (
 	textQuotaRefreshing
 	textFileMenu
 	textSettingsMenuItem
+	textCheckForUpdatesMenuItem
+	textUpdates
+	textUpdatesDetail
+	textCheckForUpdates
 	textCodingAgents
 	textCheckingAgent
 	textCheckingAgents
@@ -249,6 +255,10 @@ var keyOfText = [numTexts]string{
 	"quotaRefreshing",
 	"fileMenu",
 	"settingsMenuItem",
+	"checkForUpdatesMenuItem",
+	"updates",
+	"updatesDetail",
+	"checkForUpdates",
 	"codingAgents",
 	"checkingAgent",
 	"checkingAgents",
@@ -326,6 +336,10 @@ var textsEn = i18n.NewTexts(""+
 	"Refreshing…"+
 	"File"+
 	"Settings…"+
+	"Check for Updates…"+
+	"Updates"+
+	"Checked daily; a newer version is offered when one is out."+
+	"Check for Updates"+
 	"Coding agents"+
 	"Checking…"+
 	"Checking…"+
@@ -400,6 +414,10 @@ var textsEn = i18n.NewTexts(""+
 		13,
 		4,
 		11,
+		20,
+		7,
+		58,
+		17,
 		13,
 		11,
 		11,
@@ -477,6 +495,10 @@ var textsZhHans = i18n.NewTexts(""+
 	"正在刷新…"+
 	"文件"+
 	"设置…"+
+	"检查更新…"+
+	"更新"+
+	"每天自动检查，有新版本时会提示。"+
+	"检查更新"+
 	"编程智能体"+
 	"正在检查…"+
 	"正在检查…"+
@@ -551,6 +573,10 @@ var textsZhHans = i18n.NewTexts(""+
 		15,
 		6,
 		9,
+		15,
+		6,
+		48,
+		12,
 		15,
 		15,
 		15,
@@ -702,6 +728,9 @@ func Supply(lang string, t Translation) {
 	}
 	if t.QuotaRefresh != nil {
 		s.QuotaRefresh = t.QuotaRefresh
+	}
+	if t.CurrentVersion != nil {
+		s.CurrentVersion = t.CurrentVersion
 	}
 	if t.EnableAgent != nil {
 		s.EnableAgent = t.EnableAgent
@@ -1850,6 +1879,56 @@ func SettingsMenuItem(cx *core.Scope) string { return For(cx).SettingsMenuItem()
 
 // SettingsMenuItem is the package's SettingsMenuItem in the language of msgs.
 func (msgs Messages) SettingsMenuItem() string { return msgs.text(textSettingsMenuItem) }
+
+// CheckForUpdatesMenuItem says "Check for Updates…"
+// in the language the app shows under cx.
+func CheckForUpdatesMenuItem(cx *core.Scope) string { return For(cx).CheckForUpdatesMenuItem() }
+
+// CheckForUpdatesMenuItem is the package's CheckForUpdatesMenuItem in the language of msgs.
+func (msgs Messages) CheckForUpdatesMenuItem() string { return msgs.text(textCheckForUpdatesMenuItem) }
+
+// Updates says "Updates"
+// in the language the app shows under cx.
+func Updates(cx *core.Scope) string { return For(cx).Updates() }
+
+// Updates is the package's Updates in the language of msgs.
+func (msgs Messages) Updates() string { return msgs.text(textUpdates) }
+
+// CurrentVersion says "Version {version}"
+// in the language the app shows under cx.
+func CurrentVersion(cx *core.Scope, version string) string { return For(cx).CurrentVersion(version) }
+
+// CurrentVersion is the package's CurrentVersion in the language of msgs.
+func (msgs Messages) CurrentVersion(version string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.CurrentVersion(version))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].CurrentVersion; f != nil {
+			return f(version)
+		}
+		switch lang {
+		case "", "en":
+			return "Version " + msgs.arg(version)
+		case "zh-Hans":
+			return "版本 " + version
+		}
+	}
+}
+
+// UpdatesDetail says "Checked daily; a newer version is offered when one is out."
+// in the language the app shows under cx.
+func UpdatesDetail(cx *core.Scope) string { return For(cx).UpdatesDetail() }
+
+// UpdatesDetail is the package's UpdatesDetail in the language of msgs.
+func (msgs Messages) UpdatesDetail() string { return msgs.text(textUpdatesDetail) }
+
+// CheckForUpdates says "Check for Updates"
+// in the language the app shows under cx.
+func CheckForUpdates(cx *core.Scope) string { return For(cx).CheckForUpdates() }
+
+// CheckForUpdates is the package's CheckForUpdates in the language of msgs.
+func (msgs Messages) CheckForUpdates() string { return msgs.text(textCheckForUpdates) }
 
 // CodingAgents says "Coding agents"
 // in the language the app shows under cx.

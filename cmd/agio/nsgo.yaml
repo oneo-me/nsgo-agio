@@ -7,3 +7,14 @@ dev:
 
 build:
   output: dist
+  targets: [macos_arm64, macos_x64, windows_arm64, windows_x64, linux_arm64, linux_x64]
+
+release:
+  github: oneo-me/nsgo-agio
+
+# Releases update themselves from release.github's latest release once key
+# holds the public key `go tool nsgo keygen` prints. Its secret key signs
+# the installers and is given only in NSGO_UPDATES_KEY where releases build,
+# never in this repository.
+updates:
+  key: "uY5LLjkKftzXMZodFQJNz/K1EwKrFpNvZbMNcByXIE0="

@@ -9,13 +9,14 @@ import (
 	"github.com/nsgo-dev/nsgo/core"
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/ui"
+	"github.com/nsgo-dev/nsgo/updater"
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/agent"
 	"github.com/oneo-me/nsgo-agio/chatview/locales"
 )
 
 // settings is App's settings dialog: the backend's agents and their
-// models, then the app's own categories.
+// models, the app's own categories, then its updates when it has them.
 func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
 	m := a.Model
 	msgs := locales.For(cx)
@@ -35,12 +36,31 @@ func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
 		Label: msgs.Settings(), TestID: "settings-dialog",
 		Content: func(narrow func() bool) core.Node {
 			return region(m, key, func(cx *core.Scope) core.Node {
-				return ui.Settings{Categories: append([]ui.SettingsCategory{agentSettings(m, msgs)}, a.Settings...), Category: category, Query: query, Narrow: narrow, TestID: "settings",
+				categories := append([]ui.SettingsCategory{agentSettings(m, msgs)}, a.Settings...)
+				if a.Updates {
+					categories = append(categories, updateSettings(msgs, func() { updater.Check(cx) }))
+				}
+				return ui.Settings{Categories: categories, Category: category, Query: query, Narrow: narrow, TestID: "settings",
 					Title: msgs.Settings(), SearchLabel: msgs.SearchSettings(), SearchPlaceholder: msgs.SearchSettings(),
 					ResultsTitle: msgs.SettingsResults(), EmptyText: msgs.NoMatchingSettings(),
 					OnClose: func() { open.Set(false) }, CloseLabel: msgs.CloseSettings()}
 			})
 		}}
+}
+
+// updateSettings shows the app's version with a button checking for a
+// newer one, the only way to on Windows and Linux, which have no menu bar.
+func updateSettings(msgs locales.Messages, check func()) ui.SettingsCategory {
+	version := core.App().Version
+	if version == "" {
+		version = "—"
+	}
+	return ui.SettingsCategory{ID: "updates", Title: msgs.Updates(), Icon: lucide.CircleArrowUp, Groups: []ui.SettingsGroup{{
+		ID: "updates", Title: msgs.Updates(), Items: []ui.SettingsItem{{
+			ID: "check", Title: msgs.CurrentVersion(version), Description: msgs.UpdatesDetail(),
+			Keywords: []string{"update", "version", "更新", "版本"},
+			Control:  ui.Button{Text: msgs.CheckForUpdates(), Variant: ui.ButtonOutline, TestID: "check-for-updates", OnPress: check},
+		}}}}}
 }
 
 // agentSettings shows each agent as a card: what looking for it found,

@@ -8,10 +8,13 @@ import (
 	"time"
 
 	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/desktop"
+	menus "github.com/nsgo-dev/nsgo/desktop/locales"
 	"github.com/nsgo-dev/nsgo/nsgotest"
 	"github.com/nsgo-dev/nsgo/ui"
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/agent"
+	"github.com/oneo-me/nsgo-agio/chatview/locales"
 	"github.com/oneo-me/nsgo-agio/host"
 	"github.com/oneo-me/nsgo-agio/internal/fakeagent"
 	"github.com/oneo-me/nsgo-agio/quota"
@@ -186,4 +189,42 @@ func TestComposerShowsTheModelsLimit(t *testing.T) {
 		}
 		return n == 2
 	})
+}
+
+func TestAppMenuChecksForUpdatesOnlyWhenAsked(t *testing.T) {
+	has := func(items []desktop.MenuItem) bool {
+		for _, item := range items[0].Items {
+			if item.Label == "Check for Updates…" {
+				return true
+			}
+		}
+		return false
+	}
+	msgs, words := locales.In("en"), menus.In("en")
+	if has(appMenu("Agio", msgs, words, func() {}, func() {}, nil)) {
+		t.Error("the menu checks for updates without updates")
+	}
+	if !has(appMenu("Agio", msgs, words, func() {}, func() {}, func() {})) {
+		t.Error("the menu lacks Check for Updates…")
+	}
+}
+
+func TestSettingsCheckForUpdatesOnlyWhenAsked(t *testing.T) {
+	for _, updates := range []bool{false, true} {
+		h := host.New(host.Options{Env: []string{}, Tools: []agent.Tool{agent.Claude},
+			Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}}, Home: t.TempDir()})
+		t.Cleanup(func() { h.Close() })
+		app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
+			return App{Model: Bind(cx, h), Updates: updates}
+		}, nsgotest.Size(900, 640))
+		app.Press("id:open-settings")
+		app.WaitFor("id:settings", 5*time.Second)
+		if hasText(app, "Updates") != updates {
+			t.Errorf("with Updates %v, the settings show updates: %v", updates, !updates)
+		}
+		if updates {
+			app.Press("text:Updates")
+			app.WaitFor("id:check-for-updates", 5*time.Second)
+		}
+	}
 }

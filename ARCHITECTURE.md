@@ -13,7 +13,7 @@ Agio is the agent core split out of Neorio: drivers that run coding agent CLIs a
 | `transcript` | Turns folded from events, and the patches that carry them |
 | `host` | A `Backend` running agents in this process: discovery, turning tools and models on and off, account limits, sessions, interruption and choices |
 | `wire` | Framed JSON peer, `Serve` for a backend and `Client`, a `Backend` mirroring one |
-| `chatview` | NSGo views of any `Backend`, built from `ui/chat`: conversations, agent settings, limits and the macOS menu bar, with their catalogs in `locales` |
+| `chatview` | NSGo views of any `Backend`, built from `ui/chat`: conversations, agent settings, limits, update checks and the macOS menu bar, with their catalogs in `locales` |
 | `shellenv`, `internal/childproc` | The login shell's environment, and process groups started and stopped as a whole |
 | `cmd/agio` | Agio, the single-process app: its settings file and usage statistics |
 | `examples/` | A server and a client |
@@ -40,7 +40,7 @@ Agio is the agent core split out of Neorio: drivers that run coding agent CLIs a
 
 ## Verification
 
-Headless tests run the drivers against fake CLIs, the host and wire against a scripted driver, and `chatview` through `nsgotest`. Native windows and real agents need manual review.
+Headless tests run the drivers against fake CLIs, the host and wire against a scripted driver, and `chatview` through `nsgotest`. The fake CLIs are shell scripts, so Windows skips the tests using them. Native windows and real agents need manual review.
 
 ## Subjects
 

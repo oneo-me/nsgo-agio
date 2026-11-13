@@ -104,7 +104,7 @@ func main() {
 	})
 	nsgo.Run(func(cx *core.Scope) core.Node {
 		reportUsage(cx, h, st)
-		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title,
+		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title, Updates: true,
 			Settings: []ui.SettingsCategory{statsSettings(cx, st)}}
 	}, nsgo.WindowSize(1040, 720))
 	// The window closed: its agents end with it.

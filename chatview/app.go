@@ -8,6 +8,7 @@ import (
 	menus "github.com/nsgo-dev/nsgo/desktop/locales"
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/ui"
+	"github.com/nsgo-dev/nsgo/updater"
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/chatview/locales"
 )
@@ -20,12 +21,14 @@ import (
 //
 // Name, when set, heads the menu bar on macOS: the app's menu with the
 // settings, a File menu starting a conversation, and the platform's Edit
-// and Window menus. Settings follow the agents in the settings dialog, such
-// as the app's own preferences.
+// and Window menus. Updates adds Check for Updates… to the app's menu, for
+// an app whose nsgo.yaml configures updates. Settings follow the agents in
+// the settings dialog, such as the app's own preferences.
 type App struct {
-	Model *Model
-	Dir   string
-	Name  string
+	Model   *Model
+	Dir     string
+	Name    string
+	Updates bool
 	// Header ends the window's header, such as the app's own actions.
 	Header   []core.Node
 	Settings []ui.SettingsCategory
@@ -115,7 +118,12 @@ func (a App) Render(cx *core.Scope) core.Node {
 	newConversation := func() { failed = ""; create() }
 	if a.Name != "" && runtime.GOOS == "darwin" {
 		cx.Effect(func() {
-			desktop.SetApplicationMenu(cx, appMenu(a.Name, locales.For(cx), menus.For(cx), newConversation, func() { settingsOpen.Set(true) }))
+			var checkUpdates func()
+			if a.Updates {
+				checkUpdates = func() { updater.Check(cx) }
+			}
+			desktop.SetApplicationMenu(cx, appMenu(a.Name, locales.For(cx), menus.For(cx), newConversation,
+				func() { settingsOpen.Set(true) }, checkUpdates))
 		})
 	}
 	shell := ui.SidebarShell{TestID: a.TestID,
@@ -144,18 +152,23 @@ func (a App) Render(cx *core.Scope) core.Node {
 }
 
 // appMenu is the menu bar in the language shown, of chatview's words and
-// NSGo's; the platform labels the role items.
-func appMenu(name string, msgs locales.Messages, words menus.Messages, newConversation, openSettings func()) []desktop.MenuItem {
+// NSGo's; the platform labels the role items. A nil checkUpdates leaves
+// out Check for Updates….
+func appMenu(name string, msgs locales.Messages, words menus.Messages, newConversation, openSettings, checkUpdates func()) []desktop.MenuItem {
+	app := []desktop.MenuItem{{Role: desktop.MenuAbout}}
+	if checkUpdates != nil {
+		app = append(app, desktop.MenuItem{Label: msgs.CheckForUpdatesMenuItem(), OnSelect: checkUpdates})
+	}
+	app = append(app,
+		desktop.MenuItem{Separator: true},
+		desktop.MenuItem{Label: msgs.SettingsMenuItem(), Shortcut: "mod+,", OnSelect: openSettings},
+		desktop.MenuItem{Separator: true},
+		desktop.MenuItem{Role: desktop.MenuHide}, desktop.MenuItem{Role: desktop.MenuHideOthers}, desktop.MenuItem{Role: desktop.MenuShowAll},
+		desktop.MenuItem{Separator: true},
+		desktop.MenuItem{Role: desktop.MenuQuit},
+	)
 	return []desktop.MenuItem{
-		{Label: name, Items: []desktop.MenuItem{
-			{Role: desktop.MenuAbout},
-			{Separator: true},
-			{Label: msgs.SettingsMenuItem(), Shortcut: "mod+,", OnSelect: openSettings},
-			{Separator: true},
-			{Role: desktop.MenuHide}, {Role: desktop.MenuHideOthers}, {Role: desktop.MenuShowAll},
-			{Separator: true},
-			{Role: desktop.MenuQuit},
-		}},
+		{Label: name, Items: app},
 		{Label: msgs.FileMenu(), Items: []desktop.MenuItem{
 			{Label: msgs.NewConversation(), Shortcut: "mod+n", OnSelect: newConversation},
 			{Separator: true},
