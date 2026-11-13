@@ -28,7 +28,8 @@ Agio is the agent core of NSGo apps, split out of Neorio: drivers that run codin
 - `Create` returns once `State` shows the conversation; views rely on it to select what they created.
 - A conversation keeps the tool and directory of its first message, as sessions cannot move between CLIs or folders. A new message interrupts a running one instead of queueing.
 - Agents run with full access in their directory and are never asked for approval; a host signals only the process groups it started.
-- Agio persists nothing. An application that keeps conversations stores their `Cursor`, `Dir`, `Model` and times and resumes them with `Create`, and passes the folders it remembers to `chatview.App`; one that keeps the agents and models turned off passes them to `host.Options`. Limits are read again after a restart.
+- Agio persists nothing. An application that keeps conversations stores their `Cursor`, `Dir`, `Model` and times and resumes them with `Create`, and passes the folders it remembers to `chatview.App`.
+- An application that keeps the agents and models turned off passes them to `host.Options`. Limits are read again after a restart.
 
 ## Core flows
 

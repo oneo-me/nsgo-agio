@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+
+jobs:
+  release:
+    # A Mac builds every target and installer; actool needs Xcode 26 for
+    # Agio's .icon.
+    runs-on: macos-26
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Check the version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          # Go modules take only semantic versions, and v2 and later need a
+          # /vN module path, so the tag must be one Go can resolve.
+          echo "$GITHUB_REF_NAME" | grep -Eq '^v[01]\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$' \
+            || { echo "$GITHUB_REF_NAME is not a Go module version such as v0.1.0"; exit 1; }
+          app=$(awk '$1 == "version:" { print $2; exit }' cmd/agio/nsgo.yaml)
+          [ "$app" = "$version" ] \
+            || { echo "cmd/agio/nsgo.yaml's version is $app, not $version"; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Extract release notes
+        run: |
+          awk -v heading="## [$VERSION]" '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md" \
+            || { echo "CHANGELOG.md has no notes for $VERSION"; exit 1; }
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install NSIS
+        run: brew install makensis
+
+      - name: Build Agio
+        env:
+          # Signs the installers and the appcasts; without it macOS and
+          # Windows get no appcast and stop updating.
+          NSGO_UPDATES_KEY: ${{ secrets.NSGO_UPDATES_KEY }}
+        run: |
+          [ -n "$NSGO_UPDATES_KEY" ] || { echo "Set the NSGO_UPDATES_KEY secret"; exit 1; }
+          go tool nsgo build cmd/agio
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: cmd/agio/dist/releases
+        run: |
+          # GitHub lists a release's assets in the order they were uploaded,
+          # so they go up one at a time: the install scripts and installers
+          # first, then the appcasts and checksums updates and the scripts
+          # read. The release stays a draft until all are there, as
+          # releases/latest/download must never miss an appcast.
+          order() {
+            for pattern in 'install.sh' 'install.ps1' '*.dmg' '*-setup.exe' '*.AppImage' '*.deb' '*.pkg.tar.gz' \
+              'appcast-*.xml' '*.sha256'; do
+              find . -maxdepth 1 -type f -name "$pattern" | sort
+            done
+          }
+          files=$(order)
+          # Hidden files, such as the build's .version, stay unpublished.
+          missing=$(find . -maxdepth 1 -type f -not -name '.*' | sort | grep -vxF "$files" || true)
+          [ -z "$missing" ] || { echo "Unordered release files:"; echo "$missing"; exit 1; }
+
+          flags=()
+          case "$VERSION" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+            --title "$VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
+          for file in $files; do
+            gh release upload "$GITHUB_REF_NAME" "$file"
+          done
+          gh release edit "$GITHUB_REF_NAME" --draft=false
+
+      - name: Announce the module to Go's proxy
+        continue-on-error: true
+        # Outside the module, which cannot ask for a version of itself.
+        working-directory: ${{ runner.temp }}
+        run: GOPROXY=https://proxy.golang.org go list -m "github.com/oneo-me/nsgo-agio@$GITHUB_REF_NAME"

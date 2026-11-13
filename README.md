@@ -38,7 +38,7 @@ Agio runs the agent CLIs on the login shell's `PATH` with your own sign-ins. It 
 ## Install the library
 
 ```sh
-go get github.com/oneo-me/nsgo-agio
+go get github.com/oneo-me/nsgo-agio@v0.1.0
 ```
 
 It needs Go 1.27 and the agent CLIs you want on the login shell's `PATH`; it runs them with your own sign-ins.
@@ -79,6 +79,8 @@ Agio runs its agents in one process; the examples run as a server and its client
 | Client | `AGIO_TOKEN=secret go tool nsgo dev examples/client` |
 
 `go tool nsgo build cmd/agio` builds Agio for macOS, Windows and Linux, on arm64 and x64. Releases update themselves from the latest GitHub release when built with `NSGO_UPDATES_KEY`, the secret key of `updates.key` in `cmd/agio/nsgo.yaml`. `go build -tags agiodemo ./cmd/agio` builds a demo that shows scripted tasks instead of running agents, which the website's screenshots use.
+
+Pushing a tag `v<version>` matching `version` in `cmd/agio/nsgo.yaml`, such as `v0.1.0`, publishes that version: the Go module, and a GitHub release of Agio with its `CHANGELOG.md` section as the notes, built with the `NSGO_UPDATES_KEY` repository secret.
 
 ## Documentation
 

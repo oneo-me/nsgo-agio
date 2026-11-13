@@ -38,7 +38,7 @@ Agio 用你自己的登录状态运行登录 shell 的 `PATH` 中的智能体 CL
 ## 安装库
 
 ```sh
-go get github.com/oneo-me/nsgo-agio
+go get github.com/oneo-me/nsgo-agio@v0.1.0
 ```
 
 需要 Go 1.27，以及登录 shell 的 `PATH` 中你想使用的智能体 CLI；它们使用你自己的登录状态运行。
@@ -79,6 +79,8 @@ Agio 在单进程中运行智能体；示例以服务端和客户端运行：
 | 客户端 | `AGIO_TOKEN=secret go tool nsgo dev examples/client` |
 
 `go tool nsgo build cmd/agio` 为 macOS、Windows 和 Linux 构建 arm64 与 x64 的 Agio。构建时设置 `NSGO_UPDATES_KEY`（`cmd/agio/nsgo.yaml` 中 `updates.key` 对应的私钥），发布的版本就会从最新的 GitHub Release 自动更新。`go build -tags agiodemo ./cmd/agio` 构建一个展示脚本化任务、不运行智能体的演示版，官网截图用的就是它。
+
+推送与 `cmd/agio/nsgo.yaml` 中 `version` 一致的 `v<版本>` 标签（如 `v0.1.0`）即发布该版本：Go 模块，以及 Agio 的 GitHub Release，发布说明取自 `CHANGELOG.md` 中该版本的一节，构建使用仓库密钥 `NSGO_UPDATES_KEY`。
 
 ## 文档
 
