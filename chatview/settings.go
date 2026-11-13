@@ -7,6 +7,7 @@ import (
 
 	"github.com/nsgo-dev/nsgo/base"
 	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/i18n"
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/ui"
 	"github.com/nsgo-dev/nsgo/updater"
@@ -16,34 +17,46 @@ import (
 )
 
 // settings is App's settings dialog: the backend's agents and their
-// models, the app's own categories, then its updates when it has them.
+// models and its updates when it has them, among the app's own categories.
 func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
 	m := a.Model
-	msgs := locales.For(cx)
-	category, query := core.NewSignal(cx, ""), core.NewSignal(cx, "")
+	category, query := a.SettingsCategory, core.NewSignal(cx, "")
+	if category == nil {
+		category = core.NewSignal(cx, "")
+	}
 	// Search matches the agents' statuses, so the page is rebuilt when they
 	// change, but not as models are turned on or off, which keeps their
 	// dropdown open; the page and search are held here.
 	key := func() string {
 		var b strings.Builder
+		msgs := locales.For(cx)
 		s := m.State()
 		for _, t := range s.Tools {
 			b.WriteString(t.Tool.Name() + toolStatus(msgs, t, s.Discovering) + fmt.Sprint(t.Ready(), len(t.Catalog.Models)) + "\n")
 		}
+		b.WriteString(i18n.Language(cx))
+		if a.SettingsKey != nil {
+			b.WriteString("\n" + a.SettingsKey())
+		}
 		return b.String()
 	}
 	return ui.SettingsDialog{Open: open.Get, OnOpenChange: func(o bool, _ base.Reason) { open.Set(o) },
-		Label: msgs.Settings(), TestID: "settings-dialog",
+		Label: locales.For(cx).Settings(), TestID: "settings-dialog",
 		Content: func(narrow func() bool) core.Node {
 			return region(m, key, func(cx *core.Scope) core.Node {
-				categories := append([]ui.SettingsCategory{agentSettings(m, msgs)}, a.Settings...)
+				msgs := locales.For(cx)
+				categories := []ui.SettingsCategory{agentSettings(m, msgs)}
 				if a.Updates {
 					categories = append(categories, updateSettings(msgs, func() { updater.Check(cx) }))
+				}
+				if a.Settings != nil {
+					categories = a.Settings(categories)
 				}
 				return ui.Settings{Categories: categories, Category: category, Query: query, Narrow: narrow, TestID: "settings",
 					Title: msgs.Settings(), SearchLabel: msgs.SearchSettings(), SearchPlaceholder: msgs.SearchSettings(),
 					ResultsTitle: msgs.SettingsResults(), EmptyText: msgs.NoMatchingSettings(),
-					OnClose: func() { open.Set(false) }, CloseLabel: msgs.CloseSettings()}
+					SectionActions: a.SettingsSectionActions,
+					OnClose:        func() { open.Set(false) }, CloseLabel: msgs.CloseSettings()}
 			})
 		}}
 }

@@ -65,6 +65,7 @@ var Parameters = map[string][]string{
 	"EnableAgent":             {"tool"},
 	"ModelsEnabled":           {"count", "enabled"},
 	"ToolModels":              {"tool"},
+	"HeroTitle":               {"project"},
 }
 
 // Translation is a language's messages another package supplies:
@@ -105,6 +106,7 @@ type Translation struct {
 	EnableAgent             func(tool string) string
 	ModelsEnabled           func(count int, enabled int) string
 	ToolModels              func(tool string) string
+	HeroTitle               func(project string) string
 }
 
 var supplied = map[string]Translation{}
@@ -145,8 +147,6 @@ const (
 	textActionTool
 	textThought
 	textWorked
-	textConversations
-	textNewConversation
 	textUntitled
 	textRemoveConversation
 	textToggleSidebar
@@ -157,10 +157,7 @@ const (
 	textNoMatchingSettings
 	textCloseSettings
 	textAgents
-	textRecentProjects
 	textChooseFolder
-	textSearchProjects
-	textNoMatchingProjects
 	textQuotaDetails
 	textQuotaLimit
 	textQuotaWeekly
@@ -188,6 +185,20 @@ const (
 	textChooseModel
 	textLoadingModels
 	textNoEnabledModels
+	textAppearance
+	textAppearanceSystem
+	textAppearanceLight
+	textAppearanceDark
+	textNewTask
+	textRunningTasks
+	textToday
+	textYesterday
+	textPreviousWeek
+	textPreviousMonth
+	textOlder
+	textNoTasks
+	textHeroDetail
+	textChooseProject
 	numTexts
 )
 
@@ -228,8 +239,6 @@ var keyOfText = [numTexts]string{
 	"actionTool",
 	"thought",
 	"worked",
-	"conversations",
-	"newConversation",
 	"untitled",
 	"removeConversation",
 	"toggleSidebar",
@@ -240,10 +249,7 @@ var keyOfText = [numTexts]string{
 	"noMatchingSettings",
 	"closeSettings",
 	"agents",
-	"recentProjects",
 	"chooseFolder",
-	"searchProjects",
-	"noMatchingProjects",
 	"quotaDetails",
 	"quotaLimit",
 	"quotaWeekly",
@@ -271,6 +277,20 @@ var keyOfText = [numTexts]string{
 	"chooseModel",
 	"loadingModels",
 	"noEnabledModels",
+	"appearance",
+	"appearanceSystem",
+	"appearanceLight",
+	"appearanceDark",
+	"newTask",
+	"runningTasks",
+	"today",
+	"yesterday",
+	"previousWeek",
+	"previousMonth",
+	"older",
+	"noTasks",
+	"heroDetail",
+	"chooseProject",
 }
 
 // textsEn are the messages without arguments in en.
@@ -309,9 +329,7 @@ var textsEn = i18n.NewTexts(""+
 	"Tool"+
 	"Thought"+
 	"Worked"+
-	"Conversations"+
-	"New conversation"+
-	"New conversation"+
+	"Untitled task"+
 	"Remove"+
 	"Show or hide the sidebar"+
 	"Resize the sidebar"+
@@ -321,10 +339,7 @@ var textsEn = i18n.NewTexts(""+
 	"No matching settings"+
 	"Close"+
 	"Agents"+
-	"Recent projects"+
 	"Choose a folder…"+
-	"Search projects"+
-	"No matching projects"+
 	"Account limits"+
 	"Usage limit"+
 	"Weekly limit"+
@@ -351,7 +366,21 @@ var textsEn = i18n.NewTexts(""+
 	"No matching results."+
 	"Choose a model"+
 	"Looking for models…"+
-	"No models are enabled. Enable them in Settings › Agents.",
+	"No models are enabled. Enable them in Settings › Agents."+
+	"Appearance"+
+	"Follow system"+
+	"Light"+
+	"Dark"+
+	"New task"+
+	"Running"+
+	"Today"+
+	"Yesterday"+
+	"Previous 7 days"+
+	"Previous 30 days"+
+	"Older"+
+	"No tasks yet."+
+	"Choose the project in the question, then describe the task."+
+	"Choose a project",
 	[]uint16{
 		7,
 		4,
@@ -388,8 +417,6 @@ var textsEn = i18n.NewTexts(""+
 		7,
 		6,
 		13,
-		16,
-		16,
 		6,
 		24,
 		18,
@@ -399,10 +426,7 @@ var textsEn = i18n.NewTexts(""+
 		20,
 		5,
 		6,
-		15,
 		18,
-		15,
-		20,
 		14,
 		11,
 		12,
@@ -430,6 +454,20 @@ var textsEn = i18n.NewTexts(""+
 		14,
 		21,
 		58,
+		10,
+		13,
+		5,
+		4,
+		8,
+		7,
+		5,
+		9,
+		15,
+		16,
+		5,
+		13,
+		59,
+		16,
 	})
 
 // textsZhHans are the messages without arguments in zh-Hans.
@@ -468,9 +506,7 @@ var textsZhHans = i18n.NewTexts(""+
 	"工具"+
 	"已思考"+
 	"已完成"+
-	"对话"+
-	"新对话"+
-	"新对话"+
+	"未命名任务"+
 	"移除"+
 	"显示或隐藏边栏"+
 	"调整边栏宽度"+
@@ -480,10 +516,7 @@ var textsZhHans = i18n.NewTexts(""+
 	"没有匹配的设置"+
 	"关闭"+
 	"智能体"+
-	"最近的项目"+
 	"选择文件夹…"+
-	"搜索项目"+
-	"没有匹配的项目"+
 	"账户额度"+
 	"用量限额"+
 	"每周限额"+
@@ -510,7 +543,21 @@ var textsZhHans = i18n.NewTexts(""+
 	"没有匹配结果。"+
 	"选择模型"+
 	"正在查找模型…"+
-	"没有已启用的模型。请在“设置 › 智能体”中启用。",
+	"没有已启用的模型。请在“设置 › 智能体”中启用。"+
+	"外观"+
+	"跟随系统"+
+	"浅色"+
+	"深色"+
+	"新建任务"+
+	"进行中"+
+	"今天"+
+	"昨天"+
+	"过去 7 天"+
+	"过去 30 天"+
+	"更早"+
+	"暂无任务。"+
+	"点击问题中的项目可以更换，然后描述任务。"+
+	"选择项目",
 	[]uint16{
 		6,
 		6,
@@ -546,22 +593,17 @@ var textsZhHans = i18n.NewTexts(""+
 		6,
 		9,
 		9,
-		6,
-		9,
-		9,
-		6,
-		21,
-		18,
-		6,
-		12,
-		6,
-		21,
-		6,
-		9,
 		15,
-		18,
-		12,
+		6,
 		21,
+		18,
+		6,
+		12,
+		6,
+		21,
+		6,
+		9,
+		18,
 		12,
 		12,
 		12,
@@ -589,6 +631,20 @@ var textsZhHans = i18n.NewTexts(""+
 		12,
 		21,
 		71,
+		6,
+		12,
+		6,
+		6,
+		12,
+		9,
+		6,
+		6,
+		12,
+		13,
+		6,
+		15,
+		60,
+		12,
 	})
 
 // texts returns the messages without arguments in lang, nil for a
@@ -740,6 +796,9 @@ func Supply(lang string, t Translation) {
 	}
 	if t.ToolModels != nil {
 		s.ToolModels = t.ToolModels
+	}
+	if t.HeroTitle != nil {
+		s.HeroTitle = t.HeroTitle
 	}
 	supplied[lang] = s
 	Catalog.Add(lang)
@@ -1421,24 +1480,10 @@ func (msgs Messages) StoppedAfter(duration string) string {
 	}
 }
 
-// Conversations says "Conversations"
-// in the language the app shows under cx.
-func Conversations(cx *core.Scope) string { return For(cx).Conversations() }
-
-// Conversations is the package's Conversations in the language of msgs.
-func (msgs Messages) Conversations() string { return msgs.text(textConversations) }
-
-// NewConversation says "New conversation"
-// in the language the app shows under cx.
-func NewConversation(cx *core.Scope) string { return For(cx).NewConversation() }
-
-// NewConversation is the package's NewConversation in the language of msgs.
-func (msgs Messages) NewConversation() string { return msgs.text(textNewConversation) }
-
-// Untitled says "New conversation"
+// Untitled says "Untitled task"
 // in the language the app shows under cx.
 //
-// A conversation's title before its first message.
+// A task's title before its agent names it.
 func Untitled(cx *core.Scope) string { return For(cx).Untitled() }
 
 // Untitled is the package's Untitled in the language of msgs.
@@ -1507,33 +1552,12 @@ func Agents(cx *core.Scope) string { return For(cx).Agents() }
 // Agents is the package's Agents in the language of msgs.
 func (msgs Messages) Agents() string { return msgs.text(textAgents) }
 
-// RecentProjects says "Recent projects"
-// in the language the app shows under cx.
-func RecentProjects(cx *core.Scope) string { return For(cx).RecentProjects() }
-
-// RecentProjects is the package's RecentProjects in the language of msgs.
-func (msgs Messages) RecentProjects() string { return msgs.text(textRecentProjects) }
-
 // ChooseFolder says "Choose a folder…"
 // in the language the app shows under cx.
 func ChooseFolder(cx *core.Scope) string { return For(cx).ChooseFolder() }
 
 // ChooseFolder is the package's ChooseFolder in the language of msgs.
 func (msgs Messages) ChooseFolder() string { return msgs.text(textChooseFolder) }
-
-// SearchProjects says "Search projects"
-// in the language the app shows under cx.
-func SearchProjects(cx *core.Scope) string { return For(cx).SearchProjects() }
-
-// SearchProjects is the package's SearchProjects in the language of msgs.
-func (msgs Messages) SearchProjects() string { return msgs.text(textSearchProjects) }
-
-// NoMatchingProjects says "No matching projects"
-// in the language the app shows under cx.
-func NoMatchingProjects(cx *core.Scope) string { return For(cx).NoMatchingProjects() }
-
-// NoMatchingProjects is the package's NoMatchingProjects in the language of msgs.
-func (msgs Messages) NoMatchingProjects() string { return msgs.text(textNoMatchingProjects) }
 
 // QuotaDetails says "Account limits"
 // in the language the app shows under cx.
@@ -2094,3 +2118,123 @@ func NoEnabledModels(cx *core.Scope) string { return For(cx).NoEnabledModels() }
 
 // NoEnabledModels is the package's NoEnabledModels in the language of msgs.
 func (msgs Messages) NoEnabledModels() string { return msgs.text(textNoEnabledModels) }
+
+// Appearance says "Appearance"
+// in the language the app shows under cx.
+func Appearance(cx *core.Scope) string { return For(cx).Appearance() }
+
+// Appearance is the package's Appearance in the language of msgs.
+func (msgs Messages) Appearance() string { return msgs.text(textAppearance) }
+
+// AppearanceSystem says "Follow system"
+// in the language the app shows under cx.
+func AppearanceSystem(cx *core.Scope) string { return For(cx).AppearanceSystem() }
+
+// AppearanceSystem is the package's AppearanceSystem in the language of msgs.
+func (msgs Messages) AppearanceSystem() string { return msgs.text(textAppearanceSystem) }
+
+// AppearanceLight says "Light"
+// in the language the app shows under cx.
+func AppearanceLight(cx *core.Scope) string { return For(cx).AppearanceLight() }
+
+// AppearanceLight is the package's AppearanceLight in the language of msgs.
+func (msgs Messages) AppearanceLight() string { return msgs.text(textAppearanceLight) }
+
+// AppearanceDark says "Dark"
+// in the language the app shows under cx.
+func AppearanceDark(cx *core.Scope) string { return For(cx).AppearanceDark() }
+
+// AppearanceDark is the package's AppearanceDark in the language of msgs.
+func (msgs Messages) AppearanceDark() string { return msgs.text(textAppearanceDark) }
+
+// NewTask says "New task"
+// in the language the app shows under cx.
+func NewTask(cx *core.Scope) string { return For(cx).NewTask() }
+
+// NewTask is the package's NewTask in the language of msgs.
+func (msgs Messages) NewTask() string { return msgs.text(textNewTask) }
+
+// RunningTasks says "Running"
+// in the language the app shows under cx.
+func RunningTasks(cx *core.Scope) string { return For(cx).RunningTasks() }
+
+// RunningTasks is the package's RunningTasks in the language of msgs.
+func (msgs Messages) RunningTasks() string { return msgs.text(textRunningTasks) }
+
+// Today says "Today"
+// in the language the app shows under cx.
+func Today(cx *core.Scope) string { return For(cx).Today() }
+
+// Today is the package's Today in the language of msgs.
+func (msgs Messages) Today() string { return msgs.text(textToday) }
+
+// Yesterday says "Yesterday"
+// in the language the app shows under cx.
+func Yesterday(cx *core.Scope) string { return For(cx).Yesterday() }
+
+// Yesterday is the package's Yesterday in the language of msgs.
+func (msgs Messages) Yesterday() string { return msgs.text(textYesterday) }
+
+// PreviousWeek says "Previous 7 days"
+// in the language the app shows under cx.
+func PreviousWeek(cx *core.Scope) string { return For(cx).PreviousWeek() }
+
+// PreviousWeek is the package's PreviousWeek in the language of msgs.
+func (msgs Messages) PreviousWeek() string { return msgs.text(textPreviousWeek) }
+
+// PreviousMonth says "Previous 30 days"
+// in the language the app shows under cx.
+func PreviousMonth(cx *core.Scope) string { return For(cx).PreviousMonth() }
+
+// PreviousMonth is the package's PreviousMonth in the language of msgs.
+func (msgs Messages) PreviousMonth() string { return msgs.text(textPreviousMonth) }
+
+// Older says "Older"
+// in the language the app shows under cx.
+func Older(cx *core.Scope) string { return For(cx).Older() }
+
+// Older is the package's Older in the language of msgs.
+func (msgs Messages) Older() string { return msgs.text(textOlder) }
+
+// NoTasks says "No tasks yet."
+// in the language the app shows under cx.
+func NoTasks(cx *core.Scope) string { return For(cx).NoTasks() }
+
+// NoTasks is the package's NoTasks in the language of msgs.
+func (msgs Messages) NoTasks() string { return msgs.text(textNoTasks) }
+
+// HeroTitle says "What should we work on in {project}?"
+// in the language the app shows under cx.
+func HeroTitle(cx *core.Scope, project string) string { return For(cx).HeroTitle(project) }
+
+// HeroTitle is the package's HeroTitle in the language of msgs.
+func (msgs Messages) HeroTitle(project string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.HeroTitle(project))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].HeroTitle; f != nil {
+			return f(project)
+		}
+		switch lang {
+		case "", "en":
+			return "What should we work on in " + msgs.arg(project) + "?"
+		case "zh-Hans":
+			return "要在 " + project + " 中处理什么任务？"
+		}
+	}
+}
+
+// HeroDetail says "Choose the project in the question, then describe the task."
+// in the language the app shows under cx.
+func HeroDetail(cx *core.Scope) string { return For(cx).HeroDetail() }
+
+// HeroDetail is the package's HeroDetail in the language of msgs.
+func (msgs Messages) HeroDetail() string { return msgs.text(textHeroDetail) }
+
+// ChooseProject says "Choose a project"
+// in the language the app shows under cx.
+func ChooseProject(cx *core.Scope) string { return For(cx).ChooseProject() }
+
+// ChooseProject is the package's ChooseProject in the language of msgs.
+func (msgs Messages) ChooseProject() string { return msgs.text(textChooseProject) }

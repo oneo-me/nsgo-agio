@@ -15,7 +15,6 @@ import (
 	"github.com/nsgo-dev/nsgo/ui"
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/agent"
-	"github.com/oneo-me/nsgo-agio/cmd/agio/locales"
 )
 
 // Agio counts its use in its site's Umami, as a page of the site under
@@ -168,16 +167,14 @@ func statsAgent(os core.OS) string {
 
 // statsSettings is the settings' category turning the usage statistics on
 // or off.
-func statsSettings(cx *core.Scope, st *store) ui.SettingsCategory {
-	on := core.NewSignal(cx, !st.get().StatsOff)
-	toggle := ui.Switch{Checked: on.Get, Label: locales.SettingsStatsSend(cx), OnChange: func(v bool) {
-		on.Set(v)
-		st.update(func(s *settings) { s.StatsOff = !v })
-	}}
-	return ui.SettingsCategory{ID: "privacy", Title: locales.SettingsPrivacy(cx), Icon: lucide.ChartColumn,
-		Groups: []ui.SettingsGroup{{ID: "stats", Title: locales.SettingsStats(cx), Items: []ui.SettingsItem{{
-			ID: "send", Title: locales.SettingsStatsSend(cx), Description: locales.SettingsStatsDetail(cx),
-			Keywords: []string{"statistics", "analytics", "privacy", "telemetry", locales.SettingsStats(cx)},
+func (a *app) statsSettings() ui.SettingsCategory {
+	m := a.msgs()
+	toggle := ui.Switch{Label: m.SettingsStatsSend(), Checked: func() bool { return !a.get().StatsOff },
+		OnChange: func(on bool) { a.change(func(s *settings) { s.StatsOff = !on }) }}
+	return ui.SettingsCategory{ID: "privacy", Title: m.SettingsPrivacy(), Icon: lucide.ChartColumn,
+		Groups: []ui.SettingsGroup{{ID: "stats", Title: m.SettingsStats(), Items: []ui.SettingsItem{{
+			ID: "send", Title: m.SettingsStatsSend(), Description: m.SettingsStatsDetail(),
+			Keywords: []string{"statistics", "analytics", "privacy", "telemetry", m.SettingsStats()},
 			Control:  toggle,
 		}}}}}
 }

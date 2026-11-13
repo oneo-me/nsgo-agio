@@ -50,7 +50,7 @@ func TestAppSendsAndShowsTheReply(t *testing.T) {
 	app.WaitUntil(5*time.Second, func() bool { return len(h.State().Conversations) == 1 && h.State().Ready() })
 	app.WaitFor("role:button Opus", 5*time.Second)
 	app.Type("id:composer", "hello agent")
-	app.Press("role:button Send")
+	app.Press("id:composer >> role:button Send")
 	app.WaitUntil(5*time.Second, func() bool { return hasText(app, "echo: hello agent") })
 	if !hasText(app, "hello agent") {
 		t.Fatalf("title missing: %q", app.Texts())
@@ -60,16 +60,27 @@ func TestAppSendsAndShowsTheReply(t *testing.T) {
 	}
 }
 
-func TestAppStartsAndRemovesConversations(t *testing.T) {
+func TestNewTaskStartsTasksInTheirGroups(t *testing.T) {
 	app, h := startApp(t)
-	app.WaitUntil(5*time.Second, func() bool { return len(h.State().Conversations) == 1 })
-	app.Press("id:new-conversation")
+	app.WaitUntil(5*time.Second, func() bool { return len(h.State().Conversations) == 1 && h.State().Ready() })
+	// New task asks for the project in its hero, and the draft it composes
+	// is no task yet.
+	app.WaitFor("id:new-task-project", 5*time.Second)
+	app.WaitFor("text:No tasks yet.", 5*time.Second)
+	app.WaitFor("role:button Opus", 5*time.Second)
+	app.Type("id:composer", "hello")
+	app.Press("role:button Send")
+	// Sending shows the task, listed by when it was last active.
+	app.WaitUntil(5*time.Second, func() bool { return hasText(app, "echo: hello") && hasText(app, "Today") })
+	task := h.State().Conversations[0].ID
+	app.Press("id:new-task")
+	app.WaitFor("id:new-task-project", 5*time.Second)
 	app.WaitUntil(5*time.Second, func() bool { return len(h.State().Conversations) == 2 })
-	for _, c := range h.State().Conversations {
-		h.Remove(c.ID)
-	}
-	// Removing the last starts another, so the window never stands empty.
-	app.WaitUntil(5*time.Second, func() bool { return len(h.State().Conversations) == 1 })
+	// Its row shows it again.
+	app.Press("id:task-" + task)
+	app.WaitUntil(5*time.Second, func() bool { return hasText(app, "echo: hello") && !app.Exists("id:new-task-page") })
+	h.Remove(task)
+	app.WaitFor("text:No tasks yet.", 5*time.Second)
 }
 
 func TestAppChoosesTheModel(t *testing.T) {
@@ -101,8 +112,10 @@ func TestSettingsShowTheAppsCategories(t *testing.T) {
 		Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}}, Home: t.TempDir()})
 	t.Cleanup(func() { h.Close() })
 	app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
-		return App{Model: Bind(cx, h), Settings: []ui.SettingsCategory{{ID: "own", Title: "Own",
-			Groups: []ui.SettingsGroup{{ID: "own", Items: []ui.SettingsItem{{ID: "item", Title: "Own item"}}}}}}}
+		return App{Model: Bind(cx, h), Settings: func(own []ui.SettingsCategory) []ui.SettingsCategory {
+			return append(own, ui.SettingsCategory{ID: "own", Title: "Own",
+				Groups: []ui.SettingsGroup{{ID: "own", Items: []ui.SettingsItem{{ID: "item", Title: "Own item"}}}}})
+		}}
 	}, nsgotest.Size(900, 640))
 	app.Press("id:open-settings")
 	app.WaitUntil(5*time.Second, func() bool { return hasText(app, "Own") })
@@ -110,27 +123,54 @@ func TestSettingsShowTheAppsCategories(t *testing.T) {
 	app.WaitFor("text:Own item", 5*time.Second)
 }
 
-func TestNewConversationChoosesItsProject(t *testing.T) {
+func TestAppearanceMenuShowsAndReportsTheChoice(t *testing.T) {
+	h := host.New(host.Options{Env: []string{}, Tools: []agent.Tool{agent.Claude},
+		Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}}, Home: t.TempDir()})
+	t.Cleanup(func() { h.Close() })
+	var chosen []core.Appearance
+	var env *core.Env
+	app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
+		env = cx.Env()
+		return App{Model: Bind(cx, h), OnAppearanceChange: func(a core.Appearance) { chosen = append(chosen, a) }}
+	}, nsgotest.Size(900, 640))
+	app.Press("id:appearance")
+	app.Press("text:Dark")
+	app.WaitUntil(5*time.Second, func() bool { return len(chosen) == 1 && chosen[0] == core.AppearanceDark })
+	if env.Appearance() != core.AppearanceDark {
+		t.Fatalf("the window shows %v, want dark", env.Appearance())
+	}
+}
+
+func TestNewTaskWorksWhereTheShownTaskDid(t *testing.T) {
 	app, h := startApp(t)
 	app.WaitUntil(5*time.Second, func() bool { return len(h.State().Conversations) == 1 && h.State().Ready() })
 	first := h.State().Conversations[0]
 	other := t.TempDir()
-	h.Choose(first.ID, agio.Choice{Dir: &other})
-	app.WaitFor("text:"+filepath.Base(other), 5*time.Second)
-	// A new conversation works where the selected one does.
-	app.Press("id:new-conversation")
-	app.WaitUntil(5*time.Second, func() bool { s := h.State(); return len(s.Conversations) == 2 && s.Conversations[0].Dir == other })
-	// Its picker offers the projects in use until the first message.
-	app.Press("id:project")
-	app.WaitUntil(5*time.Second, func() bool { return hasText(app, other) && hasText(app, "Choose a folder…") })
-	app.Press("id:project")
+	if err := h.Choose(first.ID, agio.Choice{Dir: &other}); err != nil {
+		t.Fatal(err)
+	}
+	app.WaitUntil(5*time.Second, func() bool { return hasText(app, filepath.Base(other)) })
+	// New task's picker offers the projects in use and a folder; the
+	// composer only names the project.
+	app.Press("id:new-task-project")
+	app.WaitFor("id:choose-folder", 5*time.Second)
+	app.Press("id:project-" + filepath.Base(other))
+	if app.Exists("id:choose-folder") {
+		t.Fatal("the picker stayed open")
+	}
 	app.Type("id:composer", "hello")
 	app.Press("role:button Send")
-	app.WaitUntil(5*time.Second, func() bool { return h.State().Conversations[0].Bound })
+	app.WaitUntil(5*time.Second, func() bool { return h.State().Conversation(first.ID).Bound })
 	dir := t.TempDir()
-	if err := h.Choose(h.State().Conversations[0].ID, agio.Choice{Dir: &dir}); err == nil {
+	if err := h.Choose(first.ID, agio.Choice{Dir: &dir}); err == nil {
 		t.Fatal("moved a started conversation")
 	}
+	// New task's next draft works where the task shown did.
+	app.Press("id:new-task")
+	app.WaitUntil(5*time.Second, func() bool {
+		s := h.State()
+		return len(s.Conversations) == 2 && s.Conversations[0].ID != first.ID && s.Conversations[0].Dir == other
+	})
 }
 
 func TestSettingsTurnModelsOffAndOn(t *testing.T) {

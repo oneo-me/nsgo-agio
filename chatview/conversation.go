@@ -28,6 +28,8 @@ type Conversation struct {
 	// scrolls under.
 	TopInset core.Points
 	TestID   string
+	// onSend runs as a message is sent, as New task shows its task.
+	onSend func()
 }
 
 // Render implements core.Node.
@@ -181,6 +183,9 @@ func (v Conversation) composer(cx *core.Scope, state *chat.ConversationState, dr
 		}
 		draft.Set("")
 		state.JumpToLatest()
+		if v.onSend != nil {
+			v.onSend()
+		}
 		m.Do(func(b agio.Backend) error { return b.Send(v.ID, agio.Message{Text: text}) }, func(err error) {
 			// A message that was not sent returns to an empty composer.
 			if err != nil && draft.GetUntracked() == "" {
@@ -215,51 +220,11 @@ func (v Conversation) composer(cx *core.Scope, state *chat.ConversationState, dr
 		}}
 }
 
-// pickFolder is the project picker's option opening the system's folder
-// picker.
-const pickFolder = "\x00pick"
-
-// project shows where the agent works. Until the first message it picks
-// the project: one the backend's conversations work in, or a folder.
+// project shows where the agent works; New task chooses it.
 func (v Conversation) project(cx *core.Scope) core.Node {
 	m := v.Model
-	msgs := locales.For(cx)
-	conv := func() *agio.Conversation { return m.Conversation(v.ID) }
-	label := live(m, func() string { return pathBase(conv().Dir) })
-	key := func() string {
-		c := conv()
-		return fmt.Sprint(c.Bound || len(c.Turns) > 0, projects(m.State()))
-	}
-	return region(m, key, func(cx *core.Scope) core.Node {
-		if c := conv(); c.Bound || len(c.Turns) > 0 {
-			return chat.Chip{TextFunc: label, Icon: lucide.Folder, TestID: "project"}
-		}
-		choose := func(dir string) {
-			m.Do(func(b agio.Backend) error { return b.Choose(v.ID, agio.Choice{Dir: &dir}) }, nil)
-		}
-		var options []chat.Option
-		for _, dir := range projects(m.State()) {
-			options = append(options, chat.Option{ID: dir, Label: pathBase(dir), Description: dir, Group: msgs.RecentProjects(), Icon: lucide.Folder})
-		}
-		options = append(options, chat.Option{ID: pickFolder, Label: msgs.ChooseFolder(), Icon: lucide.FolderOpen})
-		return chat.Picker{Label: label, Icon: lucide.Folder, Options: options, Width: 300, TestID: "project",
-			Selected:    live(m, func() string { return conv().Dir }),
-			SearchLabel: msgs.SearchProjects(), EmptyText: msgs.NoMatchingProjects(),
-			OnChange: func(id string) {
-				if id != pickFolder {
-					choose(id)
-					return
-				}
-				cx.PickDirectories(core.PickDirectoriesOptions{}, func(dirs []core.Directory, err error) {
-					switch {
-					case err != nil:
-						m.notice.Set(err.Error())
-					case len(dirs) > 0 && dirs[0].Path != "":
-						choose(dirs[0].Path)
-					}
-				})
-			}}
-	})
+	label := live(m, func() string { return pathBase(m.Conversation(v.ID).Dir) })
+	return chat.Chip{TextFunc: label, Icon: lucide.Folder, TestID: "project"}
 }
 
 // projects are the directories the backend's conversations work in, most

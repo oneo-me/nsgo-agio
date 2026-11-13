@@ -36,60 +36,409 @@ func For(cx *core.Scope) Messages { return In(i18n.Language(cx)) }
 // Parameters names the parameters of each message that has some, by
 // its method, for the TSX declarations of the messages
 // (tsx.RegisterMessages).
-var Parameters = map[string][]string{}
+var Parameters = map[string][]string{
+	"TaskSoundPreview":    {"sound"},
+	"AutomaticLauncher":   {"app"},
+	"LauncherMissing":     {"app"},
+	"OpenIn":              {"app"},
+	"ProviderModelLabel":  {"index"},
+	"RemoveProviderModel": {"index"},
+}
 
 // Translation is a language's messages another package supplies:
 // those without arguments in Texts, by key, and a function for each
 // of the others; a key or a field left out leaves the message to the
 // catalog.
 type Translation struct {
-	Texts map[string]string
+	Texts               map[string]string
+	TaskSoundPreview    func(sound string) string
+	AutomaticLauncher   func(app string) string
+	LauncherMissing     func(app string) string
+	OpenIn              func(app string) string
+	ProviderModelLabel  func(index int) string
+	RemoveProviderModel func(index int) string
 }
 
 var supplied = map[string]Translation{}
 
 // The indexes of the messages without arguments in the tables.
 const (
-	textSettingsPrivacy = iota
+	textApplication = iota
+	textGeneral
+	textLanguage
+	textLanguagePreference
+	textTheme
+	textThemePreference
+	textSystem
+	textLight
+	textDark
+	textEn
+	textZhHans
+	textKeyboard
+	textShortcutModifier
+	textShortcutModifierDescription
+	textShortcutCtrl
+	textShortcutAlt
+	textPower
+	textKeepAwake
+	textKeepAwakeDescription
+	textKeepDisplayAwake
+	textKeepDisplayAwakeDescription
+	textAlerts
+	textTaskSound
+	textTaskSoundDescription
+	textSoundNone
+	textSoundChime
+	textSoundGlass
+	textSoundMarimba
+	textSoundPop
+	textSoundDigital
+	textTaskNotification
+	textTaskCompleted
+	textTaskFailed
+	textUntitled
+	textTools
+	textTerminal
+	textEditor
+	textGitTool
+	textAutomatic
+	textHideLauncher
+	textModelServices
+	textProviderType
+	textProviderEmpty
+	textAddProvider
+	textProviderUnnamed
+	textProviderName
+	textProviderNamePlaceholder
+	textProviderBaseUrl
+	textProviderApiKey
+	textProviderModels
+	textAddProviderModel
+	textProviderModelsEmpty
+	textProviderModelPlaceholder
+	textRemoveProvider
+	textRemoveProviderDescription
+	textSettingsPrivacy
 	textSettingsStats
 	textSettingsStatsSend
 	textSettingsStatsDetail
+	textTasks
 	numTexts
 )
 
 // keyOfText is the key of the message without arguments at each
 // index, by which Supply reads a Translation's Texts.
 var keyOfText = [numTexts]string{
+	"application",
+	"general",
+	"language",
+	"languagePreference",
+	"theme",
+	"themePreference",
+	"system",
+	"light",
+	"dark",
+	"en",
+	"zhHans",
+	"keyboard",
+	"shortcutModifier",
+	"shortcutModifierDescription",
+	"shortcutCtrl",
+	"shortcutAlt",
+	"power",
+	"keepAwake",
+	"keepAwakeDescription",
+	"keepDisplayAwake",
+	"keepDisplayAwakeDescription",
+	"alerts",
+	"taskSound",
+	"taskSoundDescription",
+	"soundNone",
+	"soundChime",
+	"soundGlass",
+	"soundMarimba",
+	"soundPop",
+	"soundDigital",
+	"taskNotification",
+	"taskCompleted",
+	"taskFailed",
+	"untitled",
+	"tools",
+	"terminal",
+	"editor",
+	"gitTool",
+	"automatic",
+	"hideLauncher",
+	"modelServices",
+	"providerType",
+	"providerEmpty",
+	"addProvider",
+	"providerUnnamed",
+	"providerName",
+	"providerNamePlaceholder",
+	"providerBaseUrl",
+	"providerApiKey",
+	"providerModels",
+	"addProviderModel",
+	"providerModelsEmpty",
+	"providerModelPlaceholder",
+	"removeProvider",
+	"removeProviderDescription",
 	"settingsPrivacy",
 	"settingsStats",
 	"settingsStatsSend",
 	"settingsStatsDetail",
+	"tasks",
 }
 
 // textsEn are the messages without arguments in en.
 var textsEn = i18n.NewTexts(""+
+	"Application"+
+	"General"+
+	"Language"+
+	"Language preference"+
+	"Theme"+
+	"Theme preference"+
+	"Follow system"+
+	"Light"+
+	"Dark"+
+	"English"+
+	"简体中文"+
+	"Keyboard"+
+	"Shortcut modifier"+
+	"Use Alt for Agio shortcuts; text editing keeps Ctrl."+
+	"Ctrl"+
+	"Alt (like Command on macOS)"+
+	"Power"+
+	"Prevent sleep while agents work"+
+	"Keeps the computer awake while agents work. The display can still turn off."+
+	"Prevent screen lock while agents work"+
+	"Keeps the display on and the screen unlocked while agents work."+
+	"Alerts"+
+	"Sound when an agent stops"+
+	"Rises when it completes, falls when it fails."+
+	"None"+
+	"Chime"+
+	"Glass"+
+	"Marimba"+
+	"Pop"+
+	"Digital"+
+	"Notify when an agent stops"+
+	"The agent completed"+
+	"The agent failed"+
+	"Untitled task"+
+	"Tools"+
+	"Terminal"+
+	"Development tool"+
+	"Git tool"+
+	"Automatic"+
+	"Don't show"+
+	"Model services"+
+	"OpenAI-compatible"+
+	"No model services"+
+	"Add provider"+
+	"New provider"+
+	"Provider name"+
+	"e.g. OpenAI or Local"+
+	"Base URL"+
+	"API key"+
+	"Models"+
+	"Add model"+
+	"No models yet"+
+	"e.g. gpt-5-mini"+
+	"Remove provider"+
+	"Removes this provider and its models."+
 	"Privacy"+
 	"Statistics"+
 	"Send usage statistics"+
-	"Send when Agio is open and used, and which agents messages go to, with no prompts, folders or personal data, to help improve Agio.",
+	"Send when Agio is open and used, and which agents messages go to, with no prompts, folders or personal data, to help improve Agio."+
+	"Tasks",
 	[]uint16{
+		11,
+		7,
+		8,
+		19,
+		5,
+		16,
+		13,
+		5,
+		4,
+		7,
+		12,
+		8,
+		17,
+		52,
+		4,
+		27,
+		5,
+		31,
+		75,
+		37,
+		63,
+		6,
+		25,
+		45,
+		4,
+		5,
+		5,
+		7,
+		3,
+		7,
+		26,
+		19,
+		16,
+		13,
+		5,
+		8,
+		16,
+		8,
+		9,
+		10,
+		14,
+		17,
+		17,
+		12,
+		12,
+		13,
+		20,
+		8,
+		7,
+		6,
+		9,
+		13,
+		15,
+		15,
+		37,
 		7,
 		10,
 		21,
 		130,
+		5,
 	})
 
 // textsZhHans are the messages without arguments in zh-Hans.
 var textsZhHans = i18n.NewTexts(""+
+	"应用"+
+	"通用"+
+	"语言"+
+	"语言偏好"+
+	"主题"+
+	"主题偏好"+
+	"跟随系统"+
+	"浅色"+
+	"深色"+
+	"English"+
+	"简体中文"+
+	"键盘"+
+	"快捷键修饰键"+
+	"Agio 快捷键使用 Alt；文本编辑仍使用 Ctrl。"+
+	"Ctrl"+
+	"Alt（如 macOS 的 Command）"+
+	"电源"+
+	"智能体工作时阻止休眠"+
+	"智能体工作时保持电脑不休眠。显示器仍可关闭。"+
+	"智能体工作时阻止锁屏"+
+	"智能体工作时保持显示器常亮、屏幕不锁定。"+
+	"提醒"+
+	"智能体停止时的音效"+
+	"完成时上扬，失败时下降。"+
+	"无"+
+	"叮咚"+
+	"玻璃"+
+	"木琴"+
+	"气泡"+
+	"电子"+
+	"智能体停止时发送通知"+
+	"智能体已完成"+
+	"智能体失败"+
+	"未命名任务"+
+	"工具"+
+	"终端"+
+	"开发工具"+
+	"Git 工具"+
+	"自动"+
+	"不显示"+
+	"模型服务"+
+	"OpenAI 兼容"+
+	"未添加模型服务"+
+	"添加提供商"+
+	"新提供商"+
+	"提供商名称"+
+	"例如 OpenAI 或本地服务"+
+	"Base URL"+
+	"API 密钥"+
+	"模型"+
+	"添加模型"+
+	"尚无模型"+
+	"例如 gpt-5-mini"+
+	"删除提供商"+
+	"删除此提供商及其模型。"+
 	"隐私"+
 	"统计"+
 	"发送使用统计"+
-	"发送 Agio 何时打开和使用，以及消息发给了哪些智能体，不含提示词、文件夹或个人信息，帮助改进 Agio。",
+	"发送 Agio 何时打开和使用，以及消息发给了哪些智能体，不含提示词、文件夹或个人信息，帮助改进 Agio。"+
+	"任务",
 	[]uint16{
+		6,
+		6,
+		6,
+		12,
+		6,
+		12,
+		12,
+		6,
+		6,
+		7,
+		12,
+		6,
+		18,
+		56,
+		4,
+		30,
+		6,
+		30,
+		66,
+		30,
+		60,
+		6,
+		27,
+		36,
+		3,
+		6,
+		6,
+		6,
+		6,
+		6,
+		30,
+		18,
+		15,
+		15,
+		6,
+		6,
+		12,
+		10,
+		6,
+		9,
+		12,
+		13,
+		21,
+		15,
+		12,
+		15,
+		29,
+		8,
+		10,
+		6,
+		12,
+		12,
+		17,
+		15,
+		33,
 		6,
 		6,
 		18,
 		140,
+		6,
 	})
 
 // texts returns the messages without arguments in lang, nil for a
@@ -145,7 +494,563 @@ func Supply(lang string, t Translation) {
 			}
 		}
 	}
+	s := supplied[lang]
+	if t.TaskSoundPreview != nil {
+		s.TaskSoundPreview = t.TaskSoundPreview
+	}
+	if t.AutomaticLauncher != nil {
+		s.AutomaticLauncher = t.AutomaticLauncher
+	}
+	if t.LauncherMissing != nil {
+		s.LauncherMissing = t.LauncherMissing
+	}
+	if t.OpenIn != nil {
+		s.OpenIn = t.OpenIn
+	}
+	if t.ProviderModelLabel != nil {
+		s.ProviderModelLabel = t.ProviderModelLabel
+	}
+	if t.RemoveProviderModel != nil {
+		s.RemoveProviderModel = t.RemoveProviderModel
+	}
+	supplied[lang] = s
 	Catalog.Add(lang)
+}
+
+// arg is what an argument wrote, marked in the source's message for a
+// pseudo locale.
+func (msgs Messages) arg(s string) string {
+	if msgs.mark {
+		return i18n.Arg(s)
+	}
+	return s
+}
+
+// Application says "Application"
+// in the language the app shows under cx.
+func Application(cx *core.Scope) string { return For(cx).Application() }
+
+// Application is the package's Application in the language of msgs.
+func (msgs Messages) Application() string { return msgs.text(textApplication) }
+
+// General says "General"
+// in the language the app shows under cx.
+func General(cx *core.Scope) string { return For(cx).General() }
+
+// General is the package's General in the language of msgs.
+func (msgs Messages) General() string { return msgs.text(textGeneral) }
+
+// Language says "Language"
+// in the language the app shows under cx.
+func Language(cx *core.Scope) string { return For(cx).Language() }
+
+// Language is the package's Language in the language of msgs.
+func (msgs Messages) Language() string { return msgs.text(textLanguage) }
+
+// LanguagePreference says "Language preference"
+// in the language the app shows under cx.
+func LanguagePreference(cx *core.Scope) string { return For(cx).LanguagePreference() }
+
+// LanguagePreference is the package's LanguagePreference in the language of msgs.
+func (msgs Messages) LanguagePreference() string { return msgs.text(textLanguagePreference) }
+
+// Theme says "Theme"
+// in the language the app shows under cx.
+func Theme(cx *core.Scope) string { return For(cx).Theme() }
+
+// Theme is the package's Theme in the language of msgs.
+func (msgs Messages) Theme() string { return msgs.text(textTheme) }
+
+// ThemePreference says "Theme preference"
+// in the language the app shows under cx.
+func ThemePreference(cx *core.Scope) string { return For(cx).ThemePreference() }
+
+// ThemePreference is the package's ThemePreference in the language of msgs.
+func (msgs Messages) ThemePreference() string { return msgs.text(textThemePreference) }
+
+// System says "Follow system"
+// in the language the app shows under cx.
+func System(cx *core.Scope) string { return For(cx).System() }
+
+// System is the package's System in the language of msgs.
+func (msgs Messages) System() string { return msgs.text(textSystem) }
+
+// Light says "Light"
+// in the language the app shows under cx.
+func Light(cx *core.Scope) string { return For(cx).Light() }
+
+// Light is the package's Light in the language of msgs.
+func (msgs Messages) Light() string { return msgs.text(textLight) }
+
+// Dark says "Dark"
+// in the language the app shows under cx.
+func Dark(cx *core.Scope) string { return For(cx).Dark() }
+
+// Dark is the package's Dark in the language of msgs.
+func (msgs Messages) Dark() string { return msgs.text(textDark) }
+
+// En says "English"
+// in the language the app shows under cx.
+func En(cx *core.Scope) string { return For(cx).En() }
+
+// En is the package's En in the language of msgs.
+func (msgs Messages) En() string { return msgs.text(textEn) }
+
+// ZhHans says "简体中文"
+// in the language the app shows under cx.
+func ZhHans(cx *core.Scope) string { return For(cx).ZhHans() }
+
+// ZhHans is the package's ZhHans in the language of msgs.
+func (msgs Messages) ZhHans() string { return msgs.text(textZhHans) }
+
+// Keyboard says "Keyboard"
+// in the language the app shows under cx.
+func Keyboard(cx *core.Scope) string { return For(cx).Keyboard() }
+
+// Keyboard is the package's Keyboard in the language of msgs.
+func (msgs Messages) Keyboard() string { return msgs.text(textKeyboard) }
+
+// ShortcutModifier says "Shortcut modifier"
+// in the language the app shows under cx.
+func ShortcutModifier(cx *core.Scope) string { return For(cx).ShortcutModifier() }
+
+// ShortcutModifier is the package's ShortcutModifier in the language of msgs.
+func (msgs Messages) ShortcutModifier() string { return msgs.text(textShortcutModifier) }
+
+// ShortcutModifierDescription says "Use Alt for Agio shortcuts; text editing keeps Ctrl."
+// in the language the app shows under cx.
+func ShortcutModifierDescription(cx *core.Scope) string { return For(cx).ShortcutModifierDescription() }
+
+// ShortcutModifierDescription is the package's ShortcutModifierDescription in the language of msgs.
+func (msgs Messages) ShortcutModifierDescription() string {
+	return msgs.text(textShortcutModifierDescription)
+}
+
+// ShortcutCtrl says "Ctrl"
+// in the language the app shows under cx.
+func ShortcutCtrl(cx *core.Scope) string { return For(cx).ShortcutCtrl() }
+
+// ShortcutCtrl is the package's ShortcutCtrl in the language of msgs.
+func (msgs Messages) ShortcutCtrl() string { return msgs.text(textShortcutCtrl) }
+
+// ShortcutAlt says "Alt (like Command on macOS)"
+// in the language the app shows under cx.
+func ShortcutAlt(cx *core.Scope) string { return For(cx).ShortcutAlt() }
+
+// ShortcutAlt is the package's ShortcutAlt in the language of msgs.
+func (msgs Messages) ShortcutAlt() string { return msgs.text(textShortcutAlt) }
+
+// Power says "Power"
+// in the language the app shows under cx.
+func Power(cx *core.Scope) string { return For(cx).Power() }
+
+// Power is the package's Power in the language of msgs.
+func (msgs Messages) Power() string { return msgs.text(textPower) }
+
+// KeepAwake says "Prevent sleep while agents work"
+// in the language the app shows under cx.
+func KeepAwake(cx *core.Scope) string { return For(cx).KeepAwake() }
+
+// KeepAwake is the package's KeepAwake in the language of msgs.
+func (msgs Messages) KeepAwake() string { return msgs.text(textKeepAwake) }
+
+// KeepAwakeDescription says "Keeps the computer awake while agents work. The display can still turn off."
+// in the language the app shows under cx.
+func KeepAwakeDescription(cx *core.Scope) string { return For(cx).KeepAwakeDescription() }
+
+// KeepAwakeDescription is the package's KeepAwakeDescription in the language of msgs.
+func (msgs Messages) KeepAwakeDescription() string { return msgs.text(textKeepAwakeDescription) }
+
+// KeepDisplayAwake says "Prevent screen lock while agents work"
+// in the language the app shows under cx.
+func KeepDisplayAwake(cx *core.Scope) string { return For(cx).KeepDisplayAwake() }
+
+// KeepDisplayAwake is the package's KeepDisplayAwake in the language of msgs.
+func (msgs Messages) KeepDisplayAwake() string { return msgs.text(textKeepDisplayAwake) }
+
+// KeepDisplayAwakeDescription says "Keeps the display on and the screen unlocked while agents work."
+// in the language the app shows under cx.
+func KeepDisplayAwakeDescription(cx *core.Scope) string { return For(cx).KeepDisplayAwakeDescription() }
+
+// KeepDisplayAwakeDescription is the package's KeepDisplayAwakeDescription in the language of msgs.
+func (msgs Messages) KeepDisplayAwakeDescription() string {
+	return msgs.text(textKeepDisplayAwakeDescription)
+}
+
+// Alerts says "Alerts"
+// in the language the app shows under cx.
+func Alerts(cx *core.Scope) string { return For(cx).Alerts() }
+
+// Alerts is the package's Alerts in the language of msgs.
+func (msgs Messages) Alerts() string { return msgs.text(textAlerts) }
+
+// TaskSound says "Sound when an agent stops"
+// in the language the app shows under cx.
+func TaskSound(cx *core.Scope) string { return For(cx).TaskSound() }
+
+// TaskSound is the package's TaskSound in the language of msgs.
+func (msgs Messages) TaskSound() string { return msgs.text(textTaskSound) }
+
+// TaskSoundDescription says "Rises when it completes, falls when it fails."
+// in the language the app shows under cx.
+func TaskSoundDescription(cx *core.Scope) string { return For(cx).TaskSoundDescription() }
+
+// TaskSoundDescription is the package's TaskSoundDescription in the language of msgs.
+func (msgs Messages) TaskSoundDescription() string { return msgs.text(textTaskSoundDescription) }
+
+// TaskSoundPreview says "Play {sound}"
+// in the language the app shows under cx.
+func TaskSoundPreview(cx *core.Scope, sound string) string { return For(cx).TaskSoundPreview(sound) }
+
+// TaskSoundPreview is the package's TaskSoundPreview in the language of msgs.
+func (msgs Messages) TaskSoundPreview(sound string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.TaskSoundPreview(sound))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].TaskSoundPreview; f != nil {
+			return f(sound)
+		}
+		switch lang {
+		case "", "en":
+			return "Play " + msgs.arg(sound)
+		case "zh-Hans":
+			return "试听" + sound
+		}
+	}
+}
+
+// SoundNone says "None"
+// in the language the app shows under cx.
+func SoundNone(cx *core.Scope) string { return For(cx).SoundNone() }
+
+// SoundNone is the package's SoundNone in the language of msgs.
+func (msgs Messages) SoundNone() string { return msgs.text(textSoundNone) }
+
+// SoundChime says "Chime"
+// in the language the app shows under cx.
+func SoundChime(cx *core.Scope) string { return For(cx).SoundChime() }
+
+// SoundChime is the package's SoundChime in the language of msgs.
+func (msgs Messages) SoundChime() string { return msgs.text(textSoundChime) }
+
+// SoundGlass says "Glass"
+// in the language the app shows under cx.
+func SoundGlass(cx *core.Scope) string { return For(cx).SoundGlass() }
+
+// SoundGlass is the package's SoundGlass in the language of msgs.
+func (msgs Messages) SoundGlass() string { return msgs.text(textSoundGlass) }
+
+// SoundMarimba says "Marimba"
+// in the language the app shows under cx.
+func SoundMarimba(cx *core.Scope) string { return For(cx).SoundMarimba() }
+
+// SoundMarimba is the package's SoundMarimba in the language of msgs.
+func (msgs Messages) SoundMarimba() string { return msgs.text(textSoundMarimba) }
+
+// SoundPop says "Pop"
+// in the language the app shows under cx.
+func SoundPop(cx *core.Scope) string { return For(cx).SoundPop() }
+
+// SoundPop is the package's SoundPop in the language of msgs.
+func (msgs Messages) SoundPop() string { return msgs.text(textSoundPop) }
+
+// SoundDigital says "Digital"
+// in the language the app shows under cx.
+func SoundDigital(cx *core.Scope) string { return For(cx).SoundDigital() }
+
+// SoundDigital is the package's SoundDigital in the language of msgs.
+func (msgs Messages) SoundDigital() string { return msgs.text(textSoundDigital) }
+
+// TaskNotification says "Notify when an agent stops"
+// in the language the app shows under cx.
+func TaskNotification(cx *core.Scope) string { return For(cx).TaskNotification() }
+
+// TaskNotification is the package's TaskNotification in the language of msgs.
+func (msgs Messages) TaskNotification() string { return msgs.text(textTaskNotification) }
+
+// TaskCompleted says "The agent completed"
+// in the language the app shows under cx.
+func TaskCompleted(cx *core.Scope) string { return For(cx).TaskCompleted() }
+
+// TaskCompleted is the package's TaskCompleted in the language of msgs.
+func (msgs Messages) TaskCompleted() string { return msgs.text(textTaskCompleted) }
+
+// TaskFailed says "The agent failed"
+// in the language the app shows under cx.
+func TaskFailed(cx *core.Scope) string { return For(cx).TaskFailed() }
+
+// TaskFailed is the package's TaskFailed in the language of msgs.
+func (msgs Messages) TaskFailed() string { return msgs.text(textTaskFailed) }
+
+// Untitled says "Untitled task"
+// in the language the app shows under cx.
+//
+// A task's title in notifications before its agent names it.
+func Untitled(cx *core.Scope) string { return For(cx).Untitled() }
+
+// Untitled is the package's Untitled in the language of msgs.
+func (msgs Messages) Untitled() string { return msgs.text(textUntitled) }
+
+// Tools says "Tools"
+// in the language the app shows under cx.
+func Tools(cx *core.Scope) string { return For(cx).Tools() }
+
+// Tools is the package's Tools in the language of msgs.
+func (msgs Messages) Tools() string { return msgs.text(textTools) }
+
+// Terminal says "Terminal"
+// in the language the app shows under cx.
+func Terminal(cx *core.Scope) string { return For(cx).Terminal() }
+
+// Terminal is the package's Terminal in the language of msgs.
+func (msgs Messages) Terminal() string { return msgs.text(textTerminal) }
+
+// Editor says "Development tool"
+// in the language the app shows under cx.
+func Editor(cx *core.Scope) string { return For(cx).Editor() }
+
+// Editor is the package's Editor in the language of msgs.
+func (msgs Messages) Editor() string { return msgs.text(textEditor) }
+
+// GitTool says "Git tool"
+// in the language the app shows under cx.
+func GitTool(cx *core.Scope) string { return For(cx).GitTool() }
+
+// GitTool is the package's GitTool in the language of msgs.
+func (msgs Messages) GitTool() string { return msgs.text(textGitTool) }
+
+// Automatic says "Automatic"
+// in the language the app shows under cx.
+func Automatic(cx *core.Scope) string { return For(cx).Automatic() }
+
+// Automatic is the package's Automatic in the language of msgs.
+func (msgs Messages) Automatic() string { return msgs.text(textAutomatic) }
+
+// AutomaticLauncher says "Automatic ({app})"
+// in the language the app shows under cx.
+func AutomaticLauncher(cx *core.Scope, app string) string { return For(cx).AutomaticLauncher(app) }
+
+// AutomaticLauncher is the package's AutomaticLauncher in the language of msgs.
+func (msgs Messages) AutomaticLauncher(app string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.AutomaticLauncher(app))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].AutomaticLauncher; f != nil {
+			return f(app)
+		}
+		switch lang {
+		case "", "en":
+			return "Automatic (" + msgs.arg(app) + ")"
+		case "zh-Hans":
+			return "自动（" + app + "）"
+		}
+	}
+}
+
+// LauncherMissing says "{app} (not installed)"
+// in the language the app shows under cx.
+func LauncherMissing(cx *core.Scope, app string) string { return For(cx).LauncherMissing(app) }
+
+// LauncherMissing is the package's LauncherMissing in the language of msgs.
+func (msgs Messages) LauncherMissing(app string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.LauncherMissing(app))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].LauncherMissing; f != nil {
+			return f(app)
+		}
+		switch lang {
+		case "", "en":
+			return msgs.arg(app) + " (not installed)"
+		case "zh-Hans":
+			return app + "（未安装）"
+		}
+	}
+}
+
+// HideLauncher says "Don't show"
+// in the language the app shows under cx.
+func HideLauncher(cx *core.Scope) string { return For(cx).HideLauncher() }
+
+// HideLauncher is the package's HideLauncher in the language of msgs.
+func (msgs Messages) HideLauncher() string { return msgs.text(textHideLauncher) }
+
+// OpenIn says "Open in {app}"
+// in the language the app shows under cx.
+func OpenIn(cx *core.Scope, app string) string { return For(cx).OpenIn(app) }
+
+// OpenIn is the package's OpenIn in the language of msgs.
+func (msgs Messages) OpenIn(app string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.OpenIn(app))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].OpenIn; f != nil {
+			return f(app)
+		}
+		switch lang {
+		case "", "en":
+			return "Open in " + msgs.arg(app)
+		case "zh-Hans":
+			return "在 " + app + " 中打开"
+		}
+	}
+}
+
+// ModelServices says "Model services"
+// in the language the app shows under cx.
+func ModelServices(cx *core.Scope) string { return For(cx).ModelServices() }
+
+// ModelServices is the package's ModelServices in the language of msgs.
+func (msgs Messages) ModelServices() string { return msgs.text(textModelServices) }
+
+// ProviderType says "OpenAI-compatible"
+// in the language the app shows under cx.
+func ProviderType(cx *core.Scope) string { return For(cx).ProviderType() }
+
+// ProviderType is the package's ProviderType in the language of msgs.
+func (msgs Messages) ProviderType() string { return msgs.text(textProviderType) }
+
+// ProviderEmpty says "No model services"
+// in the language the app shows under cx.
+func ProviderEmpty(cx *core.Scope) string { return For(cx).ProviderEmpty() }
+
+// ProviderEmpty is the package's ProviderEmpty in the language of msgs.
+func (msgs Messages) ProviderEmpty() string { return msgs.text(textProviderEmpty) }
+
+// AddProvider says "Add provider"
+// in the language the app shows under cx.
+func AddProvider(cx *core.Scope) string { return For(cx).AddProvider() }
+
+// AddProvider is the package's AddProvider in the language of msgs.
+func (msgs Messages) AddProvider() string { return msgs.text(textAddProvider) }
+
+// ProviderUnnamed says "New provider"
+// in the language the app shows under cx.
+func ProviderUnnamed(cx *core.Scope) string { return For(cx).ProviderUnnamed() }
+
+// ProviderUnnamed is the package's ProviderUnnamed in the language of msgs.
+func (msgs Messages) ProviderUnnamed() string { return msgs.text(textProviderUnnamed) }
+
+// ProviderName says "Provider name"
+// in the language the app shows under cx.
+func ProviderName(cx *core.Scope) string { return For(cx).ProviderName() }
+
+// ProviderName is the package's ProviderName in the language of msgs.
+func (msgs Messages) ProviderName() string { return msgs.text(textProviderName) }
+
+// ProviderNamePlaceholder says "e.g. OpenAI or Local"
+// in the language the app shows under cx.
+func ProviderNamePlaceholder(cx *core.Scope) string { return For(cx).ProviderNamePlaceholder() }
+
+// ProviderNamePlaceholder is the package's ProviderNamePlaceholder in the language of msgs.
+func (msgs Messages) ProviderNamePlaceholder() string { return msgs.text(textProviderNamePlaceholder) }
+
+// ProviderBaseUrl says "Base URL"
+// in the language the app shows under cx.
+func ProviderBaseUrl(cx *core.Scope) string { return For(cx).ProviderBaseUrl() }
+
+// ProviderBaseUrl is the package's ProviderBaseUrl in the language of msgs.
+func (msgs Messages) ProviderBaseUrl() string { return msgs.text(textProviderBaseUrl) }
+
+// ProviderApiKey says "API key"
+// in the language the app shows under cx.
+func ProviderApiKey(cx *core.Scope) string { return For(cx).ProviderApiKey() }
+
+// ProviderApiKey is the package's ProviderApiKey in the language of msgs.
+func (msgs Messages) ProviderApiKey() string { return msgs.text(textProviderApiKey) }
+
+// ProviderModels says "Models"
+// in the language the app shows under cx.
+func ProviderModels(cx *core.Scope) string { return For(cx).ProviderModels() }
+
+// ProviderModels is the package's ProviderModels in the language of msgs.
+func (msgs Messages) ProviderModels() string { return msgs.text(textProviderModels) }
+
+// AddProviderModel says "Add model"
+// in the language the app shows under cx.
+func AddProviderModel(cx *core.Scope) string { return For(cx).AddProviderModel() }
+
+// AddProviderModel is the package's AddProviderModel in the language of msgs.
+func (msgs Messages) AddProviderModel() string { return msgs.text(textAddProviderModel) }
+
+// ProviderModelsEmpty says "No models yet"
+// in the language the app shows under cx.
+func ProviderModelsEmpty(cx *core.Scope) string { return For(cx).ProviderModelsEmpty() }
+
+// ProviderModelsEmpty is the package's ProviderModelsEmpty in the language of msgs.
+func (msgs Messages) ProviderModelsEmpty() string { return msgs.text(textProviderModelsEmpty) }
+
+// ProviderModelLabel says "Model ID {index}"
+// in the language the app shows under cx.
+func ProviderModelLabel(cx *core.Scope, index int) string { return For(cx).ProviderModelLabel(index) }
+
+// ProviderModelLabel is the package's ProviderModelLabel in the language of msgs.
+func (msgs Messages) ProviderModelLabel(index int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.ProviderModelLabel(index))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].ProviderModelLabel; f != nil {
+			return f(index)
+		}
+		switch lang {
+		case "", "en":
+			return "Model ID " + msgs.arg(i18n.FormatNumber("en", float64(index)))
+		case "zh-Hans":
+			return "模型 ID " + i18n.FormatNumber("zh-Hans", float64(index))
+		}
+	}
+}
+
+// ProviderModelPlaceholder says "e.g. gpt-5-mini"
+// in the language the app shows under cx.
+func ProviderModelPlaceholder(cx *core.Scope) string { return For(cx).ProviderModelPlaceholder() }
+
+// ProviderModelPlaceholder is the package's ProviderModelPlaceholder in the language of msgs.
+func (msgs Messages) ProviderModelPlaceholder() string {
+	return msgs.text(textProviderModelPlaceholder)
+}
+
+// RemoveProviderModel says "Remove model {index}"
+// in the language the app shows under cx.
+func RemoveProviderModel(cx *core.Scope, index int) string { return For(cx).RemoveProviderModel(index) }
+
+// RemoveProviderModel is the package's RemoveProviderModel in the language of msgs.
+func (msgs Messages) RemoveProviderModel(index int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.RemoveProviderModel(index))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].RemoveProviderModel; f != nil {
+			return f(index)
+		}
+		switch lang {
+		case "", "en":
+			return "Remove model " + msgs.arg(i18n.FormatNumber("en", float64(index)))
+		case "zh-Hans":
+			return "删除模型 " + i18n.FormatNumber("zh-Hans", float64(index))
+		}
+	}
+}
+
+// RemoveProvider says "Remove provider"
+// in the language the app shows under cx.
+func RemoveProvider(cx *core.Scope) string { return For(cx).RemoveProvider() }
+
+// RemoveProvider is the package's RemoveProvider in the language of msgs.
+func (msgs Messages) RemoveProvider() string { return msgs.text(textRemoveProvider) }
+
+// RemoveProviderDescription says "Removes this provider and its models."
+// in the language the app shows under cx.
+func RemoveProviderDescription(cx *core.Scope) string { return For(cx).RemoveProviderDescription() }
+
+// RemoveProviderDescription is the package's RemoveProviderDescription in the language of msgs.
+func (msgs Messages) RemoveProviderDescription() string {
+	return msgs.text(textRemoveProviderDescription)
 }
 
 // SettingsPrivacy says "Privacy"
@@ -175,3 +1080,10 @@ func SettingsStatsDetail(cx *core.Scope) string { return For(cx).SettingsStatsDe
 
 // SettingsStatsDetail is the package's SettingsStatsDetail in the language of msgs.
 func (msgs Messages) SettingsStatsDetail() string { return msgs.text(textSettingsStatsDetail) }
+
+// Tasks says "Tasks"
+// in the language the app shows under cx.
+func Tasks(cx *core.Scope) string { return For(cx).Tasks() }
+
+// Tasks is the package's Tasks in the language of msgs.
+func (msgs Messages) Tasks() string { return msgs.text(textTasks) }
