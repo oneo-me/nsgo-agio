@@ -461,6 +461,14 @@ func (h *Host) Choose(id string, ch agio.Choice) error {
 		if c == nil {
 			return errNoConversation
 		}
+		if ch.Title != nil {
+			if title := strings.TrimSpace(*ch.Title); title != "" {
+				c.title = title
+			}
+			if ch == (agio.Choice{Title: ch.Title}) {
+				return nil
+			}
+		}
 		if ch.Dir != nil {
 			if c.bound || len(c.turns) > 0 {
 				return errors.New("a conversation keeps the directory of its first message")

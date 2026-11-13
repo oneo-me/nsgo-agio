@@ -43,6 +43,7 @@ var Parameters = map[string][]string{
 	"OpenIn":              {"app"},
 	"ProviderModelLabel":  {"index"},
 	"RemoveProviderModel": {"index"},
+	"NamingFailed":        {"reason"},
 }
 
 // Translation is a language's messages another package supplies:
@@ -57,6 +58,7 @@ type Translation struct {
 	OpenIn              func(app string) string
 	ProviderModelLabel  func(index int) string
 	RemoveProviderModel func(index int) string
+	NamingFailed        func(reason string) string
 }
 
 var supplied = map[string]Translation{}
@@ -123,6 +125,14 @@ const (
 	textSettingsStatsSend
 	textSettingsStatsDetail
 	textTasks
+	textNaming
+	textNamingModel
+	textNamingModelChoice
+	textNamingModelDescription
+	textNamingModelNone
+	textTitleLanguage
+	textTitleLanguageDescription
+	textTitleLanguageInterface
 	numTexts
 )
 
@@ -189,6 +199,14 @@ var keyOfText = [numTexts]string{
 	"settingsStatsSend",
 	"settingsStatsDetail",
 	"tasks",
+	"naming",
+	"namingModel",
+	"namingModelChoice",
+	"namingModelDescription",
+	"namingModelNone",
+	"titleLanguage",
+	"titleLanguageDescription",
+	"titleLanguageInterface",
 }
 
 // textsEn are the messages without arguments in en.
@@ -252,7 +270,15 @@ var textsEn = i18n.NewTexts(""+
 	"Statistics"+
 	"Send usage statistics"+
 	"Send when Agio is open and used, and which agents messages go to, with no prompts, folders or personal data, to help improve Agio."+
-	"Tasks",
+	"Tasks"+
+	"Naming"+
+	"Task naming model"+
+	"Choose task naming model"+
+	"Titles each task from its first message."+
+	"Use first message"+
+	"Title language"+
+	"Titles the naming model gives use this language."+
+	"Same as interface",
 	[]uint16{
 		11,
 		7,
@@ -314,6 +340,14 @@ var textsEn = i18n.NewTexts(""+
 		21,
 		130,
 		5,
+		6,
+		17,
+		24,
+		40,
+		17,
+		14,
+		48,
+		17,
 	})
 
 // textsZhHans are the messages without arguments in zh-Hans.
@@ -377,7 +411,15 @@ var textsZhHans = i18n.NewTexts(""+
 	"统计"+
 	"发送使用统计"+
 	"发送 Agio 何时打开和使用，以及消息发给了哪些智能体，不含提示词、文件夹或个人信息，帮助改进 Agio。"+
-	"任务",
+	"任务"+
+	"命名"+
+	"任务命名模型"+
+	"选择任务命名模型"+
+	"根据每条任务的首条消息生成标题。"+
+	"使用首条消息"+
+	"标题语言"+
+	"命名模型生成的标题使用此语言。"+
+	"跟随界面语言",
 	[]uint16{
 		6,
 		6,
@@ -439,6 +481,14 @@ var textsZhHans = i18n.NewTexts(""+
 		18,
 		140,
 		6,
+		6,
+		18,
+		24,
+		48,
+		18,
+		12,
+		45,
+		18,
 	})
 
 // texts returns the messages without arguments in lang, nil for a
@@ -512,6 +562,9 @@ func Supply(lang string, t Translation) {
 	}
 	if t.RemoveProviderModel != nil {
 		s.RemoveProviderModel = t.RemoveProviderModel
+	}
+	if t.NamingFailed != nil {
+		s.NamingFailed = t.NamingFailed
 	}
 	supplied[lang] = s
 	Catalog.Add(lang)
@@ -1087,3 +1140,83 @@ func Tasks(cx *core.Scope) string { return For(cx).Tasks() }
 
 // Tasks is the package's Tasks in the language of msgs.
 func (msgs Messages) Tasks() string { return msgs.text(textTasks) }
+
+// Naming says "Naming"
+// in the language the app shows under cx.
+func Naming(cx *core.Scope) string { return For(cx).Naming() }
+
+// Naming is the package's Naming in the language of msgs.
+func (msgs Messages) Naming() string { return msgs.text(textNaming) }
+
+// NamingModel says "Task naming model"
+// in the language the app shows under cx.
+func NamingModel(cx *core.Scope) string { return For(cx).NamingModel() }
+
+// NamingModel is the package's NamingModel in the language of msgs.
+func (msgs Messages) NamingModel() string { return msgs.text(textNamingModel) }
+
+// NamingModelChoice says "Choose task naming model"
+// in the language the app shows under cx.
+func NamingModelChoice(cx *core.Scope) string { return For(cx).NamingModelChoice() }
+
+// NamingModelChoice is the package's NamingModelChoice in the language of msgs.
+func (msgs Messages) NamingModelChoice() string { return msgs.text(textNamingModelChoice) }
+
+// NamingModelDescription says "Titles each task from its first message."
+// in the language the app shows under cx.
+func NamingModelDescription(cx *core.Scope) string { return For(cx).NamingModelDescription() }
+
+// NamingModelDescription is the package's NamingModelDescription in the language of msgs.
+func (msgs Messages) NamingModelDescription() string { return msgs.text(textNamingModelDescription) }
+
+// NamingModelNone says "Use first message"
+// in the language the app shows under cx.
+func NamingModelNone(cx *core.Scope) string { return For(cx).NamingModelNone() }
+
+// NamingModelNone is the package's NamingModelNone in the language of msgs.
+func (msgs Messages) NamingModelNone() string { return msgs.text(textNamingModelNone) }
+
+// NamingFailed says "Naming failed: {reason}"
+// in the language the app shows under cx.
+func NamingFailed(cx *core.Scope, reason string) string { return For(cx).NamingFailed(reason) }
+
+// NamingFailed is the package's NamingFailed in the language of msgs.
+func (msgs Messages) NamingFailed(reason string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.NamingFailed(reason))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].NamingFailed; f != nil {
+			return f(reason)
+		}
+		switch lang {
+		case "", "en":
+			return "Naming failed: " + msgs.arg(reason)
+		case "zh-Hans":
+			return "命名失败：" + reason
+		}
+	}
+}
+
+// TitleLanguage says "Title language"
+// in the language the app shows under cx.
+func TitleLanguage(cx *core.Scope) string { return For(cx).TitleLanguage() }
+
+// TitleLanguage is the package's TitleLanguage in the language of msgs.
+func (msgs Messages) TitleLanguage() string { return msgs.text(textTitleLanguage) }
+
+// TitleLanguageDescription says "Titles the naming model gives use this language."
+// in the language the app shows under cx.
+func TitleLanguageDescription(cx *core.Scope) string { return For(cx).TitleLanguageDescription() }
+
+// TitleLanguageDescription is the package's TitleLanguageDescription in the language of msgs.
+func (msgs Messages) TitleLanguageDescription() string {
+	return msgs.text(textTitleLanguageDescription)
+}
+
+// TitleLanguageInterface says "Same as interface"
+// in the language the app shows under cx.
+func TitleLanguageInterface(cx *core.Scope) string { return For(cx).TitleLanguageInterface() }
+
+// TitleLanguageInterface is the package's TitleLanguageInterface in the language of msgs.
+func (msgs Messages) TitleLanguageInterface() string { return msgs.text(textTitleLanguageInterface) }

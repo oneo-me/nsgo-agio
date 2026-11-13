@@ -134,6 +134,15 @@ func TestChooseConfiguresTheAgent(t *testing.T) {
 	if err := h.Choose(id, agio.Choice{Model: &other}); err == nil {
 		t.Fatal("chose a model of another tool")
 	}
+	configured := len(d.Configured())
+	for _, title := range []string{" Fix login ", " "} {
+		if err := h.Choose(id, agio.Choice{Title: &title}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if c := h.State().Conversation(id); c.Title != "Fix login" || len(d.Configured()) != configured {
+		t.Fatalf("after renaming, the title is %q and the agent was configured %d times more", c.Title, len(d.Configured())-configured)
+	}
 }
 
 func TestResumeReadsHistory(t *testing.T) {

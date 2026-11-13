@@ -18,7 +18,7 @@ func TestSettingsApplyTheLanguageAndKeepProviders(t *testing.T) {
 	t.Cleanup(func() { h.Close() })
 	st := &store[settings]{s: settings{Language: "zh-Hans"}}
 	app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
-		a := newApp(cx, st, &awake{})
+		a := newApp(cx, st, &awake{}, newNamer(h, st, func() string { return "en" }))
 		return chatview.App{Model: chatview.Bind(cx, h), Dir: t.TempDir(),
 			Header: a.launchButtons, Settings: a.settingsCategories, SettingsKey: a.settingsKey,
 			SettingsSectionActions: a.sectionActions, SettingsCategory: a.category,

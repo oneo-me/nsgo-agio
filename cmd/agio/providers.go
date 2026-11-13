@@ -25,6 +25,27 @@ type providerModel struct {
 	Model string `yaml:"model,omitempty"`
 }
 
+// modelReference names a provider's model by their IDs.
+type modelReference struct {
+	Provider string `yaml:"provider,omitempty"`
+	Model    string `yaml:"model,omitempty"`
+}
+
+// providerModel returns the provider and model ref names, if both remain.
+func (s *settings) providerModel(ref modelReference) (modelProvider, providerModel, bool) {
+	for _, p := range s.Providers {
+		if p.ID != ref.Provider {
+			continue
+		}
+		for _, m := range p.Models {
+			if m.ID == ref.Model {
+				return p, m, true
+			}
+		}
+	}
+	return modelProvider{}, providerModel{}, false
+}
+
 // defaultBaseURL is the base URL a provider without one uses.
 const defaultBaseURL = "https://api.openai.com/v1"
 
@@ -58,6 +79,9 @@ func (s *settings) addProvider(name string) string {
 
 func (s *settings) removeProvider(id string) {
 	s.Providers = slices.DeleteFunc(slices.Clone(s.Providers), func(p modelProvider) bool { return p.ID == id })
+	if s.NamingModel.Provider == id {
+		s.NamingModel = modelReference{}
+	}
 }
 
 func (s *settings) addProviderModel(id string) {
@@ -70,6 +94,9 @@ func (s *settings) removeProviderModel(provider, model string) {
 	s.editProvider(provider, func(p *modelProvider) {
 		p.Models = slices.DeleteFunc(p.Models, func(m providerModel) bool { return m.ID == model })
 	})
+	if s.NamingModel == (modelReference{Provider: provider, Model: model}) {
+		s.NamingModel = modelReference{}
+	}
 }
 
 func (a *app) providerName(p modelProvider) string {

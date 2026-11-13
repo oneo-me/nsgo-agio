@@ -18,9 +18,10 @@ import (
 // app is the window's side of the settings: their pages and what applies
 // them as they change.
 type app struct {
-	cx *core.Scope
-	st *store[settings]
-	aw *awake
+	cx    *core.Scope
+	st    *store[settings]
+	aw    *awake
+	namer *namer
 	// rev counts the changes made here, which the controls follow.
 	rev *core.Signal[int]
 	// category is the settings' page shown.
@@ -29,10 +30,11 @@ type app struct {
 	installed []launchers.Installed
 }
 
-// newApp applies the saved language and appearance and looks for the
-// launchers off the engine.
-func newApp(cx *core.Scope, st *store[settings], aw *awake) *app {
-	a := &app{cx: cx, st: st, aw: aw, rev: core.NewSignal(cx, 0), category: core.NewSignal(cx, "")}
+// newApp applies the saved language and appearance, looks for the
+// launchers off the engine and follows why naming fails.
+func newApp(cx *core.Scope, st *store[settings], aw *awake, nm *namer) *app {
+	a := &app{cx: cx, st: st, aw: aw, namer: nm, rev: core.NewSignal(cx, 0), category: core.NewSignal(cx, "")}
+	nm.onChange(func() { cx.Post(func() { a.rev.Update(func(n int) int { return n + 1 }) }) })
 	s := st.get()
 	cx.SetLocale(s.Language)
 	cx.SetAppearance(appearance(s.Appearance))
@@ -97,7 +99,7 @@ const altShortcut = "alt"
 func (a *app) settingsKey() string {
 	s := a.get()
 	var b strings.Builder
-	fmt.Fprint(&b, len(a.installed), len(s.Providers), ";")
+	fmt.Fprint(&b, len(a.installed), len(s.Providers), a.namer.lastFailure(), ";")
 	for _, p := range s.Providers {
 		fmt.Fprint(&b, p.ID, len(p.Models), ";")
 	}
@@ -105,7 +107,8 @@ func (a *app) settingsKey() string {
 }
 
 // settingsCategories group the pages under the application, its tasks and
-// the model services; own are chatview's agents and updates.
+// the model services, with privacy and updates last; own are chatview's
+// agents and updates.
 func (a *app) settingsCategories(own []ui.SettingsCategory) []ui.SettingsCategory {
 	m := a.msgs()
 	general := ui.SettingsCategory{
@@ -188,10 +191,10 @@ func (a *app) settingsCategories(own []ui.SettingsCategory) []ui.SettingsCategor
 		})
 	}
 	// The application's own pages, then those of its tasks: the agents
-	// they run, how they alert and the tools they open in.
-	application := []ui.SettingsCategory{general, power, a.statsSettings()}
-	application = append(application, own[1:]...)
-	tasks := []ui.SettingsCategory{own[0], alerts, tools}
+	// they run, how they are named, how they alert and the tools they open
+	// in.
+	application := []ui.SettingsCategory{general, power}
+	tasks := []ui.SettingsCategory{own[0], a.namingSettings(), alerts, tools}
 	for i := range application {
 		application[i].Section = m.Application()
 	}
@@ -199,7 +202,8 @@ func (a *app) settingsCategories(own []ui.SettingsCategory) []ui.SettingsCategor
 		tasks[i].Section = m.Tasks()
 	}
 	categories := append(application, tasks...)
-	return append(categories, a.providerCategories()...)
+	categories = append(categories, a.providerCategories()...)
+	return append(append(categories, a.statsSettings()), own[1:]...)
 }
 
 // sectionActions add a model service from its section's heading.

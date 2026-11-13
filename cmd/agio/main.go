@@ -53,6 +53,11 @@ type settings struct {
 	Editor    string          `yaml:"editor,omitempty"`
 	GitTool   string          `yaml:"git_tool,omitempty"`
 	Providers []modelProvider `yaml:"providers,omitempty"`
+	// NamingModel is the providers' model titling new tasks, none to keep
+	// their first message; TitleLanguage "en" or "zh-Hans" is the titles'
+	// language, empty for the interface's.
+	NamingModel   modelReference `yaml:"naming_model,omitempty"`
+	TitleLanguage string         `yaml:"title_language,omitempty"`
 	// InstallID is the install's in the usage statistics; StatsOff is set
 	// once the settings turned them off.
 	InstallID string `yaml:"install_id,omitempty"`
@@ -156,9 +161,11 @@ func main() {
 	var lang atomic.Value
 	lang.Store("en")
 	al, aw := &alerts{}, &awake{}
+	nm := newNamer(h, st, func() string { return lang.Load().(string) })
 	// The agents and models turned on or off in the settings, the tasks and
 	// their projects are kept for next time; an agent stopping alerts, and
-	// one working keeps the computer awake as the settings ask.
+	// one working keeps the computer awake as the settings ask, and new
+	// tasks are named.
 	stop := h.Watch(func() {
 		s := h.State()
 		var disabled []agent.Tool
@@ -179,6 +186,7 @@ func main() {
 		}
 		al.look(st.get(), s.Conversations, lang.Load().(string))
 		aw.update(st.get(), working)
+		nm.look(s)
 	})
 	options := []nsgo.Option{nsgo.WindowSize(1040, minWindowHeight),
 		nsgo.WindowConstraints(core.WindowConstraints{MinWidth: minWindowWidth, MinHeight: minWindowHeight})}
@@ -188,7 +196,7 @@ func main() {
 	var window *windowKeeper
 	nsgo.Run(func(cx *core.Scope) core.Node {
 		reportUsage(cx, h, st)
-		a := newApp(cx, st, aw)
+		a := newApp(cx, st, aw, nm)
 		window = keepWindow(cx, ws)
 		cx.Effect(func() { lang.Store(i18n.Language(cx)) })
 		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title, Updates: true, Icon: heroIcon,

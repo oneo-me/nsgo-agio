@@ -72,3 +72,12 @@ settingsStats: Statistics
 settingsStatsSend: Send usage statistics
 settingsStatsDetail: Send when Agio is open and used, and which agents messages go to, with no prompts, folders or personal data, to help improve Agio.
 tasks: "Tasks"
+naming: "Naming"
+namingModel: "Task naming model"
+namingModelChoice: "Choose task naming model"
+namingModelDescription: "Titles each task from its first message."
+namingModelNone: "Use first message"
+namingFailed: "Naming failed: {reason}"
+titleLanguage: "Title language"
+titleLanguageDescription: "Titles the naming model gives use this language."
+titleLanguageInterface: "Same as interface"

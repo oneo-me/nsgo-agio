@@ -64,3 +64,12 @@ settingsStats: 统计
 settingsStatsSend: 发送使用统计
 settingsStatsDetail: 发送 Agio 何时打开和使用，以及消息发给了哪些智能体，不含提示词、文件夹或个人信息，帮助改进 Agio。
 tasks: "任务"
+naming: "命名"
+namingModel: "任务命名模型"
+namingModelChoice: "选择任务命名模型"
+namingModelDescription: "根据每条任务的首条消息生成标题。"
+namingModelNone: "使用首条消息"
+namingFailed: "命名失败：{reason}"
+titleLanguage: "标题语言"
+titleLanguageDescription: "命名模型生成的标题使用此语言。"
+titleLanguageInterface: "跟随界面语言"

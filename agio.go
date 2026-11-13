@@ -227,8 +227,10 @@ type Message struct {
 }
 
 // Choice changes what its set fields name. Dir is a directory on the
-// backend's computer.
+// backend's computer; Title renames the conversation, which an agent
+// naming it later renames again.
 type Choice struct {
+	Title  *string `json:"title,omitempty"`
 	Dir    *string `json:"dir,omitempty"`
 	Model  *string `json:"model,omitempty"`
 	Effort *string `json:"effort,omitempty"`

@@ -16,7 +16,8 @@ Agio is the agent core split out of Neorio: drivers that run coding agent CLIs a
 | `chatview` | NSGo views of any `Backend`, built from `ui/chat`: conversations shown as tasks, New task, agent settings, limits, update checks and the macOS menu bar, with their catalogs in `locales` |
 | `shellenv`, `internal/childproc` | The login shell's environment, and process groups started and stopped as a whole |
 | `internal/launchers` | The file manager, terminals, development tools and Git clients installed, which open a folder |
-| `cmd/agio` | Agio, the single-process app: its settings and their pages, the window, projects and tasks it resumes, alerts, keeping awake, launchers and usage statistics |
+| `internal/naming` | A task's title from its first message, asked of an OpenAI-compatible model |
+| `cmd/agio` | Agio, the single-process app: its settings and their pages, the window, projects and tasks it resumes, naming new tasks, alerts, keeping awake, launchers and usage statistics |
 | `examples/` | A server and a client |
 
 ## Boundaries
