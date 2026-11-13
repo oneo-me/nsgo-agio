@@ -1,13 +1,16 @@
 package host
 
 import (
+	"context"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/agent"
 	"github.com/oneo-me/nsgo-agio/internal/fakeagent"
+	"github.com/oneo-me/nsgo-agio/quota"
 	"github.com/oneo-me/nsgo-agio/transcript"
 )
 
@@ -149,4 +152,96 @@ func TestResumeReadsHistory(t *testing.T) {
 	if c.Turns[0].Prompt != "before" || !strings.Contains(c.Turns[0].Final().Text, "earlier") || c.ContextTokens != 7 {
 		t.Fatalf("history = %+v", c)
 	}
+}
+
+func TestEnableTurnsAToolOffAndOn(t *testing.T) {
+	d := &fakeagent.Driver{}
+	h := New(Options{Env: []string{}, Tools: []agent.Tool{agent.Claude}, Disabled: []agent.Tool{agent.Claude},
+		Drivers: map[agent.Tool]agent.Driver{agent.Claude: d}, Home: t.TempDir()})
+	t.Cleanup(func() { h.Close() })
+	s := h.State()
+	if s.Discovering || len(s.Tools) != 1 || !s.Tools[0].Disabled || s.Ready() {
+		t.Fatalf("a tool off from the start = %+v", s)
+	}
+	id, _ := h.Create(agio.Create{Dir: t.TempDir()})
+	if err := h.Send(id, agio.Message{Text: "hello"}); err == nil {
+		t.Fatal("sent with every tool off")
+	}
+	if err := h.Enable(agent.Claude, true); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, h, func(s agio.State) bool { return s.Ready() && s.Conversation(id).Model == "claude:opus" })
+	if err := h.Send(id, agio.Message{Text: "hello"}); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, h, func(s agio.State) bool { return !s.Conversation(id).Running })
+	if err := h.Enable(agent.Claude, false); err != nil {
+		t.Fatal(err)
+	}
+	s = h.State()
+	if s.Ready() || !s.Tools[0].Disabled || s.Tools[0].Catalog.Models == nil {
+		t.Fatalf("a tool turned off = %+v", s.Tools)
+	}
+	// Its conversation keeps its model but cannot start another agent.
+	if c := s.Conversation(id); c.Model != "claude:opus" {
+		t.Fatalf("conversation = %+v", c)
+	}
+	if err := h.Enable("nope", true); err == nil {
+		t.Fatal("enabled an unknown tool")
+	}
+}
+
+func TestModelsTurnedOffAreNotOffered(t *testing.T) {
+	h := newHost(t, &fakeagent.Driver{})
+	id, _ := h.Create(agio.Create{Dir: t.TempDir()})
+	if err := h.EnableModels([]string{"claude:opus"}, false); err != nil {
+		t.Fatal(err)
+	}
+	s := h.State()
+	if c := s.Conversation(id); c.Model == "claude:opus" || c.Model == "" {
+		t.Fatalf("a new conversation kept a model turned off: %+v", c)
+	}
+	for _, m := range s.Models() {
+		if m.Key() == "claude:opus" {
+			t.Fatal("offered a model turned off")
+		}
+	}
+	if got := s.Tools[0].DisabledModels; len(got) != 1 || got[0] != "opus" {
+		t.Fatalf("disabled models = %v", got)
+	}
+	opus := "claude:opus"
+	if err := h.Choose(id, agio.Choice{Model: &opus}); err == nil {
+		t.Fatal("chose a model turned off")
+	}
+	h.EnableModels([]string{"claude:opus"}, true)
+	if c := h.State().Conversation(id); c.Model != "claude:opus" {
+		t.Fatalf("the default did not come back: %+v", c)
+	}
+}
+
+func TestQuotasAreReadAndRefreshed(t *testing.T) {
+	var mu sync.Mutex
+	reads := map[quota.Provider]int{}
+	read := func(_ context.Context, _ []string, p quota.Provider) (quota.Usage, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		reads[p]++
+		if p != quota.Claude {
+			return quota.Usage{}, quota.ErrNoCredentials
+		}
+		return quota.Usage{Plan: "Max", Windows: []quota.Window{{Minutes: 300, Percent: float64(10 * reads[p])}}}, nil
+	}
+	h := New(Options{Env: []string{}, Tools: []agent.Tool{agent.Claude}, Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}},
+		Home: t.TempDir(), ReadQuota: read})
+	t.Cleanup(func() { h.Close() })
+	s := waitFor(t, h, func(s agio.State) bool { return len(s.Quotas) == 1 && !s.Quotas[0].Checking })
+	q := s.Quotas[0]
+	if q.Provider != quota.Claude || q.Usage.Windows[0].Percent != 10 || !q.Next.After(q.Checked) {
+		t.Fatalf("quota = %+v", q)
+	}
+	if s.Quota("claude:opus") == nil {
+		t.Fatal("the model's account has no quota")
+	}
+	h.RefreshQuota(quota.Claude)
+	waitFor(t, h, func(s agio.State) bool { return len(s.Quotas) == 1 && s.Quotas[0].Usage.Windows[0].Percent == 20 })
 }

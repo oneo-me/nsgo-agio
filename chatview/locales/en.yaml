@@ -28,7 +28,6 @@ thinkingUltra: "Ultra"
 tierStandard: "Standard"
 tierFast: "Fast"
 searchModels: "Search models"
-noMatchingModels: "No matching models"
 contextWindow: "Context window"
 contextUsed:
   message: "Context window {percent}% used"
@@ -81,3 +80,81 @@ untitled:
 removeConversation: "Remove"
 toggleSidebar: "Show or hide the sidebar"
 resizeSidebar: "Resize the sidebar"
+settings: "Settings"
+searchSettings: "Search settings"
+settingsResults: "Results"
+noMatchingSettings: "No matching settings"
+closeSettings: "Close"
+agents: "Agents"
+recentProjects: "Recent projects"
+chooseFolder: "Choose a folder…"
+searchProjects: "Search projects"
+noMatchingProjects: "No matching projects"
+quotaDetails: "Account limits"
+quotaLimit: "Usage limit"
+quotaWeekly: "Weekly limit"
+quotaHours:
+  message: "{count}-hour limit"
+  placeholders:
+    count: {type: int}
+quotaDays:
+  message: "{count}-day limit"
+  placeholders:
+    count: {type: int}
+quotaLeft: "{percent}% left"
+quotaBalance: "Balance"
+quotaResetsSoon: "Resets soon"
+quotaResetsSeconds:
+  message: "Resets in {count}s"
+  placeholders:
+    count: {type: int}
+quotaResetsMinutes:
+  message: "Resets in {count}m"
+  placeholders:
+    count: {type: int}
+quotaResetsHours:
+  message: "Resets in {count}h"
+  placeholders:
+    count: {type: int}
+quotaResetsDays:
+  message: "Resets in {count}d"
+  placeholders:
+    count: {type: int}
+quotaResetsHoursMinutes:
+  message: "Resets in {hours}h {minutes}m"
+  placeholders:
+    hours: {type: int}
+    minutes: {type: int}
+quotaResetsDaysHours:
+  message: "Resets in {days}d {hours}h"
+  placeholders:
+    days: {type: int}
+    hours: {type: int}
+quotaExpired: "Sign-in expired. Use the agent again to refresh it."
+quotaRateLimited: "Limits are rate-limited right now; retrying shortly."
+quotaSignin: "Sign in again to read limits."
+quotaFailed: "Couldn't read limits: {error}"
+quotaOpenPage: "Open {account} usage page"
+quotaRefresh: "Refresh {account} limits"
+quotaRefreshing: "Refreshing…"
+fileMenu: "File"
+settingsMenuItem: "Settings…"
+codingAgents: "Coding agents"
+checkingAgent: "Checking…"
+checkingAgents: "Checking…"
+refreshAgents: "Check again"
+agentNotFound: "Not found on the login shell PATH"
+agentDisabled: "Off for new conversations"
+enableAgent: "Enable {tool} for new conversations"
+modelsEnabled:
+  message: "{count, plural, one {{enabled}/{count} model} other {{enabled}/{count} models}}"
+  placeholders:
+    count: {type: int}
+    enabled: {type: int}
+toolModels: "{tool} models"
+selectAllModels: "Select all"
+selectNoModels: "Select none"
+noResults: "No matching results."
+chooseModel: "Choose a model"
+loadingModels: "Looking for models…"
+noEnabledModels: "No models are enabled. Enable them in Settings › Agents."

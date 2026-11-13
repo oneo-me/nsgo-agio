@@ -11,6 +11,8 @@ import (
 	"time"
 
 	agio "github.com/oneo-me/nsgo-agio"
+	"github.com/oneo-me/nsgo-agio/agent"
+	"github.com/oneo-me/nsgo-agio/quota"
 	"github.com/oneo-me/nsgo-agio/transcript"
 )
 
@@ -167,6 +169,21 @@ func (c *Client) Remove(id string) error { return c.call(MethodRemove, Ref{ID: i
 // Discover implements agio.Backend.
 func (c *Client) Discover() { go c.call(MethodDiscover, nil, nil) }
 
+// Enable implements agio.Backend.
+func (c *Client) Enable(tool agent.Tool, on bool) error {
+	return c.call(MethodEnable, Enable{Tool: tool, On: on}, nil)
+}
+
+// EnableModels implements agio.Backend.
+func (c *Client) EnableModels(keys []string, on bool) error {
+	return c.call(MethodEnableModels, EnableModels{Keys: keys, On: on}, nil)
+}
+
+// RefreshQuota implements agio.Backend.
+func (c *Client) RefreshQuota(p quota.Provider) {
+	go c.call(MethodRefreshQuota, Quota{Provider: p}, nil)
+}
+
 // Close implements agio.Backend: it disconnects, leaving the server's
 // agents running.
 func (c *Client) Close() error { return c.peer.Close() }
@@ -190,7 +207,7 @@ func (c *Client) Event(method string, params json.RawMessage) {
 		c.turns = map[string][]*transcript.Turn{}
 	}
 	if st.Head != nil {
-		c.state.Discovering, c.state.Tools = st.Head.Discovering, st.Head.Tools
+		c.state.Discovering, c.state.Tools, c.state.Quotas = st.Head.Discovering, st.Head.Tools, st.Head.Quotas
 	}
 	if st.Conversations != nil {
 		c.state.Conversations = *st.Conversations

@@ -70,6 +70,9 @@ func (h *Host) snapshot(c *conversation) *agio.Conversation {
 func (h *Host) effective(c *conversation) (model, effort, tier string) {
 	model, effort, tier = c.model, c.effort, c.tier
 	m, ok := h.model(model)
+	if ok && !c.bound && h.models[model] {
+		ok = false // turned off before it was bound
+	}
 	if !ok {
 		if c.bound {
 			return model, effort, tier
@@ -204,6 +207,10 @@ func (h *Host) start(c *conversation) {
 	}
 	tool, _ := agent.ParseKey(c.model)
 	d := h.driver(tool)
+	if d == nil && h.disabled[tool] {
+		h.failRun(c, tool.Name()+" is turned off. Turn it on to continue this conversation.")
+		return
+	}
 	if d == nil {
 		h.failRun(c, tool.Name()+" is not available. Install it, then look for agents again.")
 		return
@@ -454,9 +461,18 @@ func (h *Host) Choose(id string, ch agio.Choice) error {
 		if c == nil {
 			return errNoConversation
 		}
+		if ch.Dir != nil {
+			if c.bound || len(c.turns) > 0 {
+				return errors.New("a conversation keeps the directory of its first message")
+			}
+			if info, err := os.Stat(*ch.Dir); err != nil || !info.IsDir() {
+				return errors.New("not a directory: " + *ch.Dir)
+			}
+			c.dir = *ch.Dir
+		}
 		if ch.Model != nil {
 			key := *ch.Model
-			if _, ok := h.model(key); !ok {
+			if !h.offered(key) {
 				return errors.New("no such model: " + key)
 			}
 			tool, _ := agent.ParseKey(c.model)

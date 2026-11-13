@@ -9,6 +9,7 @@ import (
 
 	"github.com/nsgo-dev/nsgo"
 	"github.com/nsgo-dev/nsgo/core"
+	"github.com/oneo-me/nsgo-agio/agent"
 	"github.com/oneo-me/nsgo-agio/chatview"
 	"github.com/oneo-me/nsgo-agio/wire"
 )
@@ -23,7 +24,7 @@ func main() {
 		log.Fatalf("connect to %s: %v", addr, err)
 	}
 	nsgo.Run(func(cx *core.Scope) core.Node {
-		return chatview.App{Model: chatview.Bind(cx, c)}
+		return chatview.App{Model: chatview.Bind(cx, c), Name: agent.Client.Title}
 	}, nsgo.WindowSize(1040, 720))
 	// Closing the window leaves the server's agents running.
 	c.Close()

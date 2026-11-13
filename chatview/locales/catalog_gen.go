@@ -33,22 +33,37 @@ func For(cx *core.Scope) Messages { return In(i18n.Language(cx)) }
 // its method, for the TSX declarations of the messages
 // (tsx.RegisterMessages).
 var Parameters = map[string][]string{
-	"ContextUsed":     {"percent"},
-	"DurationSeconds": {"count"},
-	"DurationMinutes": {"count", "seconds"},
-	"DurationHours":   {"count", "minutes"},
-	"DurationDays":    {"count"},
-	"Ran":             {"activities"},
-	"Running":         {"activities"},
-	"CountRun":        {"count"},
-	"CountRead":       {"count"},
-	"CountEdit":       {"count"},
-	"CountSearch":     {"count"},
-	"CountList":       {"count"},
-	"CountTool":       {"count"},
-	"WorkedFor":       {"duration"},
-	"WorkingFor":      {"duration"},
-	"StoppedAfter":    {"duration"},
+	"ContextUsed":             {"percent"},
+	"DurationSeconds":         {"count"},
+	"DurationMinutes":         {"count", "seconds"},
+	"DurationHours":           {"count", "minutes"},
+	"DurationDays":            {"count"},
+	"Ran":                     {"activities"},
+	"Running":                 {"activities"},
+	"CountRun":                {"count"},
+	"CountRead":               {"count"},
+	"CountEdit":               {"count"},
+	"CountSearch":             {"count"},
+	"CountList":               {"count"},
+	"CountTool":               {"count"},
+	"WorkedFor":               {"duration"},
+	"WorkingFor":              {"duration"},
+	"StoppedAfter":            {"duration"},
+	"QuotaHours":              {"count"},
+	"QuotaDays":               {"count"},
+	"QuotaLeft":               {"percent"},
+	"QuotaResetsSeconds":      {"count"},
+	"QuotaResetsMinutes":      {"count"},
+	"QuotaResetsHours":        {"count"},
+	"QuotaResetsDays":         {"count"},
+	"QuotaResetsHoursMinutes": {"hours", "minutes"},
+	"QuotaResetsDaysHours":    {"days", "hours"},
+	"QuotaFailed":             {"error_"},
+	"QuotaOpenPage":           {"account"},
+	"QuotaRefresh":            {"account"},
+	"EnableAgent":             {"tool"},
+	"ModelsEnabled":           {"count", "enabled"},
+	"ToolModels":              {"tool"},
 }
 
 // Translation is a language's messages another package supplies:
@@ -56,23 +71,38 @@ var Parameters = map[string][]string{
 // of the others; a key or a field left out leaves the message to the
 // catalog.
 type Translation struct {
-	Texts           map[string]string
-	ContextUsed     func(percent int) string
-	DurationSeconds func(count int) string
-	DurationMinutes func(count int, seconds int) string
-	DurationHours   func(count int, minutes int) string
-	DurationDays    func(count int) string
-	Ran             func(activities string) string
-	Running         func(activities string) string
-	CountRun        func(count int) string
-	CountRead       func(count int) string
-	CountEdit       func(count int) string
-	CountSearch     func(count int) string
-	CountList       func(count int) string
-	CountTool       func(count int) string
-	WorkedFor       func(duration string) string
-	WorkingFor      func(duration string) string
-	StoppedAfter    func(duration string) string
+	Texts                   map[string]string
+	ContextUsed             func(percent int) string
+	DurationSeconds         func(count int) string
+	DurationMinutes         func(count int, seconds int) string
+	DurationHours           func(count int, minutes int) string
+	DurationDays            func(count int) string
+	Ran                     func(activities string) string
+	Running                 func(activities string) string
+	CountRun                func(count int) string
+	CountRead               func(count int) string
+	CountEdit               func(count int) string
+	CountSearch             func(count int) string
+	CountList               func(count int) string
+	CountTool               func(count int) string
+	WorkedFor               func(duration string) string
+	WorkingFor              func(duration string) string
+	StoppedAfter            func(duration string) string
+	QuotaHours              func(count int) string
+	QuotaDays               func(count int) string
+	QuotaLeft               func(percent string) string
+	QuotaResetsSeconds      func(count int) string
+	QuotaResetsMinutes      func(count int) string
+	QuotaResetsHours        func(count int) string
+	QuotaResetsDays         func(count int) string
+	QuotaResetsHoursMinutes func(hours int, minutes int) string
+	QuotaResetsDaysHours    func(days int, hours int) string
+	QuotaFailed             func(error_ string) string
+	QuotaOpenPage           func(account string) string
+	QuotaRefresh            func(account string) string
+	EnableAgent             func(tool string) string
+	ModelsEnabled           func(count int, enabled int) string
+	ToolModels              func(tool string) string
 }
 
 var supplied = map[string]Translation{}
@@ -103,7 +133,6 @@ const (
 	textTierStandard
 	textTierFast
 	textSearchModels
-	textNoMatchingModels
 	textContextWindow
 	textActionThink
 	textActionRun
@@ -120,6 +149,39 @@ const (
 	textRemoveConversation
 	textToggleSidebar
 	textResizeSidebar
+	textSettings
+	textSearchSettings
+	textSettingsResults
+	textNoMatchingSettings
+	textCloseSettings
+	textAgents
+	textRecentProjects
+	textChooseFolder
+	textSearchProjects
+	textNoMatchingProjects
+	textQuotaDetails
+	textQuotaLimit
+	textQuotaWeekly
+	textQuotaBalance
+	textQuotaResetsSoon
+	textQuotaExpired
+	textQuotaRateLimited
+	textQuotaSignin
+	textQuotaRefreshing
+	textFileMenu
+	textSettingsMenuItem
+	textCodingAgents
+	textCheckingAgent
+	textCheckingAgents
+	textRefreshAgents
+	textAgentNotFound
+	textAgentDisabled
+	textSelectAllModels
+	textSelectNoModels
+	textNoResults
+	textChooseModel
+	textLoadingModels
+	textNoEnabledModels
 	numTexts
 )
 
@@ -150,7 +212,6 @@ var keyOfText = [numTexts]string{
 	"tierStandard",
 	"tierFast",
 	"searchModels",
-	"noMatchingModels",
 	"contextWindow",
 	"actionThink",
 	"actionRun",
@@ -167,6 +228,39 @@ var keyOfText = [numTexts]string{
 	"removeConversation",
 	"toggleSidebar",
 	"resizeSidebar",
+	"settings",
+	"searchSettings",
+	"settingsResults",
+	"noMatchingSettings",
+	"closeSettings",
+	"agents",
+	"recentProjects",
+	"chooseFolder",
+	"searchProjects",
+	"noMatchingProjects",
+	"quotaDetails",
+	"quotaLimit",
+	"quotaWeekly",
+	"quotaBalance",
+	"quotaResetsSoon",
+	"quotaExpired",
+	"quotaRateLimited",
+	"quotaSignin",
+	"quotaRefreshing",
+	"fileMenu",
+	"settingsMenuItem",
+	"codingAgents",
+	"checkingAgent",
+	"checkingAgents",
+	"refreshAgents",
+	"agentNotFound",
+	"agentDisabled",
+	"selectAllModels",
+	"selectNoModels",
+	"noResults",
+	"chooseModel",
+	"loadingModels",
+	"noEnabledModels",
 }
 
 // textsEn are the messages without arguments in en.
@@ -195,7 +289,6 @@ var textsEn = i18n.NewTexts(""+
 	"Standard"+
 	"Fast"+
 	"Search models"+
-	"No matching models"+
 	"Context window"+
 	"Think"+
 	"Run"+
@@ -211,7 +304,40 @@ var textsEn = i18n.NewTexts(""+
 	"New conversation"+
 	"Remove"+
 	"Show or hide the sidebar"+
-	"Resize the sidebar",
+	"Resize the sidebar"+
+	"Settings"+
+	"Search settings"+
+	"Results"+
+	"No matching settings"+
+	"Close"+
+	"Agents"+
+	"Recent projects"+
+	"Choose a folder…"+
+	"Search projects"+
+	"No matching projects"+
+	"Account limits"+
+	"Usage limit"+
+	"Weekly limit"+
+	"Balance"+
+	"Resets soon"+
+	"Sign-in expired. Use the agent again to refresh it."+
+	"Limits are rate-limited right now; retrying shortly."+
+	"Sign in again to read limits."+
+	"Refreshing…"+
+	"File"+
+	"Settings…"+
+	"Coding agents"+
+	"Checking…"+
+	"Checking…"+
+	"Check again"+
+	"Not found on the login shell PATH"+
+	"Off for new conversations"+
+	"Select all"+
+	"Select none"+
+	"No matching results."+
+	"Choose a model"+
+	"Looking for models…"+
+	"No models are enabled. Enable them in Settings › Agents.",
 	[]uint16{
 		7,
 		4,
@@ -237,7 +363,6 @@ var textsEn = i18n.NewTexts(""+
 		8,
 		4,
 		13,
-		18,
 		14,
 		5,
 		3,
@@ -254,6 +379,39 @@ var textsEn = i18n.NewTexts(""+
 		6,
 		24,
 		18,
+		8,
+		15,
+		7,
+		20,
+		5,
+		6,
+		15,
+		18,
+		15,
+		20,
+		14,
+		11,
+		12,
+		7,
+		11,
+		51,
+		52,
+		29,
+		13,
+		4,
+		11,
+		13,
+		11,
+		11,
+		11,
+		33,
+		25,
+		10,
+		11,
+		20,
+		14,
+		21,
+		58,
 	})
 
 // textsZhHans are the messages without arguments in zh-Hans.
@@ -282,7 +440,6 @@ var textsZhHans = i18n.NewTexts(""+
 	"标准"+
 	"快速"+
 	"搜索模型"+
-	"没有匹配的模型"+
 	"上下文窗口"+
 	"思考"+
 	"运行"+
@@ -298,7 +455,40 @@ var textsZhHans = i18n.NewTexts(""+
 	"新对话"+
 	"移除"+
 	"显示或隐藏边栏"+
-	"调整边栏宽度",
+	"调整边栏宽度"+
+	"设置"+
+	"搜索设置"+
+	"结果"+
+	"没有匹配的设置"+
+	"关闭"+
+	"智能体"+
+	"最近的项目"+
+	"选择文件夹…"+
+	"搜索项目"+
+	"没有匹配的项目"+
+	"账户额度"+
+	"用量限额"+
+	"每周限额"+
+	"余额"+
+	"即将重置"+
+	"登录已过期，再次使用该智能体即可刷新。"+
+	"读取限额过于频繁，稍后自动重试。"+
+	"请重新登录以读取限额。"+
+	"正在刷新…"+
+	"文件"+
+	"设置…"+
+	"编程智能体"+
+	"正在检查…"+
+	"正在检查…"+
+	"重新检查"+
+	"未在登录 Shell 的 PATH 中找到"+
+	"新对话不可用"+
+	"全选"+
+	"全不选"+
+	"没有匹配结果。"+
+	"选择模型"+
+	"正在查找模型…"+
+	"没有已启用的模型。请在“设置 › 智能体”中启用。",
 	[]uint16{
 		6,
 		6,
@@ -324,7 +514,6 @@ var textsZhHans = i18n.NewTexts(""+
 		6,
 		6,
 		12,
-		21,
 		15,
 		6,
 		6,
@@ -341,6 +530,39 @@ var textsZhHans = i18n.NewTexts(""+
 		6,
 		21,
 		18,
+		6,
+		12,
+		6,
+		21,
+		6,
+		9,
+		15,
+		18,
+		12,
+		21,
+		12,
+		12,
+		12,
+		6,
+		12,
+		57,
+		48,
+		33,
+		15,
+		6,
+		9,
+		15,
+		15,
+		15,
+		12,
+		37,
+		18,
+		6,
+		9,
+		21,
+		12,
+		21,
+		71,
 	})
 
 // texts returns the messages without arguments in lang, nil for a
@@ -444,6 +666,51 @@ func Supply(lang string, t Translation) {
 	}
 	if t.StoppedAfter != nil {
 		s.StoppedAfter = t.StoppedAfter
+	}
+	if t.QuotaHours != nil {
+		s.QuotaHours = t.QuotaHours
+	}
+	if t.QuotaDays != nil {
+		s.QuotaDays = t.QuotaDays
+	}
+	if t.QuotaLeft != nil {
+		s.QuotaLeft = t.QuotaLeft
+	}
+	if t.QuotaResetsSeconds != nil {
+		s.QuotaResetsSeconds = t.QuotaResetsSeconds
+	}
+	if t.QuotaResetsMinutes != nil {
+		s.QuotaResetsMinutes = t.QuotaResetsMinutes
+	}
+	if t.QuotaResetsHours != nil {
+		s.QuotaResetsHours = t.QuotaResetsHours
+	}
+	if t.QuotaResetsDays != nil {
+		s.QuotaResetsDays = t.QuotaResetsDays
+	}
+	if t.QuotaResetsHoursMinutes != nil {
+		s.QuotaResetsHoursMinutes = t.QuotaResetsHoursMinutes
+	}
+	if t.QuotaResetsDaysHours != nil {
+		s.QuotaResetsDaysHours = t.QuotaResetsDaysHours
+	}
+	if t.QuotaFailed != nil {
+		s.QuotaFailed = t.QuotaFailed
+	}
+	if t.QuotaOpenPage != nil {
+		s.QuotaOpenPage = t.QuotaOpenPage
+	}
+	if t.QuotaRefresh != nil {
+		s.QuotaRefresh = t.QuotaRefresh
+	}
+	if t.EnableAgent != nil {
+		s.EnableAgent = t.EnableAgent
+	}
+	if t.ModelsEnabled != nil {
+		s.ModelsEnabled = t.ModelsEnabled
+	}
+	if t.ToolModels != nil {
+		s.ToolModels = t.ToolModels
 	}
 	supplied[lang] = s
 	Catalog.Add(lang)
@@ -631,13 +898,6 @@ func SearchModels(cx *core.Scope) string { return For(cx).SearchModels() }
 
 // SearchModels is the package's SearchModels in the language of msgs.
 func (msgs Messages) SearchModels() string { return msgs.text(textSearchModels) }
-
-// NoMatchingModels says "No matching models"
-// in the language the app shows under cx.
-func NoMatchingModels(cx *core.Scope) string { return For(cx).NoMatchingModels() }
-
-// NoMatchingModels is the package's NoMatchingModels in the language of msgs.
-func (msgs Messages) NoMatchingModels() string { return msgs.text(textNoMatchingModels) }
 
 // ContextWindow says "Context window"
 // in the language the app shows under cx.
@@ -1175,3 +1435,583 @@ func ResizeSidebar(cx *core.Scope) string { return For(cx).ResizeSidebar() }
 
 // ResizeSidebar is the package's ResizeSidebar in the language of msgs.
 func (msgs Messages) ResizeSidebar() string { return msgs.text(textResizeSidebar) }
+
+// Settings says "Settings"
+// in the language the app shows under cx.
+func Settings(cx *core.Scope) string { return For(cx).Settings() }
+
+// Settings is the package's Settings in the language of msgs.
+func (msgs Messages) Settings() string { return msgs.text(textSettings) }
+
+// SearchSettings says "Search settings"
+// in the language the app shows under cx.
+func SearchSettings(cx *core.Scope) string { return For(cx).SearchSettings() }
+
+// SearchSettings is the package's SearchSettings in the language of msgs.
+func (msgs Messages) SearchSettings() string { return msgs.text(textSearchSettings) }
+
+// SettingsResults says "Results"
+// in the language the app shows under cx.
+func SettingsResults(cx *core.Scope) string { return For(cx).SettingsResults() }
+
+// SettingsResults is the package's SettingsResults in the language of msgs.
+func (msgs Messages) SettingsResults() string { return msgs.text(textSettingsResults) }
+
+// NoMatchingSettings says "No matching settings"
+// in the language the app shows under cx.
+func NoMatchingSettings(cx *core.Scope) string { return For(cx).NoMatchingSettings() }
+
+// NoMatchingSettings is the package's NoMatchingSettings in the language of msgs.
+func (msgs Messages) NoMatchingSettings() string { return msgs.text(textNoMatchingSettings) }
+
+// CloseSettings says "Close"
+// in the language the app shows under cx.
+func CloseSettings(cx *core.Scope) string { return For(cx).CloseSettings() }
+
+// CloseSettings is the package's CloseSettings in the language of msgs.
+func (msgs Messages) CloseSettings() string { return msgs.text(textCloseSettings) }
+
+// Agents says "Agents"
+// in the language the app shows under cx.
+func Agents(cx *core.Scope) string { return For(cx).Agents() }
+
+// Agents is the package's Agents in the language of msgs.
+func (msgs Messages) Agents() string { return msgs.text(textAgents) }
+
+// RecentProjects says "Recent projects"
+// in the language the app shows under cx.
+func RecentProjects(cx *core.Scope) string { return For(cx).RecentProjects() }
+
+// RecentProjects is the package's RecentProjects in the language of msgs.
+func (msgs Messages) RecentProjects() string { return msgs.text(textRecentProjects) }
+
+// ChooseFolder says "Choose a folder…"
+// in the language the app shows under cx.
+func ChooseFolder(cx *core.Scope) string { return For(cx).ChooseFolder() }
+
+// ChooseFolder is the package's ChooseFolder in the language of msgs.
+func (msgs Messages) ChooseFolder() string { return msgs.text(textChooseFolder) }
+
+// SearchProjects says "Search projects"
+// in the language the app shows under cx.
+func SearchProjects(cx *core.Scope) string { return For(cx).SearchProjects() }
+
+// SearchProjects is the package's SearchProjects in the language of msgs.
+func (msgs Messages) SearchProjects() string { return msgs.text(textSearchProjects) }
+
+// NoMatchingProjects says "No matching projects"
+// in the language the app shows under cx.
+func NoMatchingProjects(cx *core.Scope) string { return For(cx).NoMatchingProjects() }
+
+// NoMatchingProjects is the package's NoMatchingProjects in the language of msgs.
+func (msgs Messages) NoMatchingProjects() string { return msgs.text(textNoMatchingProjects) }
+
+// QuotaDetails says "Account limits"
+// in the language the app shows under cx.
+func QuotaDetails(cx *core.Scope) string { return For(cx).QuotaDetails() }
+
+// QuotaDetails is the package's QuotaDetails in the language of msgs.
+func (msgs Messages) QuotaDetails() string { return msgs.text(textQuotaDetails) }
+
+// QuotaLimit says "Usage limit"
+// in the language the app shows under cx.
+func QuotaLimit(cx *core.Scope) string { return For(cx).QuotaLimit() }
+
+// QuotaLimit is the package's QuotaLimit in the language of msgs.
+func (msgs Messages) QuotaLimit() string { return msgs.text(textQuotaLimit) }
+
+// QuotaWeekly says "Weekly limit"
+// in the language the app shows under cx.
+func QuotaWeekly(cx *core.Scope) string { return For(cx).QuotaWeekly() }
+
+// QuotaWeekly is the package's QuotaWeekly in the language of msgs.
+func (msgs Messages) QuotaWeekly() string { return msgs.text(textQuotaWeekly) }
+
+// QuotaHours says "{count}-hour limit"
+// in the language the app shows under cx.
+func QuotaHours(cx *core.Scope, count int) string { return For(cx).QuotaHours(count) }
+
+// QuotaHours is the package's QuotaHours in the language of msgs.
+func (msgs Messages) QuotaHours(count int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaHours(count))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaHours; f != nil {
+			return f(count)
+		}
+		switch lang {
+		case "", "en":
+			return msgs.arg(i18n.FormatNumber("en", float64(count))) + "-hour limit"
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(count)) + " 小时限额"
+		}
+	}
+}
+
+// QuotaDays says "{count}-day limit"
+// in the language the app shows under cx.
+func QuotaDays(cx *core.Scope, count int) string { return For(cx).QuotaDays(count) }
+
+// QuotaDays is the package's QuotaDays in the language of msgs.
+func (msgs Messages) QuotaDays(count int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaDays(count))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaDays; f != nil {
+			return f(count)
+		}
+		switch lang {
+		case "", "en":
+			return msgs.arg(i18n.FormatNumber("en", float64(count))) + "-day limit"
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(count)) + " 天限额"
+		}
+	}
+}
+
+// QuotaLeft says "{percent}% left"
+// in the language the app shows under cx.
+func QuotaLeft(cx *core.Scope, percent string) string { return For(cx).QuotaLeft(percent) }
+
+// QuotaLeft is the package's QuotaLeft in the language of msgs.
+func (msgs Messages) QuotaLeft(percent string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaLeft(percent))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaLeft; f != nil {
+			return f(percent)
+		}
+		switch lang {
+		case "", "en":
+			return msgs.arg(percent) + "% left"
+		case "zh-Hans":
+			return "剩余 " + percent + "%"
+		}
+	}
+}
+
+// QuotaBalance says "Balance"
+// in the language the app shows under cx.
+func QuotaBalance(cx *core.Scope) string { return For(cx).QuotaBalance() }
+
+// QuotaBalance is the package's QuotaBalance in the language of msgs.
+func (msgs Messages) QuotaBalance() string { return msgs.text(textQuotaBalance) }
+
+// QuotaResetsSoon says "Resets soon"
+// in the language the app shows under cx.
+func QuotaResetsSoon(cx *core.Scope) string { return For(cx).QuotaResetsSoon() }
+
+// QuotaResetsSoon is the package's QuotaResetsSoon in the language of msgs.
+func (msgs Messages) QuotaResetsSoon() string { return msgs.text(textQuotaResetsSoon) }
+
+// QuotaResetsSeconds says "Resets in {count}s"
+// in the language the app shows under cx.
+func QuotaResetsSeconds(cx *core.Scope, count int) string { return For(cx).QuotaResetsSeconds(count) }
+
+// QuotaResetsSeconds is the package's QuotaResetsSeconds in the language of msgs.
+func (msgs Messages) QuotaResetsSeconds(count int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaResetsSeconds(count))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaResetsSeconds; f != nil {
+			return f(count)
+		}
+		switch lang {
+		case "", "en":
+			return "Resets in " + msgs.arg(i18n.FormatNumber("en", float64(count))) + "s"
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(count)) + " 秒后重置"
+		}
+	}
+}
+
+// QuotaResetsMinutes says "Resets in {count}m"
+// in the language the app shows under cx.
+func QuotaResetsMinutes(cx *core.Scope, count int) string { return For(cx).QuotaResetsMinutes(count) }
+
+// QuotaResetsMinutes is the package's QuotaResetsMinutes in the language of msgs.
+func (msgs Messages) QuotaResetsMinutes(count int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaResetsMinutes(count))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaResetsMinutes; f != nil {
+			return f(count)
+		}
+		switch lang {
+		case "", "en":
+			return "Resets in " + msgs.arg(i18n.FormatNumber("en", float64(count))) + "m"
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(count)) + " 分钟后重置"
+		}
+	}
+}
+
+// QuotaResetsHours says "Resets in {count}h"
+// in the language the app shows under cx.
+func QuotaResetsHours(cx *core.Scope, count int) string { return For(cx).QuotaResetsHours(count) }
+
+// QuotaResetsHours is the package's QuotaResetsHours in the language of msgs.
+func (msgs Messages) QuotaResetsHours(count int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaResetsHours(count))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaResetsHours; f != nil {
+			return f(count)
+		}
+		switch lang {
+		case "", "en":
+			return "Resets in " + msgs.arg(i18n.FormatNumber("en", float64(count))) + "h"
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(count)) + " 小时后重置"
+		}
+	}
+}
+
+// QuotaResetsDays says "Resets in {count}d"
+// in the language the app shows under cx.
+func QuotaResetsDays(cx *core.Scope, count int) string { return For(cx).QuotaResetsDays(count) }
+
+// QuotaResetsDays is the package's QuotaResetsDays in the language of msgs.
+func (msgs Messages) QuotaResetsDays(count int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaResetsDays(count))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaResetsDays; f != nil {
+			return f(count)
+		}
+		switch lang {
+		case "", "en":
+			return "Resets in " + msgs.arg(i18n.FormatNumber("en", float64(count))) + "d"
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(count)) + " 天后重置"
+		}
+	}
+}
+
+// QuotaResetsHoursMinutes says "Resets in {hours}h {minutes}m"
+// in the language the app shows under cx.
+func QuotaResetsHoursMinutes(cx *core.Scope, hours int, minutes int) string {
+	return For(cx).QuotaResetsHoursMinutes(hours, minutes)
+}
+
+// QuotaResetsHoursMinutes is the package's QuotaResetsHoursMinutes in the language of msgs.
+func (msgs Messages) QuotaResetsHoursMinutes(hours int, minutes int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaResetsHoursMinutes(hours, minutes))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaResetsHoursMinutes; f != nil {
+			return f(hours, minutes)
+		}
+		switch lang {
+		case "", "en":
+			return "Resets in " + msgs.arg(i18n.FormatNumber("en", float64(hours))) + "h " + msgs.arg(i18n.FormatNumber("en", float64(minutes))) + "m"
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(hours)) + " 小时 " + i18n.FormatNumber("zh-Hans", float64(minutes)) + " 分钟后重置"
+		}
+	}
+}
+
+// QuotaResetsDaysHours says "Resets in {days}d {hours}h"
+// in the language the app shows under cx.
+func QuotaResetsDaysHours(cx *core.Scope, days int, hours int) string {
+	return For(cx).QuotaResetsDaysHours(days, hours)
+}
+
+// QuotaResetsDaysHours is the package's QuotaResetsDaysHours in the language of msgs.
+func (msgs Messages) QuotaResetsDaysHours(days int, hours int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaResetsDaysHours(days, hours))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaResetsDaysHours; f != nil {
+			return f(days, hours)
+		}
+		switch lang {
+		case "", "en":
+			return "Resets in " + msgs.arg(i18n.FormatNumber("en", float64(days))) + "d " + msgs.arg(i18n.FormatNumber("en", float64(hours))) + "h"
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(days)) + " 天 " + i18n.FormatNumber("zh-Hans", float64(hours)) + " 小时后重置"
+		}
+	}
+}
+
+// QuotaExpired says "Sign-in expired. Use the agent again to refresh it."
+// in the language the app shows under cx.
+func QuotaExpired(cx *core.Scope) string { return For(cx).QuotaExpired() }
+
+// QuotaExpired is the package's QuotaExpired in the language of msgs.
+func (msgs Messages) QuotaExpired() string { return msgs.text(textQuotaExpired) }
+
+// QuotaRateLimited says "Limits are rate-limited right now; retrying shortly."
+// in the language the app shows under cx.
+func QuotaRateLimited(cx *core.Scope) string { return For(cx).QuotaRateLimited() }
+
+// QuotaRateLimited is the package's QuotaRateLimited in the language of msgs.
+func (msgs Messages) QuotaRateLimited() string { return msgs.text(textQuotaRateLimited) }
+
+// QuotaSignin says "Sign in again to read limits."
+// in the language the app shows under cx.
+func QuotaSignin(cx *core.Scope) string { return For(cx).QuotaSignin() }
+
+// QuotaSignin is the package's QuotaSignin in the language of msgs.
+func (msgs Messages) QuotaSignin() string { return msgs.text(textQuotaSignin) }
+
+// QuotaFailed says "Couldn't read limits: {error}"
+// in the language the app shows under cx.
+func QuotaFailed(cx *core.Scope, error_ string) string { return For(cx).QuotaFailed(error_) }
+
+// QuotaFailed is the package's QuotaFailed in the language of msgs.
+func (msgs Messages) QuotaFailed(error_ string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaFailed(error_))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaFailed; f != nil {
+			return f(error_)
+		}
+		switch lang {
+		case "", "en":
+			return "Couldn't read limits: " + msgs.arg(error_)
+		case "zh-Hans":
+			return "无法读取限额：" + error_
+		}
+	}
+}
+
+// QuotaOpenPage says "Open {account} usage page"
+// in the language the app shows under cx.
+func QuotaOpenPage(cx *core.Scope, account string) string { return For(cx).QuotaOpenPage(account) }
+
+// QuotaOpenPage is the package's QuotaOpenPage in the language of msgs.
+func (msgs Messages) QuotaOpenPage(account string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaOpenPage(account))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaOpenPage; f != nil {
+			return f(account)
+		}
+		switch lang {
+		case "", "en":
+			return "Open " + msgs.arg(account) + " usage page"
+		case "zh-Hans":
+			return "打开 " + account + " 用量页面"
+		}
+	}
+}
+
+// QuotaRefresh says "Refresh {account} limits"
+// in the language the app shows under cx.
+func QuotaRefresh(cx *core.Scope, account string) string { return For(cx).QuotaRefresh(account) }
+
+// QuotaRefresh is the package's QuotaRefresh in the language of msgs.
+func (msgs Messages) QuotaRefresh(account string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaRefresh(account))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaRefresh; f != nil {
+			return f(account)
+		}
+		switch lang {
+		case "", "en":
+			return "Refresh " + msgs.arg(account) + " limits"
+		case "zh-Hans":
+			return "刷新 " + account + " 配额"
+		}
+	}
+}
+
+// QuotaRefreshing says "Refreshing…"
+// in the language the app shows under cx.
+func QuotaRefreshing(cx *core.Scope) string { return For(cx).QuotaRefreshing() }
+
+// QuotaRefreshing is the package's QuotaRefreshing in the language of msgs.
+func (msgs Messages) QuotaRefreshing() string { return msgs.text(textQuotaRefreshing) }
+
+// FileMenu says "File"
+// in the language the app shows under cx.
+func FileMenu(cx *core.Scope) string { return For(cx).FileMenu() }
+
+// FileMenu is the package's FileMenu in the language of msgs.
+func (msgs Messages) FileMenu() string { return msgs.text(textFileMenu) }
+
+// SettingsMenuItem says "Settings…"
+// in the language the app shows under cx.
+func SettingsMenuItem(cx *core.Scope) string { return For(cx).SettingsMenuItem() }
+
+// SettingsMenuItem is the package's SettingsMenuItem in the language of msgs.
+func (msgs Messages) SettingsMenuItem() string { return msgs.text(textSettingsMenuItem) }
+
+// CodingAgents says "Coding agents"
+// in the language the app shows under cx.
+func CodingAgents(cx *core.Scope) string { return For(cx).CodingAgents() }
+
+// CodingAgents is the package's CodingAgents in the language of msgs.
+func (msgs Messages) CodingAgents() string { return msgs.text(textCodingAgents) }
+
+// CheckingAgent says "Checking…"
+// in the language the app shows under cx.
+func CheckingAgent(cx *core.Scope) string { return For(cx).CheckingAgent() }
+
+// CheckingAgent is the package's CheckingAgent in the language of msgs.
+func (msgs Messages) CheckingAgent() string { return msgs.text(textCheckingAgent) }
+
+// CheckingAgents says "Checking…"
+// in the language the app shows under cx.
+func CheckingAgents(cx *core.Scope) string { return For(cx).CheckingAgents() }
+
+// CheckingAgents is the package's CheckingAgents in the language of msgs.
+func (msgs Messages) CheckingAgents() string { return msgs.text(textCheckingAgents) }
+
+// RefreshAgents says "Check again"
+// in the language the app shows under cx.
+func RefreshAgents(cx *core.Scope) string { return For(cx).RefreshAgents() }
+
+// RefreshAgents is the package's RefreshAgents in the language of msgs.
+func (msgs Messages) RefreshAgents() string { return msgs.text(textRefreshAgents) }
+
+// AgentNotFound says "Not found on the login shell PATH"
+// in the language the app shows under cx.
+func AgentNotFound(cx *core.Scope) string { return For(cx).AgentNotFound() }
+
+// AgentNotFound is the package's AgentNotFound in the language of msgs.
+func (msgs Messages) AgentNotFound() string { return msgs.text(textAgentNotFound) }
+
+// AgentDisabled says "Off for new conversations"
+// in the language the app shows under cx.
+func AgentDisabled(cx *core.Scope) string { return For(cx).AgentDisabled() }
+
+// AgentDisabled is the package's AgentDisabled in the language of msgs.
+func (msgs Messages) AgentDisabled() string { return msgs.text(textAgentDisabled) }
+
+// EnableAgent says "Enable {tool} for new conversations"
+// in the language the app shows under cx.
+func EnableAgent(cx *core.Scope, tool string) string { return For(cx).EnableAgent(tool) }
+
+// EnableAgent is the package's EnableAgent in the language of msgs.
+func (msgs Messages) EnableAgent(tool string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.EnableAgent(tool))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].EnableAgent; f != nil {
+			return f(tool)
+		}
+		switch lang {
+		case "", "en":
+			return "Enable " + msgs.arg(tool) + " for new conversations"
+		case "zh-Hans":
+			return "新对话启用 " + tool
+		}
+	}
+}
+
+// ModelsEnabled says "{count, plural, one {{enabled}/{count} model} other {{enabled}/{count} models}}"
+// in the language the app shows under cx.
+func ModelsEnabled(cx *core.Scope, count int, enabled int) string {
+	return For(cx).ModelsEnabled(count, enabled)
+}
+
+// ModelsEnabled is the package's ModelsEnabled in the language of msgs.
+func (msgs Messages) ModelsEnabled(count int, enabled int) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.ModelsEnabled(count, enabled))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].ModelsEnabled; f != nil {
+			return f(count, enabled)
+		}
+		switch lang {
+		case "", "en":
+			var b strings.Builder
+			switch i18n.Cardinal("en", float64(count)) {
+			case i18n.One:
+				b.WriteString(msgs.arg(i18n.FormatNumber("en", float64(enabled))))
+				b.WriteString("/")
+				b.WriteString(msgs.arg(i18n.FormatNumber("en", float64(count))))
+				b.WriteString(" model")
+			default:
+				b.WriteString(msgs.arg(i18n.FormatNumber("en", float64(enabled))))
+				b.WriteString("/")
+				b.WriteString(msgs.arg(i18n.FormatNumber("en", float64(count))))
+				b.WriteString(" models")
+			}
+			return b.String()
+		case "zh-Hans":
+			return i18n.FormatNumber("zh-Hans", float64(enabled)) + "/" + i18n.FormatNumber("zh-Hans", float64(count)) + " 个模型"
+		}
+	}
+}
+
+// ToolModels says "{tool} models"
+// in the language the app shows under cx.
+func ToolModels(cx *core.Scope, tool string) string { return For(cx).ToolModels(tool) }
+
+// ToolModels is the package's ToolModels in the language of msgs.
+func (msgs Messages) ToolModels(tool string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.ToolModels(tool))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].ToolModels; f != nil {
+			return f(tool)
+		}
+		switch lang {
+		case "", "en":
+			return msgs.arg(tool) + " models"
+		case "zh-Hans":
+			return tool + " 模型"
+		}
+	}
+}
+
+// SelectAllModels says "Select all"
+// in the language the app shows under cx.
+func SelectAllModels(cx *core.Scope) string { return For(cx).SelectAllModels() }
+
+// SelectAllModels is the package's SelectAllModels in the language of msgs.
+func (msgs Messages) SelectAllModels() string { return msgs.text(textSelectAllModels) }
+
+// SelectNoModels says "Select none"
+// in the language the app shows under cx.
+func SelectNoModels(cx *core.Scope) string { return For(cx).SelectNoModels() }
+
+// SelectNoModels is the package's SelectNoModels in the language of msgs.
+func (msgs Messages) SelectNoModels() string { return msgs.text(textSelectNoModels) }
+
+// NoResults says "No matching results."
+// in the language the app shows under cx.
+func NoResults(cx *core.Scope) string { return For(cx).NoResults() }
+
+// NoResults is the package's NoResults in the language of msgs.
+func (msgs Messages) NoResults() string { return msgs.text(textNoResults) }
+
+// ChooseModel says "Choose a model"
+// in the language the app shows under cx.
+func ChooseModel(cx *core.Scope) string { return For(cx).ChooseModel() }
+
+// ChooseModel is the package's ChooseModel in the language of msgs.
+func (msgs Messages) ChooseModel() string { return msgs.text(textChooseModel) }
+
+// LoadingModels says "Looking for models…"
+// in the language the app shows under cx.
+func LoadingModels(cx *core.Scope) string { return For(cx).LoadingModels() }
+
+// LoadingModels is the package's LoadingModels in the language of msgs.
+func (msgs Messages) LoadingModels() string { return msgs.text(textLoadingModels) }
+
+// NoEnabledModels says "No models are enabled. Enable them in Settings › Agents."
+// in the language the app shows under cx.
+func NoEnabledModels(cx *core.Scope) string { return For(cx).NoEnabledModels() }
+
+// NoEnabledModels is the package's NoEnabledModels in the language of msgs.
+func (msgs Messages) NoEnabledModels() string { return msgs.text(textNoEnabledModels) }

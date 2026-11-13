@@ -1,4 +1,4 @@
-# NSGo Agio architecture
+# Agio architecture
 
 Agio is the agent core split out of Neorio: drivers that run coding agent CLIs and turn their protocols into one neutral event stream, a host that folds those events into conversations, a wire protocol that carries a host to other processes, and NSGo views that show any of them. Applications compose these into a single process or a server and its clients.
 
@@ -9,10 +9,11 @@ Agio is the agent core split out of Neorio: drivers that run coding agent CLIs a
 | `.` (`agio`) | `Backend`, the contract between what runs conversations and what shows them, and its state types |
 | `agent` | Tool-neutral driver, session, model catalog and event types, and child process plumbing shared by drivers |
 | `agent/pi`, `agent/codex`, `agent/claude`, `agent/codebuddy`, `agent/acp` | One driver per CLI; `acp` runs Agent Client Protocol CLIs such as CodeBuddy Code |
+| `quota` | Account limits read the way the providers' CLIs read them, and which account a model uses |
 | `transcript` | Turns folded from events, and the patches that carry them |
-| `host` | A `Backend` running agents in this process: discovery, sessions, interruption and model choices |
+| `host` | A `Backend` running agents in this process: discovery, turning tools and models on and off, account limits, sessions, interruption and choices |
 | `wire` | Framed JSON peer, `Serve` for a backend and `Client`, a `Backend` mirroring one |
-| `chatview` | NSGo views of any `Backend`, built from `ui/chat`, with their catalogs in `locales` |
+| `chatview` | NSGo views of any `Backend`, built from `ui/chat`: conversations, agent settings, limits and the macOS menu bar, with their catalogs in `locales` |
 | `shellenv`, `internal/childproc` | The login shell's environment, and process groups started and stopped as a whole |
 | `examples/` | A single-process app, a server and a client |
 
@@ -22,15 +23,17 @@ Agio is the agent core split out of Neorio: drivers that run coding agent CLIs a
 - `host` and `wire` speak only `agent`'s neutral types; no package above the drivers reads a CLI's own protocol.
 - Views reach agents only through `agio.Backend`, so the same view shows local and remote agents. Requests run off the engine because a remote backend answers over the network.
 - `Create` returns once `State` shows the conversation; views rely on it to select what they created.
-- A conversation keeps the tool of its first message, as sessions cannot move between CLIs. A new message interrupts a running one instead of queueing.
+- A conversation keeps the tool and directory of its first message, as sessions cannot move between CLIs or folders. A new message interrupts a running one instead of queueing.
 - Agents run with full access in their directory and are never asked for approval; a host signals only the process groups it started.
-- Agio persists nothing. An application that keeps conversations stores their `Cursor`, `Dir` and `Model` and resumes them with `Create`.
+- Agio persists nothing. An application that keeps conversations stores their `Cursor`, `Dir` and `Model` and resumes them with `Create`; one that keeps the agents and models turned off passes them to `host.Options`. Limits are read again after a restart.
 
 ## Core flows
 
-**Discovery.** A host reads the login environment once, then locates each CLI and reads its model catalog in parallel; each tool is usable once its own check ends.
+**Discovery.** A host reads the login environment once, then locates each enabled CLI and reads its model catalog in parallel; each tool is usable once its own check ends. A tool turned off is not looked for, and one turned on is looked for unless it was found before.
 
 **A message.** `Send` binds the conversation's model, appends a running turn and starts the agent when needed. Drivers may report events before `Start` returns, so the host holds them until the session is known, then applies every callback in order on one goroutine. Choices made later are applied to the live agent one at a time, latest last.
+
+**Account limits.** A host given `ReadQuota` reads each signed-in account in the background with the login environment, at most every five minutes, or fifteen for Claude, whose endpoint rate-limits most; a window resetting sooner brings the read forward, and a rate limit backs off. Credentials are only read, never refreshed. A failed read keeps the previous limits. The composer shows the selected model's shortest applicable window, or the exhausted one blocking longest, or a balance, and the model picker shows the same beside each group.
 
 **Remote clients.** A served session publishes at most about 30 times a second: the tools and conversation headers when they change, and each conversation's turns as transcript patches, so streamed text sends only what arrived.
 

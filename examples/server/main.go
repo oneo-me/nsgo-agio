@@ -16,6 +16,7 @@ import (
 	"syscall"
 
 	"github.com/oneo-me/nsgo-agio/host"
+	"github.com/oneo-me/nsgo-agio/quota"
 	"github.com/oneo-me/nsgo-agio/wire"
 )
 
@@ -28,7 +29,7 @@ func main() {
 	if *token == "" && !loopback(*listen) {
 		log.Fatal("serving beyond this computer needs -token")
 	}
-	h := host.New(host.Options{Dir: *dir})
+	h := host.New(host.Options{Dir: *dir, ReadQuota: quota.Reader(home)})
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, os.Interrupt, syscall.SIGTERM)

@@ -94,3 +94,33 @@ func TestClientReportsDisconnection(t *testing.T) {
 	c.Close()
 	waitFor(t, c, func(s agio.State) bool { return s.Err != "" })
 }
+
+func TestClientEnablesTools(t *testing.T) {
+	h, c, err := connect(t, "secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, c, func(s agio.State) bool { return s.Ready() })
+	if err := c.Enable(agent.Claude, false); err != nil {
+		t.Fatal(err)
+	}
+	if h.State().Ready() {
+		t.Fatal("the host's tool is still on")
+	}
+	waitFor(t, c, func(s agio.State) bool { return len(s.Tools) == 1 && s.Tools[0].Disabled })
+}
+
+func TestClientEnablesModels(t *testing.T) {
+	h, c, err := connect(t, "secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, c, func(s agio.State) bool { return s.Ready() })
+	if err := c.EnableModels([]string{"claude:haiku"}, false); err != nil {
+		t.Fatal(err)
+	}
+	if got := h.State().Tools[0].DisabledModels; len(got) != 1 {
+		t.Fatalf("the host's models off = %v", got)
+	}
+	waitFor(t, c, func(s agio.State) bool { return len(s.Tools[0].DisabledModels) == 1 })
+}

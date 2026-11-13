@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"slices"
 
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/agent"
@@ -41,23 +42,74 @@ var (
 )
 
 // Discover implements agio.Backend: it reads the login environment once,
-// then looks for each tool and reads its models in parallel; each tool is
-// usable as soon as its own check ends.
+// then looks for each enabled tool and reads its models in parallel; each
+// tool is usable as soon as its own check ends.
 func (h *Host) Discover() {
 	h.mu.Lock()
 	if h.discovering > 0 || h.closed {
 		h.mu.Unlock()
 		return
 	}
-	h.discovering = len(h.opts.Tools)
+	var tools []agent.Tool
+	for _, tool := range h.opts.Tools {
+		if !h.disabled[tool] {
+			tools = append(tools, tool)
+		}
+	}
+	h.discover(tools)
 	h.mu.Unlock()
 	h.changed()
+}
+
+// Enable implements agio.Backend. A tool turned on is looked for unless it
+// was found before.
+func (h *Host) Enable(tool agent.Tool, on bool) error {
+	return h.do(func() error {
+		if !slices.Contains(h.opts.Tools, tool) {
+			return errors.New("unknown tool " + string(tool))
+		}
+		if h.disabled[tool] != on {
+			return nil
+		}
+		if !on {
+			h.disabled[tool] = true
+			return nil
+		}
+		delete(h.disabled, tool)
+		if h.tools[tool] == nil {
+			h.discover([]agent.Tool{tool})
+		}
+		return nil
+	})
+}
+
+// EnableModels implements agio.Backend.
+func (h *Host) EnableModels(keys []string, on bool) error {
+	return h.do(func() error {
+		for _, key := range keys {
+			if on {
+				delete(h.models, key)
+			} else {
+				h.models[key] = true
+			}
+		}
+		return nil
+	})
+}
+
+// discover looks for tools in the background, under the lock.
+func (h *Host) discover(tools []agent.Tool) {
+	if len(tools) == 0 {
+		return
+	}
+	h.discovering += len(tools)
 	go func() {
 		env := h.opts.Env
 		if env == nil {
 			env = shellenv.Load()
 		}
-		for _, tool := range h.opts.Tools {
+		h.post(func() { h.env = env })
+		for _, tool := range tools {
 			go func() {
 				info := h.discoverTool(tool, env)
 				h.post(func() {
@@ -142,9 +194,17 @@ func homeRelative(path, home string) string {
 	return path
 }
 
+// usable returns what was found of an enabled tool that can run, or nil.
+func (h *Host) usable(tool agent.Tool) *toolInfo {
+	if t := h.tools[tool]; t.ready() && !h.disabled[tool] {
+		return t
+	}
+	return nil
+}
+
 // driver returns a usable tool's driver.
 func (h *Host) driver(tool agent.Tool) agent.Driver {
-	if t := h.tools[tool]; t.ready() {
+	if t := h.usable(tool); t != nil {
 		return t.driver
 	}
 	return nil
@@ -163,7 +223,7 @@ func (h *Host) historyDriver(tool agent.Tool) agent.Driver {
 // model returns a usable model by key.
 func (h *Host) model(key string) (agent.Model, bool) {
 	tool, id := agent.ParseKey(key)
-	if t := h.tools[tool]; t.ready() {
+	if t := h.usable(tool); t != nil {
 		for _, m := range t.catalog.Models {
 			if m.ID == id {
 				return m, true
@@ -173,20 +233,29 @@ func (h *Host) model(key string) (agent.Model, bool) {
 	return agent.Model{}, false
 }
 
+// offered reports whether a usable model is not turned off.
+func (h *Host) offered(key string) bool {
+	_, ok := h.model(key)
+	return ok && !h.models[key]
+}
+
 // defaultModel is the configured default of the first usable tool, else its
-// first model, with the tool's default level.
+// first model, with the tool's default level; models turned off are
+// passed over.
 func (h *Host) defaultModel() (string, string) {
 	for _, tool := range h.opts.Tools {
-		t := h.tools[tool]
-		if !t.ready() {
+		t := h.usable(tool)
+		if t == nil {
 			continue
 		}
-		if t.catalog.Model != "" {
-			if _, ok := h.model(agent.Key(tool, t.catalog.Model)); ok {
-				return agent.Key(tool, t.catalog.Model), t.catalog.Effort
+		if key := agent.Key(tool, t.catalog.Model); t.catalog.Model != "" && h.offered(key) {
+			return key, t.catalog.Effort
+		}
+		for _, m := range t.catalog.Models {
+			if h.offered(m.Key()) {
+				return m.Key(), t.catalog.Effort
 			}
 		}
-		return t.catalog.Models[0].Key(), t.catalog.Effort
 	}
 	return "", ""
 }

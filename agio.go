@@ -7,9 +7,11 @@
 package agio
 
 import (
+	"slices"
 	"time"
 
 	"github.com/oneo-me/nsgo-agio/agent"
+	"github.com/oneo-me/nsgo-agio/quota"
 	"github.com/oneo-me/nsgo-agio/transcript"
 )
 
@@ -32,13 +34,22 @@ type Backend interface {
 	// Stop aborts the conversation's current run.
 	Stop(id string) error
 	// Choose changes the conversation's model, reasoning level or service
-	// tier, live when its agent runs. A conversation keeps the tool of its
-	// first message.
+	// tier, live when its agent runs, or its directory. A conversation
+	// keeps the tool and directory of its first message.
 	Choose(id string, c Choice) error
 	// Remove closes the conversation's agent and forgets it.
 	Remove(id string) error
 	// Discover looks for the agent CLIs again, such as after installing one.
 	Discover()
+	// Enable turns a tool on or off. A tool turned off is not looked for,
+	// offers no models and starts no agents; its running agents finish.
+	Enable(tool agent.Tool, on bool) error
+	// EnableModels turns models on or off by key (agent.Key). A model
+	// turned off is neither offered nor a default; conversations already
+	// bound to it keep it.
+	EnableModels(keys []string, on bool) error
+	// RefreshQuota reads an account's limits now.
+	RefreshQuota(p quota.Provider)
 	// Close stops every agent the backend started, or disconnects.
 	Close() error
 }
@@ -47,8 +58,12 @@ type Backend interface {
 type State struct {
 	// Discovering is set while agent CLIs are being looked for.
 	Discovering bool `json:"discovering,omitempty"`
-	// Tools are the agent CLIs looked for, usable or not.
+	// Tools are every agent CLI the backend knows, usable or not; one
+	// never found has neither Path, Catalog nor Err.
 	Tools []Tool `json:"tools,omitempty"`
+	// Quotas are the limits of the accounts signed in, in quota.Providers'
+	// order, once read.
+	Quotas []Quota `json:"quotas,omitempty"`
 	// Conversations are newest first.
 	Conversations []*Conversation `json:"conversations,omitempty"`
 	// Err is why a remote backend cannot be reached, empty while it can.
@@ -65,33 +80,72 @@ type Tool struct {
 	Catalog agent.Catalog `json:"catalog"`
 	// Err is why the tool cannot run.
 	Err string `json:"err,omitempty"`
+	// Disabled is set while the tool is turned off; DisabledModels are the
+	// IDs of its models turned off.
+	Disabled       bool     `json:"disabled,omitempty"`
+	DisabledModels []string `json:"disabledModels,omitempty"`
+}
+
+// Offers reports whether the tool offers its model id.
+func (t Tool) Offers(id string) bool { return t.Ready() && !slices.Contains(t.DisabledModels, id) }
+
+// Quota is one account's latest limits. A failed read keeps the previous
+// Usage and says why in Err.
+type Quota struct {
+	Provider quota.Provider `json:"provider"`
+	Usage    *quota.Usage   `json:"usage,omitempty"`
+	Err      string         `json:"err,omitempty"`
+	// Expired is set when the credential expired, Status to the HTTP
+	// status of a failed request, with the provider's Message.
+	Expired  bool   `json:"expired,omitempty"`
+	Status   int    `json:"status,omitempty"`
+	Message  string `json:"message,omitempty"`
+	Checking bool   `json:"checking,omitempty"`
+	// Checked is when it was last read and Next when it is read again.
+	Checked time.Time `json:"checked,omitzero"`
+	Next    time.Time `json:"next,omitzero"`
 }
 
 // Ready reports whether the tool can run.
-func (t Tool) Ready() bool { return t.Err == "" && len(t.Catalog.Models) > 0 }
+func (t Tool) Ready() bool { return !t.Disabled && t.Err == "" && len(t.Catalog.Models) > 0 }
 
-// Ready reports whether any tool can run.
-func (s State) Ready() bool {
-	for _, t := range s.Tools {
-		if t.Ready() {
-			return true
-		}
-	}
-	return false
-}
+// Ready reports whether any tool can run a model.
+func (s State) Ready() bool { return len(s.Models()) > 0 }
 
-// Models lists the usable tools' models in their order.
+// Models lists the usable tools' models in their order, but those turned
+// off.
 func (s State) Models() []agent.Model {
 	var models []agent.Model
 	for _, t := range s.Tools {
-		if t.Ready() {
-			models = append(models, t.Catalog.Models...)
+		for _, m := range t.Catalog.Models {
+			if t.Offers(m.ID) {
+				models = append(models, m)
+			}
 		}
 	}
 	return models
 }
 
-// Model returns a usable model by key (agent.Key).
+// Quota returns the limits of the account a model key uses, or nil.
+func (s State) Quota(key string) *Quota {
+	m, ok := s.Model(key)
+	if !ok {
+		return nil
+	}
+	p, ok := quota.For(m)
+	if !ok {
+		return nil
+	}
+	for i := range s.Quotas {
+		if s.Quotas[i].Provider == p {
+			return &s.Quotas[i]
+		}
+	}
+	return nil
+}
+
+// Model returns a model of a usable tool by key (agent.Key), turned off or
+// not.
 func (s State) Model(key string) (agent.Model, bool) {
 	tool, id := agent.ParseKey(key)
 	for _, t := range s.Tools {
@@ -169,8 +223,10 @@ type Message struct {
 	Files []string `json:"files,omitempty"`
 }
 
-// Choice changes what its set fields name.
+// Choice changes what its set fields name. Dir is a directory on the
+// backend's computer.
 type Choice struct {
+	Dir    *string `json:"dir,omitempty"`
 	Model  *string `json:"model,omitempty"`
 	Effort *string `json:"effort,omitempty"`
 	Tier   *string `json:"tier,omitempty"`

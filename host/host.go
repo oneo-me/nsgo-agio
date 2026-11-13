@@ -18,6 +18,7 @@ import (
 
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/agent"
+	"github.com/oneo-me/nsgo-agio/quota"
 )
 
 // publishInterval coalesces change reports, so a streamed reply reaches
@@ -35,6 +36,13 @@ type Options struct {
 	// Tools are the CLIs looked for, in the order models list; nil is
 	// agent.Tools.
 	Tools []agent.Tool
+	// Disabled are tools turned off from the start, DisabledModels model
+	// keys (agent.Key).
+	Disabled       []agent.Tool
+	DisabledModels []string
+	// ReadQuota reads an account's limits, such as quota.Reader; nil reads
+	// none.
+	ReadQuota func(ctx context.Context, env []string, p quota.Provider) (quota.Usage, error)
 	// Drivers replace looking for a tool's CLI, such as for tests or a
 	// driver of the application's own.
 	Drivers map[agent.Tool]agent.Driver
@@ -54,9 +62,14 @@ type Options struct {
 type Host struct {
 	opts Options
 
-	mu            sync.Mutex
-	discovering   int
-	tools         map[agent.Tool]*toolInfo
+	mu          sync.Mutex
+	discovering int
+	tools       map[agent.Tool]*toolInfo
+	disabled    map[agent.Tool]bool
+	models      map[string]bool // turned off
+	// env is the login environment once read.
+	env           []string
+	quotas        map[quota.Provider]*quotaState
 	conversations []*conversation
 	closed        bool
 
@@ -82,11 +95,19 @@ func New(o Options) *Host {
 	if o.Home == "" {
 		o.Home, _ = os.UserHomeDir()
 	}
-	h := &Host{opts: o, tools: map[agent.Tool]*toolInfo{}, wake: make(chan struct{}, 1),
+	h := &Host{opts: o, tools: map[agent.Tool]*toolInfo{}, disabled: map[agent.Tool]bool{},
+		models: map[string]bool{}, quotas: map[quota.Provider]*quotaState{}, wake: make(chan struct{}, 1),
 		watchers: map[int]func(){}, kick: make(chan struct{}, 1), done: make(chan struct{})}
+	for _, tool := range o.Disabled {
+		h.disabled[tool] = true
+	}
+	for _, key := range o.DisabledModels {
+		h.models[key] = true
+	}
 	go h.loop()
 	go h.publish()
 	h.Discover()
+	h.watchQuotas()
 	return h
 }
 
@@ -192,10 +213,20 @@ func (h *Host) State() agio.State {
 	defer h.mu.Unlock()
 	s := agio.State{Discovering: h.discovering > 0}
 	for _, tool := range h.opts.Tools {
-		if t := h.tools[tool]; t != nil {
-			s.Tools = append(s.Tools, t.state(tool))
+		t := agio.Tool{Tool: tool}
+		if info := h.tools[tool]; info != nil {
+			t = info.state(tool)
 		}
+		t.Disabled = h.disabled[tool]
+		for key := range h.models {
+			if kt, id := agent.ParseKey(key); kt == tool {
+				t.DisabledModels = append(t.DisabledModels, id)
+			}
+		}
+		slices.Sort(t.DisabledModels)
+		s.Tools = append(s.Tools, t)
 	}
+	s.Quotas = h.quotaStates()
 	for _, c := range h.conversations {
 		s.Conversations = append(s.Conversations, h.snapshot(c))
 	}

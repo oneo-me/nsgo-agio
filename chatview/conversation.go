@@ -211,8 +211,67 @@ func (v Conversation) composer(cx *core.Scope, state *chat.ConversationState, dr
 		Accessory:     func(cx *core.Scope) core.Node { return v.choices(cx) },
 		Trailing:      func(cx *core.Scope) core.Node { return v.contextMeter(cx) },
 		Footer: func(cx *core.Scope) core.Node {
-			return chat.Chip{TextFunc: live(m, func() string { return pathBase(conv().Dir) }), Icon: lucide.Folder}
+			return core.Group{v.project(cx), core.View{Style: core.Style{FlexGrow: 1}}, v.quotaFooter(cx)}
 		}}
+}
+
+// pickFolder is the project picker's option opening the system's folder
+// picker.
+const pickFolder = "\x00pick"
+
+// project shows where the agent works. Until the first message it picks
+// the project: one the backend's conversations work in, or a folder.
+func (v Conversation) project(cx *core.Scope) core.Node {
+	m := v.Model
+	msgs := locales.For(cx)
+	conv := func() *agio.Conversation { return m.Conversation(v.ID) }
+	label := live(m, func() string { return pathBase(conv().Dir) })
+	key := func() string {
+		c := conv()
+		return fmt.Sprint(c.Bound || len(c.Turns) > 0, projects(m.State()))
+	}
+	return region(m, key, func(cx *core.Scope) core.Node {
+		if c := conv(); c.Bound || len(c.Turns) > 0 {
+			return chat.Chip{TextFunc: label, Icon: lucide.Folder, TestID: "project"}
+		}
+		choose := func(dir string) {
+			m.Do(func(b agio.Backend) error { return b.Choose(v.ID, agio.Choice{Dir: &dir}) }, nil)
+		}
+		var options []chat.Option
+		for _, dir := range projects(m.State()) {
+			options = append(options, chat.Option{ID: dir, Label: pathBase(dir), Description: dir, Group: msgs.RecentProjects(), Icon: lucide.Folder})
+		}
+		options = append(options, chat.Option{ID: pickFolder, Label: msgs.ChooseFolder(), Icon: lucide.FolderOpen})
+		return chat.Picker{Label: label, Icon: lucide.Folder, Options: options, Width: 300, TestID: "project",
+			Selected:    live(m, func() string { return conv().Dir }),
+			SearchLabel: msgs.SearchProjects(), EmptyText: msgs.NoMatchingProjects(),
+			OnChange: func(id string) {
+				if id != pickFolder {
+					choose(id)
+					return
+				}
+				cx.PickDirectories(core.PickDirectoriesOptions{}, func(dirs []core.Directory, err error) {
+					switch {
+					case err != nil:
+						m.notice.Set(err.Error())
+					case len(dirs) > 0 && dirs[0].Path != "":
+						choose(dirs[0].Path)
+					}
+				})
+			}}
+	})
+}
+
+// projects are the directories the backend's conversations work in, most
+// recent first.
+func projects(s agio.State) []string {
+	var dirs []string
+	for _, c := range s.Conversations {
+		if c.Dir != "" && !slices.Contains(dirs, c.Dir) {
+			dirs = append(dirs, c.Dir)
+		}
+	}
+	return dirs
 }
 
 // choices are the model, reasoning level and service tier pickers.
@@ -230,7 +289,7 @@ func (v Conversation) choices(cx *core.Scope) core.Node {
 			tiers = append(tiers, t.ID)
 		}
 		var models []string
-		for _, mo := range s.Models() {
+		for _, mo := range offered(s, c.Model) {
 			models = append(models, mo.Key())
 		}
 		return fmt.Sprint(c.Model, c.Bound, known, info.Efforts, tiers, models)
@@ -241,29 +300,7 @@ func (v Conversation) choices(cx *core.Scope) core.Node {
 		if !s.Ready() {
 			return core.Group(nil)
 		}
-		tool, _ := agent.ParseKey(c.Model)
-		var options []chat.Option
-		for _, mo := range s.Models() {
-			if c.Bound && mo.Tool != tool {
-				continue // a conversation keeps its agent
-			}
-			o := chat.Option{ID: mo.Key(), Label: mo.Name, Group: modelGroup(mo)}
-			if mo.ContextWindow > 0 {
-				o.Detail = formatTokens(mo.ContextWindow)
-			}
-			options = append(options, o)
-		}
-		selected := live(m, func() string { return conv().Model })
-		nodes := []core.Node{chat.Picker{Icon: lucide.Bot, Options: options, Selected: selected, Width: 300,
-			SearchLabel: msgs.SearchModels(), EmptyText: msgs.NoMatchingModels(), TestID: "model-picker",
-			Label: func() string {
-				if info, ok := m.State().Model(selected()); ok {
-					return info.Name
-				}
-				_, id := agent.ParseKey(selected())
-				return id
-			},
-			OnChange: func(key string) { choose(agio.Choice{Model: &key}) }}}
+		nodes := []core.Node{v.modelPopover(cx, func(key string) { choose(agio.Choice{Model: &key}) })}
 		info, known := s.Model(c.Model)
 		if known && len(info.Efforts) > 1 {
 			var levels []chat.Option
@@ -306,6 +343,160 @@ func (v Conversation) choices(cx *core.Scope) core.Node {
 		}
 		return core.Group(nodes)
 	})
+}
+
+// modelPopover chooses a model among those the conversation may choose,
+// with a search across them, under headings of their tool and, for pi,
+// provider, each showing its account's limit.
+func (v Conversation) modelPopover(cx *core.Scope, choose func(key string)) core.Node {
+	m := v.Model
+	msgs := locales.For(cx)
+	open, query := core.NewSignal(cx, false), core.NewSignal(cx, "")
+	selected := live(m, func() string { return m.Conversation(v.ID).Model })
+	label := func() string {
+		key := selected()
+		if info, ok := m.State().Model(key); ok {
+			return info.Name
+		}
+		if key != "" {
+			_, id := agent.ParseKey(key)
+			return id
+		}
+		return msgs.ChooseModel()
+	}
+	icon := func() *core.SVG {
+		key := selected()
+		if info, ok := m.State().Model(key); ok {
+			return modelIcon(info)()
+		}
+		tool, _ := agent.ParseKey(key)
+		return toolIcon(tool)()
+	}
+	chip := chat.Chip{TextFunc: label, Caret: true, Yield: true, Leading: leading(icon)}
+	return chat.ChipPopover{Open: open.Get, OnOpenChange: func(o bool) { open.Set(o); query.Set("") }, Chip: chip, Label: msgs.ChooseModel(),
+		Width: 300, TestID: "model-picker",
+		Children: []core.Node{
+			core.View{Style: core.Style{Padding: core.Edges{Top: 8, Right: 8, Left: 8}}, Children: []core.Node{
+				ui.Input{Value: query.Get, OnChange: query.Set, Label: msgs.SearchModels(), Placeholder: msgs.SearchModels(), AutoFocus: true}}},
+			core.Scroll{Style: core.Style{MaxHeight: core.Pt(260)}, Children: []core.Node{
+				core.View{Style: core.Style{Padding: core.Edges{Top: 4, Right: 8, Bottom: 8, Left: 8}, Gap: 1}, Children: []core.Node{
+					core.Dynamic(func(cx *core.Scope) core.Node {
+						q := strings.ToLower(strings.TrimSpace(query.Get()))
+						return region(m, func() string { return q + "\x00" + selected() + "\x00" + v.modelsKey() }, func(cx *core.Scope) core.Node {
+							return v.modelRows(cx, q, core.Untracked(cx, selected), func(key string) { open.Set(false); choose(key) })
+						})
+					})}}}},
+		}}
+}
+
+// modelsKey says which models the popover offers.
+func (v Conversation) modelsKey() string {
+	c := v.Model.Conversation(v.ID)
+	var b strings.Builder
+	for _, mo := range offered(v.Model.State(), c.Model) {
+		b.WriteString(mo.Key() + " ")
+	}
+	return fmt.Sprint(c.Bound, b.String())
+}
+
+// modelRows lists the offered models matching the search under their
+// headings.
+func (v Conversation) modelRows(cx *core.Scope, query, selected string, choose func(key string)) core.Node {
+	m := v.Model
+	msgs := locales.For(cx)
+	colors := ui.ColorsOf(cx)
+	s := m.State()
+	c := m.Conversation(v.ID)
+	locked, _ := agent.ParseKey(c.Model)
+	var rows []core.Node
+	group, count := "", 0
+	for _, mo := range offered(s, c.Model) {
+		if c.Bound && mo.Tool != locked {
+			continue // a conversation keeps its agent
+		}
+		if query != "" && !matchesModel(mo, query) {
+			continue
+		}
+		key := mo.Key()
+		if heading := modelGroup(mo); count == 0 || heading != group {
+			rows = append(rows, modelGroupHeading(cx, m, heading, key))
+			group = heading
+		}
+		count++
+		content := []core.Node{mark(cx, modelIcon(mo), 14), fillLine(mo.Name, 13, colors.Text)}
+		if mo.ContextWindow > 0 {
+			content = append(content, ui.Text(formatTokens(mo.ContextWindow), 11.5, ui.Regular, colors.Muted))
+		}
+		rows = append(rows, optionRow(cx, mo.Name, "model-"+key, func() bool { return key == selected }, func() { choose(key) }, content...))
+	}
+	if count == 0 {
+		empty := msgs.NoResults()
+		switch {
+		case query != "":
+		case s.Discovering:
+			empty = msgs.LoadingModels()
+		default:
+			empty = msgs.NoEnabledModels()
+		}
+		t := ui.Text(empty, 12.5, ui.Regular, colors.Muted)
+		t.Style.Padding = core.All(8)
+		return t
+	}
+	return core.View{Style: core.Style{Gap: 1}, Children: rows}
+}
+
+// modelGroupHeading shows, beside a group's name, the limit its first
+// model shows in the composer. It only informs; the composer opens the
+// account's limits.
+func modelGroupHeading(cx *core.Scope, m *Model, heading, key string) core.Node {
+	msgs := locales.For(cx)
+	colors := ui.ColorsOf(cx)
+	children := []core.Node{fillLine(heading, 11.5, colors.Muted)}
+	if r, tooltip, ok := quotaSummary(msgs, m.State(), key, m.now()); ok {
+		var glance []core.Node
+		if r.Fraction >= 0 && r.Detail != "" {
+			glance = append(glance, ui.Text(r.Detail, 11.5, ui.Regular, colors.Muted))
+		}
+		if r.Fraction >= 0 {
+			glance = append(glance, ui.Progress{Value: func() float32 { return float32(100 * r.Fraction) }, Label: r.Label,
+				Style: core.Style{Width: core.Pt(64), Height: core.Pt(4), FlexShrink: 0}})
+		} else {
+			glance = append(glance, ui.Text(r.Value, 11.5, ui.Regular, colors.Muted))
+		}
+		children = append(children, ui.Tooltip{Text: tooltip, Trigger: row(6, glance...)})
+	}
+	return core.View{Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, Gap: 8, MinWidth: core.Pt(0),
+		Padding: core.Edges{Top: 8, Right: 8, Bottom: 3, Left: 8}}, Children: children}
+}
+
+// optionRow is a row styled as chat.Picker's, with the choice's content
+// and a check mark while selected.
+func optionRow(cx *core.Scope, label, testID string, selected func() bool, press func(), content ...core.Node) core.Node {
+	colors := ui.ColorsOf(cx)
+	check := core.Show{When: selected, Then: func(*core.Scope) core.Node { return ui.Icon(lucide.Check, 12, colors.Accent) },
+		Else: func(*core.Scope) core.Node {
+			return core.View{Style: core.Style{Width: core.Pt(12), Height: core.Pt(12), FlexShrink: 0}}
+		}}
+	return core.View{Role: core.RoleButton, Label: label, Selected: selected, TestID: testID,
+		OnPress: func(core.PressEvent) { press() },
+		Style:   core.Style{Direction: core.Row, MinWidth: core.Pt(0), Padding: core.Symmetric(6, 8), CornerRadius: 6, AlignItems: core.AlignCenter, Gap: 8, FlexShrink: 0},
+		StyleFunc: func() core.Style {
+			return core.Style{Hover: &core.Style{Background: ui.Alpha(colors.Text(), .05)}, Focus: ui.FocusRing(cx, -2)}
+		}, Children: append(content, check)}
+}
+
+// offered are the models a conversation may choose: those turned on, and
+// its own.
+func offered(s agio.State, current string) []agent.Model {
+	models := s.Models()
+	if m, ok := s.Model(current); ok && !slices.ContainsFunc(models, func(o agent.Model) bool { return o.Key() == current }) {
+		i := slices.IndexFunc(models, func(o agent.Model) bool { return o.Tool == m.Tool })
+		if i < 0 {
+			i = len(models)
+		}
+		models = slices.Insert(models, i, m)
+	}
+	return models
 }
 
 // contextMeter shows how much of the model's context window is in use.

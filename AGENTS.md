@@ -1,4 +1,4 @@
-# NSGo Agio
+# Agio
 
 Agio is Neorio's agent core: agent drivers, an in-process host, a wire protocol and NSGo conversation views. Read [ARCHITECTURE.md](ARCHITECTURE.md) before coding.
 

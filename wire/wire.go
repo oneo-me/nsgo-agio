@@ -16,12 +16,14 @@ import (
 	"time"
 
 	agio "github.com/oneo-me/nsgo-agio"
+	"github.com/oneo-me/nsgo-agio/agent"
+	"github.com/oneo-me/nsgo-agio/quota"
 	"github.com/oneo-me/nsgo-agio/transcript"
 )
 
 // Version names the protocol. A client and server of different versions
 // only exchange Hello.
-const Version = 1
+const Version = 2
 
 // Requests a client sends, after Hello; the server publishes EventState.
 const (
@@ -32,7 +34,11 @@ const (
 	MethodChoose   = "choose"
 	MethodRemove   = "remove"
 	MethodDiscover = "discover"
-	EventState     = "state"
+	MethodEnable   = "enable"
+	// MethodEnableModels takes EnableModels, MethodRefreshQuota a Quota.
+	MethodEnableModels = "enableModels"
+	MethodRefreshQuota = "refreshQuota"
+	EventState         = "state"
 )
 
 // Hello opens a session. Token must match the server's when it has one.
@@ -63,6 +69,23 @@ type Choose struct {
 	Choice agio.Choice `json:"choice"`
 }
 
+// Enable turns a tool on or off.
+type Enable struct {
+	Tool agent.Tool `json:"tool"`
+	On   bool       `json:"on"`
+}
+
+// EnableModels turns models on or off.
+type EnableModels struct {
+	Keys []string `json:"keys"`
+	On   bool     `json:"on"`
+}
+
+// Quota names an account.
+type Quota struct {
+	Provider quota.Provider `json:"provider"`
+}
+
 // State is what changed since the last publication. Reset replaces the
 // client's copy; otherwise nil Head and Conversations are unchanged and
 // Turns patch only the conversations they name.
@@ -75,8 +98,9 @@ type State struct {
 
 // Head is the backend's state but its conversations.
 type Head struct {
-	Discovering bool        `json:"discovering,omitempty"`
-	Tools       []agio.Tool `json:"tools,omitempty"`
+	Discovering bool         `json:"discovering,omitempty"`
+	Tools       []agio.Tool  `json:"tools,omitempty"`
+	Quotas      []agio.Quota `json:"quotas,omitempty"`
 }
 
 // publishInterval bounds how often a client is sent changes.
@@ -174,7 +198,7 @@ func (s *session) delta() *State {
 	if s.sentTurns == nil {
 		out.Reset, changed, s.sentTurns = true, true, map[string][]*transcript.Turn{}
 	}
-	head := Head{Discovering: st.Discovering, Tools: st.Tools}
+	head := Head{Discovering: st.Discovering, Tools: st.Tools, Quotas: st.Quotas}
 	if data, _ := json.Marshal(head); out.Reset || string(data) != string(s.sentHead) {
 		s.sentHead, out.Head, changed = data, &head, true
 	}
@@ -280,6 +304,28 @@ func (s *session) Request(method string, params json.RawMessage, reply func(any,
 		}
 	case MethodDiscover:
 		s.b.Discover()
+		reply(nil, nil)
+	case MethodEnable:
+		var m Enable
+		if err := decode(&m); err != nil {
+			reply(nil, err)
+			return
+		}
+		reply(nil, s.b.Enable(m.Tool, m.On))
+	case MethodEnableModels:
+		var m EnableModels
+		if err := decode(&m); err != nil {
+			reply(nil, err)
+			return
+		}
+		reply(nil, s.b.EnableModels(m.Keys, m.On))
+	case MethodRefreshQuota:
+		var m Quota
+		if err := decode(&m); err != nil {
+			reply(nil, err)
+			return
+		}
+		s.b.RefreshQuota(m.Provider)
 		reply(nil, nil)
 	default:
 		reply(nil, errors.New("unknown request "+method))

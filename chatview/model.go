@@ -20,7 +20,8 @@ type Model struct {
 	cx      *core.Scope
 	state   agio.State
 	rev     *core.Signal[uint64]
-	// clock ticks each second while an agent works, for its timer.
+	// clock ticks each second while an agent works, for its timer, or
+	// limits show, for their countdowns.
 	clock *core.Signal[time.Time]
 	// notice is why the last request failed, until another succeeds.
 	notice *core.Signal[string]
@@ -78,6 +79,11 @@ func (m *Model) refresh() {
 }
 
 func (m *Model) tick() {
+	// Limits count down to their next read and their resets.
+	if len(m.state.Quotas) > 0 {
+		m.clock.Set(time.Now())
+		return
+	}
 	for _, c := range m.state.Conversations {
 		if c.Running || c.Starting {
 			m.clock.Set(time.Now())
