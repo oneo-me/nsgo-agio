@@ -3,7 +3,7 @@ module github.com/oneo-me/nsgo-agio
 go 1.27.3
 
 require (
-	github.com/nsgo-dev/nsgo v0.0.0-20261113143802-ef63748c66ef
+	github.com/nsgo-dev/nsgo v0.0.0-20261113150221-03c2543204c5
 	go.yaml.in/yaml/v3 v3.0.6
 )
 
