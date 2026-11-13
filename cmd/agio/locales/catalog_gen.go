@@ -80,6 +80,31 @@ const (
 	textSystem
 	textLight
 	textDark
+	textLightScheme
+	textLightSchemeDescription
+	textDarkScheme
+	textDarkSchemeDescription
+	textGrain
+	textGrainDescription
+	textGrainAmount
+	textSchemeMist
+	textSchemeBlossom
+	textSchemeLagoon
+	textSchemeMeadow
+	textSchemeSunset
+	textSchemeGraphite
+	textSchemeAurora
+	textSchemeDusk
+	textSchemeDeepSea
+	textSchemeEmber
+	textSchemeCitrus
+	textSchemeOcean
+	textSchemeLilac
+	textSchemeCoral
+	textSchemeNebula
+	textSchemeMoss
+	textSchemeCrimson
+	textSchemeInk
 	textEn
 	textZhHans
 	textKeyboard
@@ -155,6 +180,31 @@ var keyOfText = [numTexts]string{
 	"system",
 	"light",
 	"dark",
+	"lightScheme",
+	"lightSchemeDescription",
+	"darkScheme",
+	"darkSchemeDescription",
+	"grain",
+	"grainDescription",
+	"grainAmount",
+	"schemeMist",
+	"schemeBlossom",
+	"schemeLagoon",
+	"schemeMeadow",
+	"schemeSunset",
+	"schemeGraphite",
+	"schemeAurora",
+	"schemeDusk",
+	"schemeDeepSea",
+	"schemeEmber",
+	"schemeCitrus",
+	"schemeOcean",
+	"schemeLilac",
+	"schemeCoral",
+	"schemeNebula",
+	"schemeMoss",
+	"schemeCrimson",
+	"schemeInk",
 	"en",
 	"zhHans",
 	"keyboard",
@@ -228,6 +278,31 @@ var textsEn = i18n.NewTexts(""+
 	"Follow system"+
 	"Light"+
 	"Dark"+
+	"Light colors"+
+	"Shown while the appearance is light."+
+	"Dark colors"+
+	"Shown while the appearance is dark."+
+	"Background grain"+
+	"Scatters a fine film grain over the window behind the content."+
+	"Grain strength"+
+	"Mist"+
+	"Blossom"+
+	"Lagoon"+
+	"Meadow"+
+	"Sunset"+
+	"Graphite"+
+	"Aurora"+
+	"Dusk"+
+	"Deep Sea"+
+	"Ember"+
+	"Citrus"+
+	"Ocean"+
+	"Lilac"+
+	"Coral"+
+	"Nebula"+
+	"Moss"+
+	"Crimson"+
+	"Ink"+
 	"English"+
 	"简体中文"+
 	"Keyboard"+
@@ -298,6 +373,31 @@ var textsEn = i18n.NewTexts(""+
 		13,
 		5,
 		4,
+		12,
+		36,
+		11,
+		35,
+		16,
+		62,
+		14,
+		4,
+		7,
+		6,
+		6,
+		6,
+		8,
+		6,
+		4,
+		8,
+		5,
+		6,
+		5,
+		5,
+		5,
+		6,
+		4,
+		7,
+		3,
 		7,
 		12,
 		8,
@@ -371,6 +471,31 @@ var textsZhHans = i18n.NewTexts(""+
 	"跟随系统"+
 	"浅色"+
 	"深色"+
+	"浅色主题色"+
+	"外观为浅色时使用。"+
+	"深色主题色"+
+	"外观为深色时使用。"+
+	"背景噪点"+
+	"在内容后方的窗口背景上叠加细腻的噪点颗粒。"+
+	"噪点强度"+
+	"晨雾"+
+	"花朝"+
+	"澄湖"+
+	"青野"+
+	"晚霞"+
+	"石墨"+
+	"极光"+
+	"暮紫"+
+	"深海"+
+	"余烬"+
+	"柠夏"+
+	"海风"+
+	"丁香"+
+	"珊瑚"+
+	"星云"+
+	"苔原"+
+	"绯夜"+
+	"墨蓝"+
 	"English"+
 	"简体中文"+
 	"键盘"+
@@ -439,6 +564,31 @@ var textsZhHans = i18n.NewTexts(""+
 		6,
 		12,
 		12,
+		6,
+		6,
+		15,
+		27,
+		15,
+		27,
+		12,
+		63,
+		12,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
+		6,
 		6,
 		6,
 		7,
@@ -653,6 +803,181 @@ func Dark(cx *core.Scope) string { return For(cx).Dark() }
 
 // Dark is the package's Dark in the language of msgs.
 func (msgs Messages) Dark() string { return msgs.text(textDark) }
+
+// LightScheme says "Light colors"
+// in the language the app shows under cx.
+func LightScheme(cx *core.Scope) string { return For(cx).LightScheme() }
+
+// LightScheme is the package's LightScheme in the language of msgs.
+func (msgs Messages) LightScheme() string { return msgs.text(textLightScheme) }
+
+// LightSchemeDescription says "Shown while the appearance is light."
+// in the language the app shows under cx.
+func LightSchemeDescription(cx *core.Scope) string { return For(cx).LightSchemeDescription() }
+
+// LightSchemeDescription is the package's LightSchemeDescription in the language of msgs.
+func (msgs Messages) LightSchemeDescription() string { return msgs.text(textLightSchemeDescription) }
+
+// DarkScheme says "Dark colors"
+// in the language the app shows under cx.
+func DarkScheme(cx *core.Scope) string { return For(cx).DarkScheme() }
+
+// DarkScheme is the package's DarkScheme in the language of msgs.
+func (msgs Messages) DarkScheme() string { return msgs.text(textDarkScheme) }
+
+// DarkSchemeDescription says "Shown while the appearance is dark."
+// in the language the app shows under cx.
+func DarkSchemeDescription(cx *core.Scope) string { return For(cx).DarkSchemeDescription() }
+
+// DarkSchemeDescription is the package's DarkSchemeDescription in the language of msgs.
+func (msgs Messages) DarkSchemeDescription() string { return msgs.text(textDarkSchemeDescription) }
+
+// Grain says "Background grain"
+// in the language the app shows under cx.
+func Grain(cx *core.Scope) string { return For(cx).Grain() }
+
+// Grain is the package's Grain in the language of msgs.
+func (msgs Messages) Grain() string { return msgs.text(textGrain) }
+
+// GrainDescription says "Scatters a fine film grain over the window behind the content."
+// in the language the app shows under cx.
+func GrainDescription(cx *core.Scope) string { return For(cx).GrainDescription() }
+
+// GrainDescription is the package's GrainDescription in the language of msgs.
+func (msgs Messages) GrainDescription() string { return msgs.text(textGrainDescription) }
+
+// GrainAmount says "Grain strength"
+// in the language the app shows under cx.
+func GrainAmount(cx *core.Scope) string { return For(cx).GrainAmount() }
+
+// GrainAmount is the package's GrainAmount in the language of msgs.
+func (msgs Messages) GrainAmount() string { return msgs.text(textGrainAmount) }
+
+// SchemeMist says "Mist"
+// in the language the app shows under cx.
+func SchemeMist(cx *core.Scope) string { return For(cx).SchemeMist() }
+
+// SchemeMist is the package's SchemeMist in the language of msgs.
+func (msgs Messages) SchemeMist() string { return msgs.text(textSchemeMist) }
+
+// SchemeBlossom says "Blossom"
+// in the language the app shows under cx.
+func SchemeBlossom(cx *core.Scope) string { return For(cx).SchemeBlossom() }
+
+// SchemeBlossom is the package's SchemeBlossom in the language of msgs.
+func (msgs Messages) SchemeBlossom() string { return msgs.text(textSchemeBlossom) }
+
+// SchemeLagoon says "Lagoon"
+// in the language the app shows under cx.
+func SchemeLagoon(cx *core.Scope) string { return For(cx).SchemeLagoon() }
+
+// SchemeLagoon is the package's SchemeLagoon in the language of msgs.
+func (msgs Messages) SchemeLagoon() string { return msgs.text(textSchemeLagoon) }
+
+// SchemeMeadow says "Meadow"
+// in the language the app shows under cx.
+func SchemeMeadow(cx *core.Scope) string { return For(cx).SchemeMeadow() }
+
+// SchemeMeadow is the package's SchemeMeadow in the language of msgs.
+func (msgs Messages) SchemeMeadow() string { return msgs.text(textSchemeMeadow) }
+
+// SchemeSunset says "Sunset"
+// in the language the app shows under cx.
+func SchemeSunset(cx *core.Scope) string { return For(cx).SchemeSunset() }
+
+// SchemeSunset is the package's SchemeSunset in the language of msgs.
+func (msgs Messages) SchemeSunset() string { return msgs.text(textSchemeSunset) }
+
+// SchemeGraphite says "Graphite"
+// in the language the app shows under cx.
+func SchemeGraphite(cx *core.Scope) string { return For(cx).SchemeGraphite() }
+
+// SchemeGraphite is the package's SchemeGraphite in the language of msgs.
+func (msgs Messages) SchemeGraphite() string { return msgs.text(textSchemeGraphite) }
+
+// SchemeAurora says "Aurora"
+// in the language the app shows under cx.
+func SchemeAurora(cx *core.Scope) string { return For(cx).SchemeAurora() }
+
+// SchemeAurora is the package's SchemeAurora in the language of msgs.
+func (msgs Messages) SchemeAurora() string { return msgs.text(textSchemeAurora) }
+
+// SchemeDusk says "Dusk"
+// in the language the app shows under cx.
+func SchemeDusk(cx *core.Scope) string { return For(cx).SchemeDusk() }
+
+// SchemeDusk is the package's SchemeDusk in the language of msgs.
+func (msgs Messages) SchemeDusk() string { return msgs.text(textSchemeDusk) }
+
+// SchemeDeepSea says "Deep Sea"
+// in the language the app shows under cx.
+func SchemeDeepSea(cx *core.Scope) string { return For(cx).SchemeDeepSea() }
+
+// SchemeDeepSea is the package's SchemeDeepSea in the language of msgs.
+func (msgs Messages) SchemeDeepSea() string { return msgs.text(textSchemeDeepSea) }
+
+// SchemeEmber says "Ember"
+// in the language the app shows under cx.
+func SchemeEmber(cx *core.Scope) string { return For(cx).SchemeEmber() }
+
+// SchemeEmber is the package's SchemeEmber in the language of msgs.
+func (msgs Messages) SchemeEmber() string { return msgs.text(textSchemeEmber) }
+
+// SchemeCitrus says "Citrus"
+// in the language the app shows under cx.
+func SchemeCitrus(cx *core.Scope) string { return For(cx).SchemeCitrus() }
+
+// SchemeCitrus is the package's SchemeCitrus in the language of msgs.
+func (msgs Messages) SchemeCitrus() string { return msgs.text(textSchemeCitrus) }
+
+// SchemeOcean says "Ocean"
+// in the language the app shows under cx.
+func SchemeOcean(cx *core.Scope) string { return For(cx).SchemeOcean() }
+
+// SchemeOcean is the package's SchemeOcean in the language of msgs.
+func (msgs Messages) SchemeOcean() string { return msgs.text(textSchemeOcean) }
+
+// SchemeLilac says "Lilac"
+// in the language the app shows under cx.
+func SchemeLilac(cx *core.Scope) string { return For(cx).SchemeLilac() }
+
+// SchemeLilac is the package's SchemeLilac in the language of msgs.
+func (msgs Messages) SchemeLilac() string { return msgs.text(textSchemeLilac) }
+
+// SchemeCoral says "Coral"
+// in the language the app shows under cx.
+func SchemeCoral(cx *core.Scope) string { return For(cx).SchemeCoral() }
+
+// SchemeCoral is the package's SchemeCoral in the language of msgs.
+func (msgs Messages) SchemeCoral() string { return msgs.text(textSchemeCoral) }
+
+// SchemeNebula says "Nebula"
+// in the language the app shows under cx.
+func SchemeNebula(cx *core.Scope) string { return For(cx).SchemeNebula() }
+
+// SchemeNebula is the package's SchemeNebula in the language of msgs.
+func (msgs Messages) SchemeNebula() string { return msgs.text(textSchemeNebula) }
+
+// SchemeMoss says "Moss"
+// in the language the app shows under cx.
+func SchemeMoss(cx *core.Scope) string { return For(cx).SchemeMoss() }
+
+// SchemeMoss is the package's SchemeMoss in the language of msgs.
+func (msgs Messages) SchemeMoss() string { return msgs.text(textSchemeMoss) }
+
+// SchemeCrimson says "Crimson"
+// in the language the app shows under cx.
+func SchemeCrimson(cx *core.Scope) string { return For(cx).SchemeCrimson() }
+
+// SchemeCrimson is the package's SchemeCrimson in the language of msgs.
+func (msgs Messages) SchemeCrimson() string { return msgs.text(textSchemeCrimson) }
+
+// SchemeInk says "Ink"
+// in the language the app shows under cx.
+func SchemeInk(cx *core.Scope) string { return For(cx).SchemeInk() }
+
+// SchemeInk is the package's SchemeInk in the language of msgs.
+func (msgs Messages) SchemeInk() string { return msgs.text(textSchemeInk) }
 
 // En says "English"
 // in the language the app shows under cx.

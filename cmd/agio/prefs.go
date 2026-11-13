@@ -38,6 +38,7 @@ func newApp(cx *core.Scope, st *store[settings], aw *awake, nm *namer) *app {
 	s := st.get()
 	cx.SetLocale(s.Language)
 	cx.SetAppearance(appearance(s.Appearance))
+	cx.SetTheme(theme(s))
 	go func() {
 		found := launchers.Detect()
 		cx.Post(func() {
@@ -122,6 +123,26 @@ func (a *app) settingsCategories(own []ui.SettingsCategory) []ui.SettingsCategor
 				ID: "theme", Title: m.Theme(),
 				Keywords: []string{"appearance", "theme", "system", "light", "dark", "外观", "主题", "浅色", "深色", m.System()},
 				Control:  a.selectChoice(func(s *settings) *string { return &s.Appearance }, m.ThemePreference(), []string{"", "light", "dark"}, a.choiceName),
+			}, {
+				ID: "light-scheme", Title: m.LightScheme(), Description: m.LightSchemeDescription(), Stacked: true,
+				Keywords: []string{"color", "scheme", "palette", "light", "颜色", "配色", "主题色", "浅色"},
+				Control:  a.schemeSetting("light-scheme", m.LightScheme(), func(s *settings) *string { return &s.LightScheme }, lightSchemes),
+			}, {
+				ID: "dark-scheme", Title: m.DarkScheme(), Description: m.DarkSchemeDescription(), Stacked: true,
+				Keywords: []string{"color", "scheme", "palette", "dark", "颜色", "配色", "主题色", "深色"},
+				Control:  a.schemeSetting("dark-scheme", m.DarkScheme(), func(s *settings) *string { return &s.DarkScheme }, darkSchemes),
+			}, {
+				ID: "grain", Title: m.Grain(), Description: m.GrainDescription(),
+				Keywords: []string{"grain", "noise", "texture", "background", "噪点", "颗粒", "纹理", "背景"},
+				Control:  a.switchSetting(func(s *settings) *bool { return &s.Grain }, m.Grain()),
+			}, {
+				ID: "grain-amount", Title: m.GrainAmount(),
+				Keywords: []string{"grain", "noise", "strength", "噪点", "强度"},
+				Control: ui.Slider{Label: m.GrainAmount(), Min: 1, Max: 100, Step: 1, TestID: "grain-amount",
+					Style:    core.Style{Width: core.Pt(180)},
+					Disabled: func() bool { return !a.get().Grain },
+					Value:    func() float64 { return float64(a.get().grainAmount()) },
+					OnChange: func(v float64) { a.change(func(s *settings) { s.GrainAmount = int(v) }) }},
 			}},
 		}},
 	}

@@ -16,11 +16,12 @@ import (
 
 // App is a window of Model's conversations as tasks in a sidebar beside
 // the selected one: those running, then the others by when they were last
-// active. New task leads the sidebar and shows a page of its own, whose
-// first message starts a task where the one shown before worked, else in
-// the first of the projects, else in Dir, a directory on the backend's
-// computer, or where the backend chooses when it is empty. The settings
-// end the sidebar.
+// active. The selected one shows on a card, inset from the window while
+// the sidebar shows. New task leads the sidebar and shows a page of its
+// own, whose first message starts a task where the one shown before
+// worked, else in the first of the projects, else in Dir, a directory on
+// the backend's computer, or where the backend chooses when it is empty.
+// The settings end the sidebar.
 //
 // Name, when set, heads the menu bar on macOS: the app's menu with the
 // settings, a File menu starting a conversation, and the platform's Edit
@@ -36,8 +37,9 @@ type App struct {
 	Projects func() []string
 	Name     string
 	Updates  bool
-	// Icon, a PNG, heads New task's page.
-	Icon []byte
+	// Icon heads New task's page, such as the app's logo, 64 points
+	// square.
+	Icon core.Node
 	// Header ends the window's header with the app's own actions for the
 	// directory a new conversation would work in, built again when it or
 	// the language changes.
@@ -52,6 +54,12 @@ type App struct {
 	SettingsKey            func() string
 	SettingsSectionActions func(cx *core.Scope, section string) core.Node
 	SettingsCategory       *core.Signal[string]
+	// ChromeStyle, when set, paints the window's chrome around the sidebar
+	// and the content's card, such as with a gradient; it is a StyleFunc.
+	ChromeStyle func() core.Style
+	// Backdrop is drawn over the chrome, behind the sidebar and the
+	// content, such as a texture.
+	Backdrop []core.Node
 	// OnAppearanceChange, when set, ends the sidebar with a menu choosing
 	// the appearance, which it reports so the app keeps it.
 	OnAppearanceChange func(core.Appearance)
@@ -198,7 +206,7 @@ func (a App) Render(cx *core.Scope) core.Node {
 		msgs := locales.For(cx)
 		var node core.Node
 		cx.Untrack(func() {
-			node = ui.SidebarShell{TestID: a.TestID,
+			node = ui.SidebarShell{TestID: a.TestID, Variant: ui.SidebarShellInset, ChromeStyle: a.ChromeStyle, Backdrop: a.Backdrop,
 				Open: open.Get, OnOpenChange: open.Set, ToggleLabel: msgs.ToggleSidebar(),
 				Width: width.Get, OnWidthChange: width.Set, ResizeLabel: msgs.ResizeSidebar(),
 				DefaultWidth: 220, MinWidth: 220, MaxWidth: 420,

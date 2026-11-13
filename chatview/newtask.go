@@ -51,8 +51,8 @@ func (a App) hero(cx *core.Scope, draft func() string) core.Node {
 	msgs := locales.For(cx)
 	var children []core.Node
 	if a.Icon != nil {
-		children = append(children, core.Image{Source: core.ImageSource{Data: a.Icon},
-			Style: core.Style{Width: core.Pt(64), Height: core.Pt(64), FlexShrink: 0, Margin: core.Edges{Bottom: 6}}})
+		children = append(children, core.View{Style: core.Style{Width: core.Pt(64), Height: core.Pt(64), FlexShrink: 0, Margin: core.Edges{Bottom: 6}},
+			Children: []core.Node{a.Icon}})
 	}
 	// A NUL placeholder marks where the translated question names the
 	// project.

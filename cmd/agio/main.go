@@ -10,7 +10,6 @@
 package main
 
 import (
-	_ "embed"
 	"encoding/json"
 	"log"
 	"os"
@@ -28,11 +27,6 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// heroIcon is the app's icon heading New task, at the size it shows.
-//
-//go:embed assets/Hero.png
-var heroIcon []byte
-
 // settings are what the application keeps between runs. Empty choices
 // follow the system or pick automatically.
 type settings struct {
@@ -40,8 +34,16 @@ type settings struct {
 	DisabledModels []string     `yaml:"disabled_models,omitempty"`
 	// Language is a language tag and Appearance "light" or "dark";
 	// ShortcutModifier "alt" moves the shortcuts outside macOS to Alt.
-	Language         string `yaml:"language,omitempty"`
-	Appearance       string `yaml:"appearance,omitempty"`
+	Language   string `yaml:"language,omitempty"`
+	Appearance string `yaml:"appearance,omitempty"`
+	// LightScheme and DarkScheme are the color schemes' IDs (themes.go)
+	// shown in each appearance, empty for the default.
+	LightScheme string `yaml:"light_scheme,omitempty"`
+	DarkScheme  string `yaml:"dark_scheme,omitempty"`
+	// Grain scatters a film grain over the window's chrome, GrainAmount
+	// strong from 1 to 100, empty for the default.
+	Grain            bool   `yaml:"grain,omitempty"`
+	GrainAmount      int    `yaml:"grain_amount,omitempty"`
 	ShortcutModifier string `yaml:"shortcut_modifier,omitempty"`
 	KeepAwake        bool   `yaml:"keep_awake,omitempty"`
 	KeepDisplayAwake bool   `yaml:"keep_display_awake,omitempty"`
@@ -188,7 +190,7 @@ func main() {
 		aw.update(st.get(), working)
 		nm.look(s)
 	})
-	options := []nsgo.Option{nsgo.WindowSize(1040, minWindowHeight),
+	options := []nsgo.Option{nsgo.WindowSize(1040, minWindowHeight), nsgo.WindowMaterial(windowMaterial()),
 		nsgo.WindowConstraints(core.WindowConstraints{MinWidth: minWindowWidth, MinHeight: minWindowHeight})}
 	if f := ws.get().Window.frame(); f != nil {
 		options = append(options, nsgo.WindowFrame(*f))
@@ -202,11 +204,11 @@ func main() {
 		// Pressing an agent's notification shows its conversation.
 		selected := core.NewSignal(cx, "")
 		al.attach(cx, selected, func(id string) bool { return h.State().Conversation(id) != nil })
-		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title, Updates: true, Icon: heroIcon,
+		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title, Updates: true, Icon: logo{},
 			Projects: func() []string { return ws.get().Projects }, SidebarOpen: window.open, SidebarWidth: window.width, Selected: selected,
 			Header: a.launchButtons, Settings: a.settingsCategories, SettingsKey: a.settingsKey,
 			SettingsSectionActions: a.sectionActions, SettingsCategory: a.category,
-			OnAppearanceChange: a.setAppearance, AltShortcuts: a.altShortcuts}
+			OnAppearanceChange: a.setAppearance, AltShortcuts: a.altShortcuts, ChromeStyle: a.chrome, Backdrop: a.grain()}
 	}, options...)
 	// The window closed: its place is kept, and its agents end with it.
 	if window != nil {

@@ -23,4 +23,7 @@
 - Resume Agio's tasks, projects, last used project, window and sidebar after a restart.
 - Send anonymous usage statistics from Agio, with a setting to turn them off.
 - Add the app icon, a prompt in a speech bubble, to Agio, the client and the website.
+- Add nine light and nine dark color schemes to Agio's settings over the window's translucent blur, the defaults leaving it plain and the others tinting it with a soft gradient behind the cards, chosen apart for each appearance and previewed as squares of their colors, the logo on New task drawn in their accent.
+- Show the selected task on a rounded card inset from the window and the sidebar, with an edge and a shadow while the sidebar shows, the inset and the window controls following the sidebar as it slides.
+- Add an optional background grain to Agio, with its strength in the settings.
 - Add the [website](https://oneo-me.github.io/nsgo-agio/) in English and Chinese, in light and dark appearances, with a quick start and the chat views.
