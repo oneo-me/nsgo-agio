@@ -1,0 +1,9 @@
+name: Agio Client
+id: me.oneo.agio.client
+version: 0.1.0
+
+dev:
+  target: native
+
+build:
+  output: dist

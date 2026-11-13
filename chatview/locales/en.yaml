@@ -1,0 +1,83 @@
+messageInput:
+  message: "Message"
+  description: What screen readers say of the composer's editor.
+send: "Send"
+stop: "Stop"
+jumpLatest: "Jump to latest"
+replyPlaceholder: "Reply…"
+newPlaceholder: "Ask the agent to do something…"
+interruptPlaceholder: "Interrupt and redirect…"
+lookingForAgents: "Looking for coding agents…"
+noAgents: "No coding agent found. Install pi, Codex, Claude Code or CodeBuddy Code, then look again."
+lookAgain: "Look again"
+startingStatus: "Starting the agent…"
+loadingHistory: "Loading the conversation…"
+thinking:
+  message: "Thinking"
+  description: The reasoning level picker's name.
+thinkingStatus:
+  message: "Thinking"
+  description: A running group's title while the agent reasons.
+thinkingMinimal: "Minimal"
+thinkingLow: "Low"
+thinkingMedium: "Medium"
+thinkingHigh: "High"
+thinkingXhigh: "Extra high"
+thinkingMax: "Max"
+thinkingUltra: "Ultra"
+tierStandard: "Standard"
+tierFast: "Fast"
+searchModels: "Search models"
+noMatchingModels: "No matching models"
+contextWindow: "Context window"
+contextUsed:
+  message: "Context window {percent}% used"
+  placeholders:
+    percent: {type: int}
+durationSeconds:
+  message: "{count}s"
+  placeholders:
+    count: {type: int}
+durationMinutes:
+  message: "{count}m {seconds}s"
+  placeholders:
+    count: {type: int}
+    seconds: {type: int}
+durationHours:
+  message: "{count}h {minutes}m"
+  placeholders:
+    count: {type: int}
+    minutes: {type: int}
+durationDays: "{count, plural, one {{count} day} other {{count} days}}"
+actionThink: "Think"
+actionRun: "Run"
+actionRead: "Read"
+actionEdit: "Edit"
+actionSearch: "Search"
+actionList: "List"
+actionTool: "Tool"
+ran:
+  message: "Ran {activities}"
+  description: A settled group's title, such as "Ran 2 commands · 1 file read".
+running:
+  message: "Running {activities}"
+  description: A running group's title.
+countRun: "{count, plural, one {{count} command} other {{count} commands}}"
+countRead: "{count, plural, one {{count} file read} other {{count} file reads}}"
+countEdit: "{count, plural, one {{count} edit} other {{count} edits}}"
+countSearch: "{count, plural, one {{count} search} other {{count} searches}}"
+countList: "{count, plural, one {{count} listing} other {{count} listings}}"
+countTool: "{count, plural, one {{count} tool} other {{count} tools}}"
+thought: "Thought"
+worked: "Worked"
+workedFor: "Worked for {duration}"
+workingFor: "Working for {duration}"
+stoppedAfter: "You stopped after {duration}."
+conversations: "Conversations"
+newConversation: "New conversation"
+untitled:
+  message: "New conversation"
+  description: A conversation's title before its first message.
+removeConversation: "Remove"
+toggleSidebar: "Show or hide the sidebar"
+resizeSidebar: "Resize the sidebar"
