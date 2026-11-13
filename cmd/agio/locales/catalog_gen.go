@@ -95,12 +95,10 @@ const (
 	textSchemeGraphite
 	textSchemeAurora
 	textSchemeDusk
-	textSchemeDeepSea
 	textSchemeEmber
 	textSchemeCitrus
 	textSchemeOcean
 	textSchemeLilac
-	textSchemeCoral
 	textSchemeNebula
 	textSchemeMoss
 	textSchemeCrimson
@@ -195,12 +193,10 @@ var keyOfText = [numTexts]string{
 	"schemeGraphite",
 	"schemeAurora",
 	"schemeDusk",
-	"schemeDeepSea",
 	"schemeEmber",
 	"schemeCitrus",
 	"schemeOcean",
 	"schemeLilac",
-	"schemeCoral",
 	"schemeNebula",
 	"schemeMoss",
 	"schemeCrimson",
@@ -293,12 +289,10 @@ var textsEn = i18n.NewTexts(""+
 	"Graphite"+
 	"Aurora"+
 	"Dusk"+
-	"Deep Sea"+
 	"Ember"+
 	"Citrus"+
 	"Ocean"+
 	"Lilac"+
-	"Coral"+
 	"Nebula"+
 	"Moss"+
 	"Crimson"+
@@ -388,10 +382,8 @@ var textsEn = i18n.NewTexts(""+
 		8,
 		6,
 		4,
-		8,
 		5,
 		6,
-		5,
 		5,
 		5,
 		6,
@@ -486,12 +478,10 @@ var textsZhHans = i18n.NewTexts(""+
 	"石墨"+
 	"极光"+
 	"暮紫"+
-	"深海"+
 	"余烬"+
 	"柠夏"+
 	"海风"+
 	"丁香"+
-	"珊瑚"+
 	"星云"+
 	"苔原"+
 	"绯夜"+
@@ -573,8 +563,6 @@ var textsZhHans = i18n.NewTexts(""+
 		12,
 		63,
 		12,
-		6,
-		6,
 		6,
 		6,
 		6,
@@ -909,13 +897,6 @@ func SchemeDusk(cx *core.Scope) string { return For(cx).SchemeDusk() }
 // SchemeDusk is the package's SchemeDusk in the language of msgs.
 func (msgs Messages) SchemeDusk() string { return msgs.text(textSchemeDusk) }
 
-// SchemeDeepSea says "Deep Sea"
-// in the language the app shows under cx.
-func SchemeDeepSea(cx *core.Scope) string { return For(cx).SchemeDeepSea() }
-
-// SchemeDeepSea is the package's SchemeDeepSea in the language of msgs.
-func (msgs Messages) SchemeDeepSea() string { return msgs.text(textSchemeDeepSea) }
-
 // SchemeEmber says "Ember"
 // in the language the app shows under cx.
 func SchemeEmber(cx *core.Scope) string { return For(cx).SchemeEmber() }
@@ -943,13 +924,6 @@ func SchemeLilac(cx *core.Scope) string { return For(cx).SchemeLilac() }
 
 // SchemeLilac is the package's SchemeLilac in the language of msgs.
 func (msgs Messages) SchemeLilac() string { return msgs.text(textSchemeLilac) }
-
-// SchemeCoral says "Coral"
-// in the language the app shows under cx.
-func SchemeCoral(cx *core.Scope) string { return For(cx).SchemeCoral() }
-
-// SchemeCoral is the package's SchemeCoral in the language of msgs.
-func (msgs Messages) SchemeCoral() string { return msgs.text(textSchemeCoral) }
 
 // SchemeNebula says "Nebula"
 // in the language the app shows under cx.

@@ -35,13 +35,11 @@ var (
 		{ID: "citrus", Chrome: rgb(0xfbefb8, 0xeef3bf, 0xd5efcf), Page: core.RGB(0xfffef7), Text: core.RGB(0x2a2814), Accent: core.RGB(0xd08300)},
 		{ID: "ocean", Chrome: rgb(0xc9e2fb, 0xd0eef4, 0xd9f4e6), Page: core.RGB(0xfbfdff), Text: core.RGB(0x182634), Accent: core.RGB(0x1677ff)},
 		{ID: "lilac", Chrome: rgb(0xdcd3fa, 0xe8d5f6, 0xf5daec), Page: core.RGB(0xfdfbff), Text: core.RGB(0x261f38), Accent: core.RGB(0x7c4dff)},
-		{ID: "coral", Chrome: rgb(0xffd2c6, 0xffdfcd, 0xffedd5), Page: core.RGB(0xfffbf8), Text: core.RGB(0x33201a), Accent: core.RGB(0xf0503c)},
 	}
 	darkSchemes = []colorScheme{
 		{ID: "graphite", Dark: true, Plain: true, Chrome: rgb(0x17181c, 0x1c1d22, 0x202127), Page: core.RGB(0x26272d), Text: core.RGB(0xe8e8eb), Accent: core.RGB(0x5b95ff)},
 		{ID: "aurora", Dark: true, Chrome: rgb(0x0d2629, 0x111c33, 0x221737), Page: core.RGB(0x1a2130), Text: core.RGB(0xe2ebf5), Accent: core.RGB(0x4fd1c5)},
 		{ID: "dusk", Dark: true, Chrome: rgb(0x261533, 0x33182f, 0x36201c), Page: core.RGB(0x271f2c), Text: core.RGB(0xf1e6f2), Accent: core.RGB(0xe879b9)},
-		{ID: "deep-sea", Dark: true, Chrome: rgb(0x08162c, 0x0c2038, 0x0a2633), Page: core.RGB(0x142036), Text: core.RGB(0xdbe7ff), Accent: core.RGB(0x5b9dff)},
 		{ID: "ember", Dark: true, Chrome: rgb(0x26130d, 0x2e170d, 0x251710), Page: core.RGB(0x2a1e19), Text: core.RGB(0xf6e5da), Accent: core.RGB(0xff8a4c)},
 		{ID: "nebula", Dark: true, Chrome: rgb(0x191342, 0x29134f, 0x3a1241), Page: core.RGB(0x1e1a35), Text: core.RGB(0xece6ff), Accent: core.RGB(0x8b7bff)},
 		{ID: "moss", Dark: true, Chrome: rgb(0x12251a, 0x1b2c15, 0x292b16), Page: core.RGB(0x1c2620), Text: core.RGB(0xe3eedf), Accent: core.RGB(0x8fce5c)},
@@ -180,11 +178,14 @@ func (a *app) schemeOption(testID string, sc colorScheme, checked func() bool, c
 		colors := ui.ColorsOf(cx)
 		return base.Radio{Label: name, TestID: testID, Checked: checked, OnChange: func(bool) { choose() },
 			StyleFunc: func() core.Style {
+				// The chosen option keeps a hover style of its own color, as a
+				// view without one stops hearing the pointer leave and would
+				// show it hovered once another is chosen.
 				st := core.Style{Gap: 6, Padding: core.Symmetric(8, 10), AlignItems: core.AlignCenter, CornerRadius: ui.RadiusControl,
 					Hover: &core.Style{Background: colors.Hover()}}
 				if checked() {
 					st.Background = ui.TintsOf(cx).Accent()
-					st.Hover = nil
+					st.Hover = &core.Style{Background: st.Background}
 				}
 				return st
 			},
@@ -220,8 +221,6 @@ func (a *app) schemeName(id string) string {
 		return m.SchemeAurora()
 	case "dusk":
 		return m.SchemeDusk()
-	case "deep-sea":
-		return m.SchemeDeepSea()
 	case "ember":
 		return m.SchemeEmber()
 	case "citrus":
@@ -230,8 +229,6 @@ func (a *app) schemeName(id string) string {
 		return m.SchemeOcean()
 	case "lilac":
 		return m.SchemeLilac()
-	case "coral":
-		return m.SchemeCoral()
 	case "nebula":
 		return m.SchemeNebula()
 	case "moss":

@@ -59,8 +59,8 @@ func TestColorSchemes(t *testing.T) {
 	}, nsgotest.Size(minWindowWidth, minWindowHeight))
 	app.Press("id:open-settings")
 	app.WaitFor("text:Light colors", 5*time.Second)
-	if len(lightSchemes) != 9 || len(darkSchemes) != 9 {
-		t.Fatalf("%d light and %d dark schemes, want 9 of each", len(lightSchemes), len(darkSchemes))
+	if len(lightSchemes) != 8 || len(darkSchemes) != 8 {
+		t.Fatalf("%d light and %d dark schemes, want 8 of each", len(lightSchemes), len(darkSchemes))
 	}
 	app.Press("id:dark-scheme-dusk")
 	if st.get().DarkScheme != "dusk" {
@@ -72,6 +72,15 @@ func TestColorSchemes(t *testing.T) {
 	app.Press("id:light-scheme-meadow")
 	if got, want := accent(), scheme(lightSchemes, "meadow").palette().Accent; got != want {
 		t.Fatalf("accent = %x after Meadow, want %x", got, want)
+	}
+	// A scheme chosen under the pointer hears it leave, so it shows no
+	// hover once another is chosen.
+	app.Hover("id:light-scheme-sunset")
+	app.Press("id:light-scheme-sunset")
+	app.HoverOut()
+	app.Press("id:light-scheme-lagoon")
+	if got, want := app.Find("id:light-scheme-sunset").Style.Background, app.Find("id:light-scheme-citrus").Style.Background; got != want {
+		t.Fatalf("Sunset's background = %v after leaving it and choosing Lagoon, want %v as unhovered", got, want)
 	}
 }
 
