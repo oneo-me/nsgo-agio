@@ -13,28 +13,25 @@ const { size = 32, class: className, id = 'agio-mark' } = Astro.props;
   class={className}
   width={size}
   height={size}
-  viewBox="0 0 64 64"
+  viewBox="196 208 632 632"
   fill="none"
   aria-hidden="true"
 >
   <defs>
-    <linearGradient id={`${id}-bg`} x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#3f9bff"></stop>
-      <stop offset="1" stop-color="#0057d8"></stop>
-    </linearGradient>
-    <linearGradient id={`${id}-light`} x1="32" y1="2" x2="32" y2="34" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fff" stop-opacity="0.16"></stop>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+    <linearGradient id={`${id}-bg`} x1="512" y1="232" x2="512" y2="812" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3a94ff"></stop>
+      <stop offset="1" stop-color="#0068e8"></stop>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="15" fill={`url(#${id}-bg)`}></rect>
-  <rect x="0.5" y="0.5" width="63" height="63" rx="14.5" stroke="#fff" stroke-opacity="0.2"></rect>
   <path
-    d="M18 47.5 32 17l14 30.5M24.6 37h14.8"
+    fill={`url(#${id}-bg)`}
+    d="M362 232H662A150 150 0 0 1 812 382V566A150 150 0 0 1 662 716H436L300 812C284 823 264 810 268 791L288 704A150 150 0 0 1 212 566V382A150 150 0 0 1 362 232Z"
+  ></path>
+  <path
+    d="M382 384 476 474 382 564"
     stroke="#fff"
-    stroke-width="5.5"
+    stroke-width="68"
     stroke-linecap="round"
     stroke-linejoin="round"></path>
-  <circle cx="47.5" cy="15.5" r="3.1" fill="#fff" fill-opacity="0.92"></circle>
-  <rect width="64" height="32" rx="15" fill={`url(#${id}-light)`}></rect>
+  <rect x="532" y="530" width="138" height="68" rx="34" fill="#fff"></rect>
 </svg>

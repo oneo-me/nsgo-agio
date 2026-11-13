@@ -101,15 +101,11 @@ socialCard({
 
 // The touch icon is square: iOS masks the corners itself, and a rounded
 // mark inside a square would show two corner shapes.
-const squareMark = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <defs>
-    <linearGradient id="bg" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#3f9bff"/><stop offset="1" stop-color="#0057d8"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" fill="url(#bg)"/>
-  <path d="M18 47.5 32 17l14 30.5M24.6 37h14.8" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="47.5" cy="15.5" r="3.1" fill="#fff" fill-opacity=".92"/>
+const squareMark = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <rect width="1024" height="1024" fill="#f5f6f8"/>
+  <path fill="#0a7cff" d="M362 232H662A150 150 0 0 1 812 382V566A150 150 0 0 1 662 716H436L300 812C284 823 264 810 268 791L288 704A150 150 0 0 1 212 566V382A150 150 0 0 1 362 232Z"/>
+  <path d="M382 384 476 474 382 564" stroke="#fff" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="532" y="530" width="138" height="68" rx="34" fill="#fff"/>
 </svg>`;
 const icon = page(
   'icon',

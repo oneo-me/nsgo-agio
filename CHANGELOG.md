@@ -11,4 +11,5 @@
 - Show tool and provider marks beside models.
 - Add the macOS menu bar with Settings and New conversation.
 - Let a new conversation choose its project folder before its first message.
+- Add the app icon, a prompt in a speech bubble, to the examples and the website.
 - Add the [website](https://oneo-me.github.io/nsgo-agio/) in English and Chinese, in light and dark appearances, with a quick start and the chat views.
