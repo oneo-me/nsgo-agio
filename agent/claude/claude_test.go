@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -61,6 +62,9 @@ done
 
 func fakeDriver(t *testing.T) (*Driver, string) {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("requires a Unix shell")
+	}
 	dir := t.TempDir()
 	path := filepath.Join(dir, "claude")
 	if err := os.WriteFile(path, []byte(fakeClaude), 0755); err != nil {

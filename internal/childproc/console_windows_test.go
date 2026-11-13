@@ -34,10 +34,10 @@ func TestMain(m *testing.M) {
 
 func consoleHelper() int {
 	kernel := syscall.NewLazyDLL("kernel32.dll")
-	window, _, _ := kernel.NewProc("GetConsoleWindow").Call()
-	codepage, _, _ := kernel.NewProc("GetConsoleCP").Call()
-	if window != 0 || codepage != 0 {
-		fmt.Fprintln(os.Stderr, "unexpected console")
+	// CREATE_NO_WINDOW gives the child a console without a window, which
+	// its own console children share instead of each opening one.
+	if window, _, _ := kernel.NewProc("GetConsoleWindow").Call(); window != 0 {
+		fmt.Fprintf(os.Stderr, "unexpected console window %#x\n", window)
 		return 1
 	}
 	if len(os.Args) > 1 && os.Args[1] == "--version" {
