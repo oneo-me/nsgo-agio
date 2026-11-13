@@ -143,12 +143,16 @@ func TestResumeReadsHistory(t *testing.T) {
 		{Type: agent.Usage, Tokens: 7},
 	}}
 	h := newHost(t, d)
-	id, err := h.Create(agio.Create{Dir: t.TempDir(), Cursor: "saved", Model: "claude:opus"})
+	created := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	id, err := h.Create(agio.Create{Dir: t.TempDir(), Cursor: "saved", Model: "claude:opus", Created: created})
 	if err != nil {
 		t.Fatal(err)
 	}
 	s := waitFor(t, h, func(s agio.State) bool { c := s.Conversation(id); return !c.Loading && len(c.Turns) == 1 })
 	c := s.Conversation(id)
+	if !c.Created.Equal(created) || !c.Updated.Equal(created) {
+		t.Fatalf("times = %v, %v, want %v", c.Created, c.Updated, created)
+	}
 	if c.Turns[0].Prompt != "before" || !strings.Contains(c.Turns[0].Final().Text, "earlier") || c.ContextTokens != 7 {
 		t.Fatalf("history = %+v", c)
 	}

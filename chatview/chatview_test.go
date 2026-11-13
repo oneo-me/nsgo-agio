@@ -83,6 +83,25 @@ func TestNewTaskStartsTasksInTheirGroups(t *testing.T) {
 	app.WaitFor("text:No tasks yet.", 5*time.Second)
 }
 
+func TestNewTaskStartsInTheFirstProject(t *testing.T) {
+	h := host.New(host.Options{Env: []string{}, Tools: []agent.Tool{agent.Claude},
+		Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}}, Home: t.TempDir()})
+	t.Cleanup(func() { h.Close() })
+	last, other := t.TempDir(), t.TempDir()
+	if _, err := h.Create(agio.Create{Dir: other, Cursor: "saved", Model: "claude:opus"}); err != nil {
+		t.Fatal(err)
+	}
+	app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
+		return App{Model: Bind(cx, h), Dir: t.TempDir(), Projects: func() []string { return []string{last} }}
+	}, nsgotest.Size(900, 640))
+	app.WaitUntil(5*time.Second, func() bool { return draftID(h.State()) != "" })
+	if d := h.State().Conversation(draftID(h.State())).Dir; d != last {
+		t.Fatalf("draft works in %q, want %q", d, last)
+	}
+	app.Press("id:new-task-project")
+	app.WaitFor("id:project-"+filepath.Base(other), 5*time.Second)
+}
+
 func TestAppChoosesTheModel(t *testing.T) {
 	app, h := startApp(t)
 	app.WaitFor("role:button Opus", 5*time.Second)

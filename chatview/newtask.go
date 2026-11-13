@@ -1,6 +1,7 @@
 package chatview
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/nsgo-dev/nsgo/core"
@@ -70,8 +71,8 @@ func (a App) hero(cx *core.Scope, draft func() string) core.Node {
 	return core.View{Style: core.Style{AlignItems: core.AlignCenter, Gap: 8, MinWidth: core.Pt(0), Padding: core.Edges{Bottom: 28}}, Children: children}
 }
 
-// projectPicker chooses the folder New task's draft works in: one the
-// backend's tasks work in, or another from the system's folder picker. Its
+// projectPicker chooses the folder New task's draft works in: one of the
+// projects, or another from the system's folder picker. Its
 // face is the folder's name in the heading, its path in a tooltip.
 func (a App) projectPicker(cx *core.Scope, draft func() string) core.Node {
 	m := a.Model
@@ -97,9 +98,9 @@ func (a App) projectPicker(cx *core.Scope, draft func() string) core.Node {
 			return core.Style{Hover: &core.Style{Background: ui.Alpha(colors.Accent(), .1)}}
 		},
 		Children: []core.Node{name}}
-	items := region(m, func() string { return strings.Join(projects(m.State()), "\x00") }, func(cx *core.Scope) core.Node {
+	items := region(m, func() string { return strings.Join(a.projects(m.State()), "\x00") }, func(cx *core.Scope) core.Node {
 		var items []core.Node
-		for _, d := range projects(m.State()) {
+		for _, d := range a.projects(m.State()) {
 			items = append(items, ui.MenuItem{Text: pathBase(d), Icon: lucide.Folder, TestID: "project-" + pathBase(d),
 				Checked: func() bool { return dir() == d }, OnSelect: func() { choose(d) }})
 		}
@@ -127,4 +128,19 @@ func (a App) projectPicker(cx *core.Scope, draft func() string) core.Node {
 		}
 		return menu
 	})
+}
+
+// projects are the app's remembered folders, then those the backend's
+// tasks work in.
+func (a App) projects(s agio.State) []string {
+	var dirs []string
+	if a.Projects != nil {
+		dirs = slices.Clone(a.Projects())
+	}
+	for _, d := range projects(s) {
+		if !slices.Contains(dirs, d) {
+			dirs = append(dirs, d)
+		}
+	}
+	return dirs
 }

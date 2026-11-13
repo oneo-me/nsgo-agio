@@ -16,7 +16,7 @@ func TestSettingsApplyTheLanguageAndKeepProviders(t *testing.T) {
 	h := host.New(host.Options{Env: []string{}, Tools: []agent.Tool{agent.Claude},
 		Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}}, Home: t.TempDir()})
 	t.Cleanup(func() { h.Close() })
-	st := &store{s: settings{Language: "zh-Hans"}}
+	st := &store[settings]{s: settings{Language: "zh-Hans"}}
 	app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
 		a := newApp(cx, st, &awake{})
 		return chatview.App{Model: chatview.Bind(cx, h), Dir: t.TempDir(),

@@ -19,7 +19,7 @@ import (
 // them as they change.
 type app struct {
 	cx *core.Scope
-	st *store
+	st *store[settings]
 	aw *awake
 	// rev counts the changes made here, which the controls follow.
 	rev *core.Signal[int]
@@ -31,7 +31,7 @@ type app struct {
 
 // newApp applies the saved language and appearance and looks for the
 // launchers off the engine.
-func newApp(cx *core.Scope, st *store, aw *awake) *app {
+func newApp(cx *core.Scope, st *store[settings], aw *awake) *app {
 	a := &app{cx: cx, st: st, aw: aw, rev: core.NewSignal(cx, 0), category: core.NewSignal(cx, "")}
 	s := st.get()
 	cx.SetLocale(s.Language)

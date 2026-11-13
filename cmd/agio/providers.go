@@ -13,16 +13,16 @@ import (
 // local identities, not display names or remote model IDs. Text keeps its
 // spacing while edited and is trimmed only when used.
 type modelProvider struct {
-	ID      string          `json:"id"`
-	Name    string          `json:"name,omitempty"`
-	BaseURL string          `json:"baseURL,omitempty"`
-	APIKey  string          `json:"apiKey,omitempty"`
-	Models  []providerModel `json:"models,omitempty"`
+	ID      string          `yaml:"id"`
+	Name    string          `yaml:"name,omitempty"`
+	BaseURL string          `yaml:"base_url,omitempty"`
+	APIKey  string          `yaml:"api_key,omitempty"`
+	Models  []providerModel `yaml:"models,omitempty"`
 }
 
 type providerModel struct {
-	ID    string `json:"id"`
-	Model string `json:"model,omitempty"`
+	ID    string `yaml:"id"`
+	Model string `yaml:"model,omitempty"`
 }
 
 // defaultBaseURL is the base URL a provider without one uses.

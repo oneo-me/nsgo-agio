@@ -18,6 +18,7 @@
 - End the sidebar with Settings and an appearance menu, and bind New task and Settings outside macOS.
 - Add Agio's settings for language, theme and the shortcut modifier, keeping the computer awake while agents work, a sound and notification when an agent stops, the terminal, development tool and Git tool its title bar opens the folder in, and OpenAI-compatible model services.
 - Keep Agio's window at least 820 × 740.
+- Resume Agio's tasks, projects, last used project, window and sidebar after a restart.
 - Send anonymous usage statistics from Agio, with a setting to turn them off.
 - Add the app icon, a prompt in a speech bubble, to Agio, the client and the website.
 - Add the [website](https://oneo-me.github.io/nsgo-agio/) in English and Chinese, in light and dark appearances, with a quick start and the chat views.

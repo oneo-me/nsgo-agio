@@ -16,7 +16,7 @@ Agio is the agent core split out of Neorio: drivers that run coding agent CLIs a
 | `chatview` | NSGo views of any `Backend`, built from `ui/chat`: conversations shown as tasks, New task, agent settings, limits, update checks and the macOS menu bar, with their catalogs in `locales` |
 | `shellenv`, `internal/childproc` | The login shell's environment, and process groups started and stopped as a whole |
 | `internal/launchers` | The file manager, terminals, development tools and Git clients installed, which open a folder |
-| `cmd/agio` | Agio, the single-process app: its settings file and pages, alerts, keeping awake, launchers and usage statistics |
+| `cmd/agio` | Agio, the single-process app: its settings and their pages, the window, projects and tasks it resumes, alerts, keeping awake, launchers and usage statistics |
 | `examples/` | A server and a client |
 
 ## Boundaries
@@ -27,7 +27,7 @@ Agio is the agent core split out of Neorio: drivers that run coding agent CLIs a
 - `Create` returns once `State` shows the conversation; views rely on it to select what they created.
 - A conversation keeps the tool and directory of its first message, as sessions cannot move between CLIs or folders. A new message interrupts a running one instead of queueing.
 - Agents run with full access in their directory and are never asked for approval; a host signals only the process groups it started.
-- Agio persists nothing. An application that keeps conversations stores their `Cursor`, `Dir` and `Model` and resumes them with `Create`; one that keeps the agents and models turned off passes them to `host.Options`. Limits are read again after a restart.
+- Agio persists nothing. An application that keeps conversations stores their `Cursor`, `Dir`, `Model` and times and resumes them with `Create`, and passes the folders it remembers to `chatview.App`; one that keeps the agents and models turned off passes them to `host.Options`. Limits are read again after a restart.
 
 ## Core flows
 

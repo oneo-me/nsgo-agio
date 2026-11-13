@@ -204,16 +204,19 @@ type Conversation struct {
 }
 
 // Create describes a new conversation. Its agent works in Dir, or where
-// the backend chooses when it is empty; Cursor
-// resumes a session the agent saved, whose history it reads, and then Model
-// must name the session's tool. Empty choices follow the tools' defaults.
+// the backend chooses when it is empty; Cursor resumes a session the agent
+// saved, whose history it reads, and then Model must name the session's
+// tool, and Created and Updated, when set, keep when it was. Empty choices
+// follow the tools' defaults.
 type Create struct {
-	Dir    string `json:"dir"`
-	Title  string `json:"title,omitempty"`
-	Model  string `json:"model,omitempty"`
-	Effort string `json:"effort,omitempty"`
-	Tier   string `json:"tier,omitempty"`
-	Cursor string `json:"cursor,omitempty"`
+	Dir     string    `json:"dir"`
+	Title   string    `json:"title,omitempty"`
+	Model   string    `json:"model,omitempty"`
+	Effort  string    `json:"effort,omitempty"`
+	Tier    string    `json:"tier,omitempty"`
+	Cursor  string    `json:"cursor,omitempty"`
+	Created time.Time `json:"created,omitzero"`
+	Updated time.Time `json:"updated,omitzero"`
 }
 
 // Message is what the user sends. Files are paths on the backend's

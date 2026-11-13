@@ -60,7 +60,7 @@ type statsPayload struct {
 // reportUsage sends the pageview, the messages' events and the heartbeats.
 // Events are made on the graph's goroutine and sent from another, oldest
 // first; one that fails is dropped.
-func reportUsage(cx *core.Scope, b agio.Backend, st *store) {
+func reportUsage(cx *core.Scope, b agio.Backend, st *store[settings]) {
 	if !statsBuild || testing.Testing() {
 		return
 	}
@@ -117,7 +117,7 @@ func activity(s agio.State, since time.Time) (tools []agent.Tool, working bool) 
 }
 
 // installID returns the install's random ID, made on first use.
-func installID(st *store) string {
+func installID(st *store[settings]) string {
 	var id string
 	st.update(func(s *settings) {
 		if s.InstallID == "" {

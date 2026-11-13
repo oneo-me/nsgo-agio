@@ -281,8 +281,15 @@ func (h *Host) Create(o agio.Create) (string, error) {
 			return errors.New("resuming a session needs its model")
 		}
 		now := h.opts.Now()
+		created, updated := o.Created, o.Updated
+		if created.IsZero() {
+			created = now
+		}
+		if updated.IsZero() {
+			updated = created
+		}
 		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, model: o.Model, effort: o.Effort, tier: o.Tier,
-			cursor: o.Cursor, bound: o.Cursor != "", created: now, updated: now, loaded: o.Cursor == ""}
+			cursor: o.Cursor, bound: o.Cursor != "", created: created, updated: updated, loaded: o.Cursor == ""}
 		h.conversations = append([]*conversation{c}, h.conversations...)
 		h.loadHistory(c)
 		id = c.id

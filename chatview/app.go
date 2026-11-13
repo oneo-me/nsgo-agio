@@ -17,9 +17,10 @@ import (
 // App is a window of Model's conversations as tasks in a sidebar beside
 // the selected one: those running, then the others by when they were last
 // active. New task leads the sidebar and shows a page of its own, whose
-// first message starts a task where the one shown before worked, else the
-// latest, else in Dir, a directory on the backend's computer, or where the
-// backend chooses when it is empty. The settings end the sidebar.
+// first message starts a task where the one shown before worked, else in
+// the first of the projects, else in Dir, a directory on the backend's
+// computer, or where the backend chooses when it is empty. The settings
+// end the sidebar.
 //
 // Name, when set, heads the menu bar on macOS: the app's menu with the
 // settings, a File menu starting a conversation, and the platform's Edit
@@ -27,10 +28,14 @@ import (
 // an app whose nsgo.yaml configures updates. Elsewhere, and on macOS
 // without the menu bar, the window binds their shortcuts itself.
 type App struct {
-	Model   *Model
-	Dir     string
-	Name    string
-	Updates bool
+	Model *Model
+	Dir   string
+	// Projects, when set, are folders the app remembers, most recently
+	// used first: New task offers them before its tasks' own and starts in
+	// the first.
+	Projects func() []string
+	Name     string
+	Updates  bool
 	// Icon, a PNG, heads New task's page.
 	Icon []byte
 	// Header ends the window's header with the app's own actions for the
@@ -53,6 +58,10 @@ type App struct {
 	// AltShortcuts, when it reports true, moves the shortcuts outside macOS
 	// from Ctrl to Alt.
 	AltShortcuts func() bool
+	// SidebarOpen and SidebarWidth, when set, hold whether the sidebar
+	// shows and how wide, so the app can keep them.
+	SidebarOpen  *core.Signal[bool]
+	SidebarWidth *core.Signal[core.Points]
 	TestID       string
 }
 
@@ -62,8 +71,13 @@ func (a App) Render(cx *core.Scope) core.Node {
 	colors := ui.ColorsOf(cx)
 	// selected is the conversation shown, "" for New task.
 	selected := core.NewSignal(cx, "")
-	open := core.NewSignal(cx, true)
-	width := core.NewSignal(cx, core.Points(220))
+	open, width := a.SidebarOpen, a.SidebarWidth
+	if open == nil {
+		open = core.NewSignal(cx, true)
+	}
+	if width == nil {
+		width = core.NewSignal(cx, core.Points(220))
+	}
 	settingsOpen := core.NewSignal(cx, false)
 	draft := live(m, func() string { return draftID(m.State()) })
 	// dir is where the shown conversation works: New task's draft's, else
@@ -79,7 +93,7 @@ func (a App) Render(cx *core.Scope) core.Node {
 		return a.Dir
 	}
 	// next is where New task's next draft works: where the conversation
-	// shown when it opened did, else the latest one, else Dir.
+	// shown when it opened did, else the first project, else Dir.
 	next := ""
 	creating := false
 	// failed is the directory starting a draft in failed, which is not
@@ -88,7 +102,7 @@ func (a App) Render(cx *core.Scope) core.Node {
 	create := func() {
 		d := next
 		if d == "" {
-			if list := projects(core.Untracked(cx, m.State)); len(list) > 0 {
+			if list := a.projects(core.Untracked(cx, m.State)); len(list) > 0 {
 				d = list[0]
 			} else {
 				d = a.Dir

@@ -1,10 +1,12 @@
 // Command agio is the Agio app: a whole agent application in one process,
 // the window and the coding agents it runs, which work in the folder a new
-// conversation picks, else in AGIO_DIR or the home directory. It keeps its
-// preferences (prefs.go), the agents and models turned off and the
-// statistics' choice in Agio/settings.json under the user's configuration
-// directory, shows the signed-in accounts' limits and reports its use
-// (stats.go). Run it with go tool nsgo dev cmd/agio.
+// conversation picks, else the project last used, else AGIO_DIR or the home
+// directory. It keeps its preferences (prefs.go), the agents and models
+// turned off and the statistics' choice in Agio/settings.yaml under the
+// user's configuration directory, and its window, projects and tasks in
+// Agio/state.yaml beside it (state.go). It shows the signed-in accounts'
+// limits and reports its use (stats.go). Run it with go tool nsgo dev
+// cmd/agio.
 package main
 
 import (
@@ -23,6 +25,7 @@ import (
 	"github.com/oneo-me/nsgo-agio/chatview"
 	"github.com/oneo-me/nsgo-agio/host"
 	"github.com/oneo-me/nsgo-agio/quota"
+	"go.yaml.in/yaml/v3"
 )
 
 // heroIcon is the app's icon heading New task, at the size it shows.
@@ -33,73 +36,107 @@ var heroIcon []byte
 // settings are what the application keeps between runs. Empty choices
 // follow the system or pick automatically.
 type settings struct {
-	Disabled       []agent.Tool `json:"disabled,omitempty"`
-	DisabledModels []string     `json:"disabledModels,omitempty"`
+	Disabled       []agent.Tool `yaml:"disabled,omitempty"`
+	DisabledModels []string     `yaml:"disabled_models,omitempty"`
 	// Language is a language tag and Appearance "light" or "dark";
 	// ShortcutModifier "alt" moves the shortcuts outside macOS to Alt.
-	Language         string `json:"language,omitempty"`
-	Appearance       string `json:"appearance,omitempty"`
-	ShortcutModifier string `json:"shortcutModifier,omitempty"`
-	KeepAwake        bool   `json:"keepAwake,omitempty"`
-	KeepDisplayAwake bool   `json:"keepDisplayAwake,omitempty"`
+	Language         string `yaml:"language,omitempty"`
+	Appearance       string `yaml:"appearance,omitempty"`
+	ShortcutModifier string `yaml:"shortcut_modifier,omitempty"`
+	KeepAwake        bool   `yaml:"keep_awake,omitempty"`
+	KeepDisplayAwake bool   `yaml:"keep_display_awake,omitempty"`
 	// TaskSound names the sound played when an agent stops, empty for none.
-	TaskSound        string `json:"taskSound,omitempty"`
-	TaskNotification bool   `json:"taskNotification,omitempty"`
+	TaskSound        string `yaml:"task_sound,omitempty"`
+	TaskNotification bool   `yaml:"task_notification,omitempty"`
 	// Terminal, Editor and GitTool are launchers' IDs, or launchers.None.
-	Terminal  string          `json:"terminal,omitempty"`
-	Editor    string          `json:"editor,omitempty"`
-	GitTool   string          `json:"gitTool,omitempty"`
-	Providers []modelProvider `json:"providers,omitempty"`
+	Terminal  string          `yaml:"terminal,omitempty"`
+	Editor    string          `yaml:"editor,omitempty"`
+	GitTool   string          `yaml:"git_tool,omitempty"`
+	Providers []modelProvider `yaml:"providers,omitempty"`
 	// InstallID is the install's in the usage statistics; StatsOff is set
 	// once the settings turned them off.
-	InstallID string `json:"installID,omitempty"`
-	StatsOff  bool   `json:"statsOff,omitempty"`
+	InstallID string `yaml:"install_id,omitempty"`
+	StatsOff  bool   `yaml:"stats_off,omitempty"`
 }
 
-// store reads and writes settings in one file, from any goroutine.
-type store struct {
+// store reads and writes a value in one YAML file, from any goroutine.
+type store[T any] struct {
 	path string
 	mu   sync.Mutex
-	s    settings
+	s    T
 }
 
-func openStore() *store {
-	st := &store{}
-	if dir, err := os.UserConfigDir(); err == nil {
-		st.path = filepath.Join(dir, "Agio", "settings.json")
-		if data, err := os.ReadFile(st.path); err == nil {
-			if err := json.Unmarshal(data, &st.s); err != nil {
-				log.Printf("read %s: %v", st.path, err)
-			}
+// openStore reads name.yaml in Agio's directory under the user's
+// configuration directory, keeping nothing when there is none.
+func openStore[T any](name string) *store[T] {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return &store[T]{}
+	}
+	return loadStore[T](filepath.Join(dir, "Agio"), name)
+}
+
+// loadStore reads name.yaml in dir. Without it, the name.json of earlier
+// versions is read and moved to it.
+func loadStore[T any](dir, name string) *store[T] {
+	st := &store[T]{path: filepath.Join(dir, name+".yaml")}
+	data, err := os.ReadFile(st.path)
+	if err == nil {
+		if err := yaml.Unmarshal(data, &st.s); err != nil {
+			log.Printf("read %s: %v", st.path, err)
 		}
+		return st
+	}
+	legacy := filepath.Join(dir, name+".json")
+	if data, err = os.ReadFile(legacy); err != nil {
+		return st
+	}
+	// The JSON keys match the fields' names, as encoding/json ignores case.
+	if err := json.Unmarshal(data, &st.s); err != nil {
+		log.Printf("read %s: %v", legacy, err)
+		return st
+	}
+	if st.save() {
+		os.Remove(legacy)
 	}
 	return st
 }
 
-func (st *store) get() settings {
+func (st *store[T]) get() T {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 	return st.s
 }
 
-// update changes the settings and saves them when they changed.
-func (st *store) update(fn func(s *settings)) {
+// update changes the value and saves it when it changed.
+func (st *store[T]) update(fn func(s *T)) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
-	before, _ := json.Marshal(st.s)
+	before, _ := yaml.Marshal(st.s)
 	fn(&st.s)
-	after, _ := json.Marshal(st.s)
-	if st.path == "" || string(before) == string(after) {
-		return
+	after, _ := yaml.Marshal(st.s)
+	if string(before) != string(after) {
+		st.save()
 	}
-	// The file holds the providers' API keys.
-	err := os.MkdirAll(filepath.Dir(st.path), 0o755)
+}
+
+// save writes the value, reporting whether it did.
+func (st *store[T]) save() bool {
+	if st.path == "" {
+		return false
+	}
+	data, err := yaml.Marshal(st.s)
 	if err == nil {
-		err = os.WriteFile(st.path, after, 0o600)
+		err = os.MkdirAll(filepath.Dir(st.path), 0o755)
+	}
+	// The settings hold the providers' API keys.
+	if err == nil {
+		err = os.WriteFile(st.path, data, 0o600)
 	}
 	if err != nil {
 		log.Printf("save %s: %v", st.path, err)
 	}
+	return err == nil
 }
 
 func main() {
@@ -108,15 +145,20 @@ func main() {
 	if dir == "" {
 		dir = home
 	}
-	st := openStore()
+	st := openStore[settings]("settings")
+	ws := openStore[state]("state")
+	ws.update((*state).normalize)
 	h := host.New(host.Options{Dir: dir, Disabled: st.get().Disabled, DisabledModels: st.get().DisabledModels,
 		ReadQuota: quota.Reader(home)})
+	// Tasks resume before their list is followed, which would drop those
+	// not resumed yet.
+	kept := restoreTasks(h, ws.get().Tasks)
 	var lang atomic.Value
 	lang.Store("en")
 	al, aw := &alerts{}, &awake{}
-	// The agents and models turned on or off in the settings are kept for
-	// next time; an agent stopping alerts, and one working keeps the
-	// computer awake as the settings ask.
+	// The agents and models turned on or off in the settings, the tasks and
+	// their projects are kept for next time; an agent stopping alerts, and
+	// one working keeps the computer awake as the settings ask.
 	stop := h.Watch(func() {
 		s := h.State()
 		var disabled []agent.Tool
@@ -130,6 +172,7 @@ func main() {
 			}
 		}
 		st.update(func(s *settings) { s.Disabled, s.DisabledModels = disabled, models })
+		ws.update(func(w *state) { noteTasks(w, s, kept) })
 		working := false
 		for _, c := range s.Conversations {
 			working = working || c.Running
@@ -137,17 +180,27 @@ func main() {
 		al.look(st.get(), s.Conversations, lang.Load().(string))
 		aw.update(st.get(), working)
 	})
+	options := []nsgo.Option{nsgo.WindowSize(1040, minWindowHeight),
+		nsgo.WindowConstraints(core.WindowConstraints{MinWidth: minWindowWidth, MinHeight: minWindowHeight})}
+	if f := ws.get().Window.frame(); f != nil {
+		options = append(options, nsgo.WindowFrame(*f))
+	}
+	var window *windowKeeper
 	nsgo.Run(func(cx *core.Scope) core.Node {
 		reportUsage(cx, h, st)
 		a := newApp(cx, st, aw)
+		window = keepWindow(cx, ws)
 		cx.Effect(func() { lang.Store(i18n.Language(cx)) })
 		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title, Updates: true, Icon: heroIcon,
+			Projects: func() []string { return ws.get().Projects }, SidebarOpen: window.open, SidebarWidth: window.width,
 			Header: a.launchButtons, Settings: a.settingsCategories, SettingsKey: a.settingsKey,
 			SettingsSectionActions: a.sectionActions, SettingsCategory: a.category,
 			OnAppearanceChange: a.setAppearance, AltShortcuts: a.altShortcuts}
-	}, nsgo.WindowSize(1040, minWindowHeight),
-		nsgo.WindowConstraints(core.WindowConstraints{MinWidth: minWindowWidth, MinHeight: minWindowHeight}))
-	// The window closed: its agents end with it.
+	}, options...)
+	// The window closed: its place is kept, and its agents end with it.
+	if window != nil {
+		window.save()
+	}
 	stop()
 	aw.stop()
 	h.Close()
