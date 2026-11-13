@@ -125,7 +125,7 @@ const en = {
         label: 'In this process',
         title: 'main.go',
         body: 'host.Host starts the agent CLIs on this machine and hands their conversations straight to the view.',
-        command: 'go tool nsgo dev examples/single',
+        command: 'go tool nsgo dev cmd/agio',
         code: `h := host.New(host.Options{Dir: workDir})
 
 nsgo.Run(func(cx *core.Scope) core.Node {
@@ -333,7 +333,7 @@ const zh: typeof en = {
         label: '在本进程',
         title: 'main.go',
         body: 'host.Host 在本机启动智能体 CLI，把它们的对话直接交给视图。',
-        command: 'go tool nsgo dev examples/single',
+        command: 'go tool nsgo dev cmd/agio',
         code: en.how.tabs[0].code,
       },
       {

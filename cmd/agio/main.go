@@ -1,8 +1,10 @@
-// Command single is a whole agent application in one process: the window
-// and the coding agents it runs, which work in the folder a new
+// Command agio is the Agio app: a whole agent application in one process,
+// the window and the coding agents it runs, which work in the folder a new
 // conversation picks, else in AGIO_DIR or the home directory. It keeps the
-// agents and models turned off in Agio/settings.json under the user's
-// configuration directory, and shows the signed-in accounts' limits. Run it with go tool nsgo dev examples/single.
+// agents and models turned off and the statistics' choice in
+// Agio/settings.json under the user's configuration directory, shows the
+// signed-in accounts' limits and reports its use (stats.go). Run it with
+// go tool nsgo dev cmd/agio.
 package main
 
 import (
@@ -14,6 +16,7 @@ import (
 
 	"github.com/nsgo-dev/nsgo"
 	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/ui"
 	"github.com/oneo-me/nsgo-agio/agent"
 	"github.com/oneo-me/nsgo-agio/chatview"
 	"github.com/oneo-me/nsgo-agio/host"
@@ -24,6 +27,10 @@ import (
 type settings struct {
 	Disabled       []agent.Tool `json:"disabled,omitempty"`
 	DisabledModels []string     `json:"disabledModels,omitempty"`
+	// InstallID is the install's in the usage statistics; StatsOff is set
+	// once the settings turned them off.
+	InstallID string `json:"installID,omitempty"`
+	StatsOff  bool   `json:"statsOff,omitempty"`
 }
 
 // store reads and writes settings in one file, from any goroutine.
@@ -96,7 +103,9 @@ func main() {
 		st.update(func(s *settings) { s.Disabled, s.DisabledModels = disabled, models })
 	})
 	nsgo.Run(func(cx *core.Scope) core.Node {
-		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title}
+		reportUsage(cx, h, st)
+		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title,
+			Settings: []ui.SettingsCategory{statsSettings(cx, st)}}
 	}, nsgo.WindowSize(1040, 720))
 	// The window closed: its agents end with it.
 	stop()

@@ -28,7 +28,8 @@ in a lightbox, and a quiet footer. To start another app's site, copy
 - `src/assets/screens/` and the `Shot` imports in `src/layouts/Home.astro`;
 - `src/components/Mark.astro`, `public/favicon.svg` and the social cards;
 - the sections in `src/layouts/Home.astro` the app does not need;
-- `agio-` in the storage keys and the Umami tag in `src/layouts/Layout.astro`.
+- `agio-` in the storage keys and the Umami website ID and domains in
+  `src/layouts/Layout.astro`.
 
 `Stage` takes a tone and features and notes take an LED, named in
 `src/template.ts` and drawn in `src/styles/global.css` for light and dark.
@@ -85,5 +86,5 @@ and publishes it to GitHub Pages on pushes to `main` that touch `website/`.
 Enable Pages for the repository with GitHub Actions as the source; a private
 repository needs a plan that includes Pages.
 
-The page counts visits in the workspace's Umami site, tagged `agio-website`;
-add the Pages domain to that site in Umami for the script to run there.
+The page counts visits in Agio's Umami site, tagged `website`, only on the
+domains listed in the script's `data-domains`.

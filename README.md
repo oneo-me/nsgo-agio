@@ -52,13 +52,15 @@ nsgo.Run(func(cx *core.Scope) core.Node {
 
 `chatview.Conversation` shows a single conversation for an application with its own layout, and `wire.Serve` serves any byte stream, such as an SSH session. Agents run with full access to the server's files, so keep a server on a private network and give it a token.
 
-The examples run as they are:
+Agio, the app in `cmd/agio`, runs its agents in one process; the examples run as a server and its client:
 
-| Example | Run |
+| Program | Run |
 | --- | --- |
-| Single process | `go tool nsgo dev examples/single` |
+| Agio | `go tool nsgo dev cmd/agio` |
 | Server | `go run ./examples/server -token secret` |
 | Client | `AGIO_TOKEN=secret go tool nsgo dev examples/client` |
+
+Agio sends anonymous usage statistics to Umami: when it is open and used, and which agents messages go to, never prompts or folders. Builds run with `nsgo dev` send nothing, and its settings turn them off.
 
 ## Documentation
 

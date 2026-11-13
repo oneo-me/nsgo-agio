@@ -20,14 +20,16 @@ import (
 //
 // Name, when set, heads the menu bar on macOS: the app's menu with the
 // settings, a File menu starting a conversation, and the platform's Edit
-// and Window menus.
+// and Window menus. Settings follow the agents in the settings dialog, such
+// as the app's own preferences.
 type App struct {
 	Model *Model
 	Dir   string
 	Name  string
 	// Header ends the window's header, such as the app's own actions.
-	Header []core.Node
-	TestID string
+	Header   []core.Node
+	Settings []ui.SettingsCategory
+	TestID   string
 }
 
 // Render implements core.Node.

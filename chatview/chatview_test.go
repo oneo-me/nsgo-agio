@@ -9,6 +9,7 @@ import (
 
 	"github.com/nsgo-dev/nsgo/core"
 	"github.com/nsgo-dev/nsgo/nsgotest"
+	"github.com/nsgo-dev/nsgo/ui"
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/agent"
 	"github.com/oneo-me/nsgo-agio/host"
@@ -90,6 +91,20 @@ func TestSettingsTurnAgentsOffAndOn(t *testing.T) {
 	app.WaitUntil(5*time.Second, func() bool { return hasText(app, "Off") })
 	app.Press("id:agent-claude")
 	app.WaitUntil(5*time.Second, func() bool { return h.State().Ready() })
+}
+
+func TestSettingsShowTheAppsCategories(t *testing.T) {
+	h := host.New(host.Options{Env: []string{}, Tools: []agent.Tool{agent.Claude},
+		Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}}, Home: t.TempDir()})
+	t.Cleanup(func() { h.Close() })
+	app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
+		return App{Model: Bind(cx, h), Settings: []ui.SettingsCategory{{ID: "own", Title: "Own",
+			Groups: []ui.SettingsGroup{{ID: "own", Items: []ui.SettingsItem{{ID: "item", Title: "Own item"}}}}}}}
+	}, nsgotest.Size(900, 640))
+	app.Press("id:open-settings")
+	app.WaitUntil(5*time.Second, func() bool { return hasText(app, "Own") })
+	app.Press("text:Own")
+	app.WaitFor("text:Own item", 5*time.Second)
 }
 
 func TestNewConversationChoosesItsProject(t *testing.T) {

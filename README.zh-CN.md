@@ -52,13 +52,15 @@ nsgo.Run(func(cx *core.Scope) core.Node {
 
 自有布局的应用可用 `chatview.Conversation` 展示单个对话；`wire.Serve` 可在任意字节流上提供服务，例如 SSH 会话。智能体对服务端文件拥有完全访问权限，因此请把服务端放在私有网络中并设置令牌。
 
-示例可直接运行：
+`cmd/agio` 中的应用 Agio 在单进程中运行智能体；示例以服务端和客户端运行：
 
-| 示例 | 运行 |
+| 程序 | 运行 |
 | --- | --- |
-| 单进程 | `go tool nsgo dev examples/single` |
+| Agio | `go tool nsgo dev cmd/agio` |
 | 服务端 | `go run ./examples/server -token secret` |
 | 客户端 | `AGIO_TOKEN=secret go tool nsgo dev examples/client` |
+
+Agio 会向 Umami 发送匿名使用统计：何时打开和使用，以及消息发给了哪些智能体，从不包含提示词或文件夹。`nsgo dev` 运行的构建不发送，也可在设置中关闭。
 
 ## 文档
 

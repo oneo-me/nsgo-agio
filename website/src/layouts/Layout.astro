@@ -37,11 +37,6 @@ const jsonLd = {
   author: { '@type': 'Person', name: site.author, url: site.blog },
   isPartOf: { '@type': 'SoftwareSourceCode', name: 'NSGo', codeRepository: site.nsgoRepo },
 };
-
-// One Umami site for the workspace, tagged per app; agio's domain is added
-// there beside the gallery's and the app's. data-domains keeps local servers
-// out of the counts.
-const umamiId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID ?? 'e8174058-eb31-40f8-bf9c-4ddc9ca5f4ac';
 ---
 
 <!doctype html>
@@ -114,13 +109,16 @@ const umamiId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID ?? 'e8174058-eb31-40f8-b
       })();
     </script>
 
+    <!-- Umami counts the deployed site's visits in Agio's own site, tagged
+         "website" so other Agio apps can report beside it; data-domains
+         skips local servers. -->
     <script
       is:inline
       defer
       src="https://umami.oneo.me/script.js"
-      data-website-id={umamiId}
+      data-website-id="c4801ae4-210f-4877-860d-807a8b8ed0e0"
       data-domains="oneo-me.github.io,agio.oneo.me"
-      data-tag="agio-website"></script>
+      data-tag="website"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">{copy.nav.skip}</a>

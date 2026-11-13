@@ -15,7 +15,7 @@ import (
 )
 
 // settings is App's settings dialog: the backend's agents and their
-// models.
+// models, then the app's own categories.
 func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
 	m := a.Model
 	msgs := locales.For(cx)
@@ -35,7 +35,7 @@ func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
 		Label: msgs.Settings(), TestID: "settings-dialog",
 		Content: func(narrow func() bool) core.Node {
 			return region(m, key, func(cx *core.Scope) core.Node {
-				return ui.Settings{Categories: []ui.SettingsCategory{agentSettings(m, msgs)}, Category: category, Query: query, Narrow: narrow, TestID: "settings",
+				return ui.Settings{Categories: append([]ui.SettingsCategory{agentSettings(m, msgs)}, a.Settings...), Category: category, Query: query, Narrow: narrow, TestID: "settings",
 					Title: msgs.Settings(), SearchLabel: msgs.SearchSettings(), SearchPlaceholder: msgs.SearchSettings(),
 					ResultsTitle: msgs.SettingsResults(), EmptyText: msgs.NoMatchingSettings(),
 					OnClose: func() { open.Set(false) }, CloseLabel: msgs.CloseSettings()}
