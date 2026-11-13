@@ -6,6 +6,7 @@
 </p>
 
 <p align="center">
+  <a href="https://oneo-me.github.io/nsgo-agio/"><img alt="Website" src="https://img.shields.io/badge/Website-oneo--me.github.io-0969da?logo=astro&logoColor=white"></a>
   <a href="https://github.com/oneo-me"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-oneo--me-181717?logo=github&logoColor=white"></a>
   <a href="https://oneo.me"><img alt="Blog" src="https://img.shields.io/badge/Blog-oneo.me-0969da"></a>
   <a href="https://x.com/oneo666"><img alt="X" src="https://img.shields.io/badge/X-%40oneo666-000000?logo=x&logoColor=white"></a>
@@ -65,7 +66,7 @@ The examples run as they are:
 
 ## Development
 
-Run `go tool nsgo check` and `go tool nsgo test` from the repository root. See [AGENTS.md](AGENTS.md) for how changes are made.
+Run `go tool nsgo check` and `go tool nsgo test` from the repository root. See [AGENTS.md](AGENTS.md) for how changes are made. The website is in [website/](website/README.md).
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
 

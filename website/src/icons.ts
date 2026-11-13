@@ -1,0 +1,26 @@
+// The line icons the page uses, shared by the icon component and the copy
+// that names a feature's icon.
+export type IconName =
+  | 'arrow-right'
+  | 'arrow-up-right'
+  | 'arrow-left'
+  | 'chevron-down'
+  | 'copy'
+  | 'check'
+  | 'menu'
+  | 'close'
+  | 'github'
+  | 'terminal'
+  | 'messages'
+  | 'server'
+  | 'window'
+  | 'layers'
+  | 'shield'
+  | 'spark'
+  | 'code'
+  | 'stream'
+  | 'book'
+  | 'sun'
+  | 'moon'
+  | 'monitor'
+  | 'globe';

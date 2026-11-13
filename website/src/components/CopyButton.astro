@@ -1,0 +1,74 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  text: string;
+  label?: string;
+  compact?: boolean;
+  class?: string;
+}
+
+const { text, label = 'Copy', compact = false, class: className } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={['copy-button', compact && 'copy-button-compact', className]}
+  data-copy={text}
+  aria-label={label}
+  title={label}
+>
+  <span class="copy-icon copy-icon-copy"><Icon name="copy" size={compact ? 14 : 15} /></span>
+  <span class="copy-icon copy-icon-check"><Icon name="check" size={compact ? 14 : 15} /></span>
+  {!compact && <span class="copy-label">{label}</span>}
+</button>
+
+<style>
+  .copy-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 28px;
+    padding: 0 9px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--color-faint);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .copy-button:hover {
+    border-color: var(--color-line);
+    background: var(--color-panel-soft);
+    color: var(--color-text);
+  }
+
+  .copy-button-compact {
+    width: 28px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .copy-icon {
+    display: inline-flex;
+  }
+
+  .copy-icon-check,
+  .copy-button[data-copied] .copy-icon-copy {
+    display: none;
+  }
+
+  .copy-button[data-copied] {
+    color: var(--color-live);
+  }
+
+  .copy-button[data-copied] .copy-icon-check {
+    display: inline-flex;
+  }
+</style>

@@ -1,0 +1,186 @@
+---
+import Mark from './Mark.astro';
+import Icon from './Icon.astro';
+import ThemeSwitch from './ThemeSwitch.astro';
+import LanguageSwitch from './LanguageSwitch.astro';
+import type { Copy } from '../copy';
+import { pagePath, site, type Lang } from '../site';
+
+interface Props {
+  lang: Lang;
+  copy: Copy;
+}
+
+const { lang, copy } = Astro.props;
+
+const home = pagePath(lang);
+const links = [
+  { label: copy.nav.features, href: `${home}#features` },
+  { label: copy.nav.how, href: `${home}#how` },
+  { label: copy.nav.start, href: `${home}#start` },
+];
+---
+
+<header class="sticky top-0 z-50 border-b border-line/70 bg-bg/80 backdrop-blur-xl">
+  <div class="wrap flex h-16 items-center justify-between gap-4">
+    <a class="group flex items-center gap-2.5" href={home} aria-label={copy.nav.home}>
+      <Mark size={28} />
+      <span class="text-[17px] font-semibold tracking-[-0.02em]">{site.name}</span>
+      <span class="badge hidden sm:inline-flex">
+        <span class="badge-dot"></span>{copy.nav.preview}
+      </span>
+    </a>
+
+    <nav class="hidden items-center gap-1 lg:flex" aria-label={copy.nav.primary}>
+      {
+        links.map((link) => (
+          <a
+            class="rounded-lg px-3 py-2 text-[13.5px] text-muted transition-colors hover:bg-panel hover:text-text"
+            href={link.href}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="hidden items-center gap-2.5 lg:flex">
+      <ThemeSwitch copy={copy} />
+      <LanguageSwitch lang={lang} copy={copy} />
+      <span class="mx-0.5 h-4 w-px bg-line" aria-hidden="true"></span>
+      <a
+        class="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[13.5px] text-muted transition-colors hover:text-text"
+        href={site.repo}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Icon name="github" size={17} />
+        {copy.nav.github}
+      </a>
+      <a class="btn btn-primary btn-small" href={`${home}#start`}>{copy.nav.getStarted}</a>
+    </div>
+
+    <button
+      type="button"
+      class="menu-toggle lg:hidden"
+      data-menu-toggle
+      aria-expanded="false"
+      aria-controls="site-menu"
+      aria-label={copy.nav.menu}
+      data-open-label={copy.nav.menu}
+      data-close-label={copy.nav.close}
+    >
+      <span class="menu-icon menu-icon-open"><Icon name="menu" size={22} /></span>
+      <span class="menu-icon menu-icon-close"><Icon name="close" size={22} /></span>
+    </button>
+  </div>
+
+  <div id="site-menu" class="site-menu border-t border-line/70 lg:hidden" data-menu hidden>
+    <nav class="wrap grid gap-1 py-4" aria-label={copy.nav.menuLabel}>
+      {
+        links.map((link) => (
+          <a class="rounded-lg px-3 py-2.5 text-[15px] text-muted hover:bg-panel hover:text-text" href={link.href}>
+            {link.label}
+          </a>
+        ))
+      }
+      <a
+        class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[15px] text-muted hover:bg-panel hover:text-text"
+        href={site.repo}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Icon name="github" size={17} /> {copy.nav.github}
+      </a>
+      <a class="btn btn-primary mt-2" href={`${home}#start`}>{copy.nav.getStarted}</a>
+
+      <div class="my-2 h-px bg-line/70"></div>
+      <div class="grid gap-2 px-1 py-2">
+        <p class="mono-label">{copy.theme.label}</p>
+        <ThemeSwitch copy={copy} wide />
+      </div>
+      <div class="grid gap-2 px-1 py-2">
+        <p class="mono-label">{copy.language.label}</p>
+        <LanguageSwitch lang={lang} copy={copy} wide />
+      </div>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const menu = document.querySelector<HTMLElement>('[data-menu]');
+
+  function setMenu(open: boolean) {
+    if (!toggle || !menu) return;
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute(
+      'aria-label',
+      open ? (toggle.dataset.closeLabel ?? 'Close menu') : (toggle.dataset.openLabel ?? 'Open menu'),
+    );
+    menu.hidden = !open;
+    document.documentElement.style.overflow = open ? 'hidden' : '';
+  }
+
+  toggle?.addEventListener('click', () => {
+    setMenu(toggle.getAttribute('aria-expanded') !== 'true');
+  });
+
+  menu?.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => setMenu(false));
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setMenu(false);
+  });
+
+  window.matchMedia('(min-width: 1024px)').addEventListener('change', (event) => {
+    if (event.matches) setMenu(false);
+  });
+</script>
+
+<style>
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--color-line);
+    border-radius: 9px;
+    background: transparent;
+    color: var(--color-muted);
+    cursor: pointer;
+  }
+
+  .menu-toggle:hover {
+    background: var(--color-panel);
+    color: var(--color-text);
+  }
+
+  .menu-icon {
+    display: inline-flex;
+  }
+
+  .menu-icon-close,
+  .menu-toggle[aria-expanded='true'] .menu-icon-open {
+    display: none;
+  }
+
+  .menu-toggle[aria-expanded='true'] .menu-icon-close {
+    display: inline-flex;
+  }
+
+  .site-menu {
+    max-height: calc(100vh - 4rem);
+    max-height: calc(100dvh - 4rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  @media (min-width: 1024px) {
+    .menu-toggle {
+      display: none;
+    }
+  }
+</style>

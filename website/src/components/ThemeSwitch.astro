@@ -1,0 +1,34 @@
+---
+import Icon from './Icon.astro';
+import type { Copy } from '../copy';
+
+interface Props {
+  copy: Copy;
+  wide?: boolean;
+}
+
+const { copy, wide = false } = Astro.props;
+
+const options = [
+  { value: 'light', label: copy.theme.light, icon: 'sun' },
+  { value: 'dark', label: copy.theme.dark, icon: 'moon' },
+  { value: 'system', label: copy.theme.system, icon: 'monitor' },
+] as const;
+---
+
+<div class:list={['theme-switch', wide && 'theme-switch-wide']} role="group" aria-label={copy.theme.label}>
+  {
+    options.map((option) => (
+      <button
+        type="button"
+        data-theme-value={option.value}
+        aria-label={option.label}
+        title={option.label}
+        aria-pressed="false"
+      >
+        <Icon name={option.icon} size={15} />
+        <span class="theme-label">{option.label}</span>
+      </button>
+    ))
+  }
+</div>

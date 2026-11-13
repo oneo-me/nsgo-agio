@@ -1,0 +1,30 @@
+---
+import type { Copy } from '../copy';
+import { langTag, langs, pagePath, type Lang } from '../site';
+
+interface Props {
+  lang: Lang;
+  copy: Copy;
+  wide?: boolean;
+}
+
+const { lang, copy, wide = false } = Astro.props;
+---
+
+<div class:list={['language-switch', wide && 'language-switch-wide']} role="group" aria-label={copy.language.label}>
+  {
+    langs.map((option) => {
+      const tag = langTag(option);
+      const label = wide ? (option === 'en' ? copy.language.en : copy.language.zh) : option === 'en' ? 'EN' : '中文';
+      return option === lang ? (
+        <span class="language-current" aria-current="page" lang={tag}>
+          {label}
+        </span>
+      ) : (
+        <a href={pagePath(option)} hreflang={tag} lang={tag} data-lang-switch={option}>
+          {label}
+        </a>
+      );
+    })
+  }
+</div>

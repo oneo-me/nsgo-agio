@@ -1,0 +1,52 @@
+---
+import CopyButton from './CopyButton.astro';
+
+interface Props {
+  text: string;
+  label?: string;
+  class?: string;
+}
+
+const { text, label = 'Copy command', class: className } = Astro.props;
+---
+
+<div class:list={['command', className]}>
+  <span class="command-mark" aria-hidden="true">$</span>
+  <code class="command-text">{text}</code>
+  <CopyButton text={text} label={label} compact />
+</div>
+
+<style>
+  .command {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 0 8px 0 16px;
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+    background: var(--color-panel);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .command-mark {
+    color: var(--color-accent);
+    user-select: none;
+  }
+
+  .command-text {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 540px) {
+    .command {
+      padding-left: 12px;
+      font-size: 11.5px;
+    }
+  }
+</style>

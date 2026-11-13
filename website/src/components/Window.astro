@@ -1,0 +1,95 @@
+---
+import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  light: ImageMetadata;
+  dark: ImageMetadata;
+  alt: string;
+  caption?: string;
+  loading?: 'eager' | 'lazy';
+  widths?: number[];
+  class?: string;
+}
+
+const {
+  light,
+  dark,
+  alt,
+  caption,
+  loading = 'lazy',
+  widths = [720, 1080, 1440, 2000, light.width],
+  class: className,
+} = Astro.props;
+---
+
+<figure class:list={['window-figure', className]}>
+  <div class="window">
+    <div class="shot shot-light">
+      <Picture
+        src={light}
+        alt={alt}
+        widths={widths}
+        sizes="(min-width: 1180px) 1080px, calc(100vw - 48px)"
+        formats={['avif', 'webp']}
+        fallbackFormat="png"
+        loading={loading}
+        decoding="async"
+      />
+    </div>
+    <div class="shot shot-dark">
+      <Picture
+        src={dark}
+        alt={alt}
+        widths={widths}
+        sizes="(min-width: 1180px) 1080px, calc(100vw - 48px)"
+        formats={['avif', 'webp']}
+        fallbackFormat="png"
+        loading={loading}
+        decoding="async"
+      />
+    </div>
+  </div>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .window-figure {
+    display: grid;
+    gap: 16px;
+  }
+
+  .shot {
+    display: none;
+  }
+
+  html[data-theme='light'] .shot-light,
+  html[data-theme='dark'] .shot-dark {
+    display: block;
+  }
+
+  @media (prefers-color-scheme: light) {
+    html:not([data-theme]) .shot-light {
+      display: block;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme]) .shot-dark {
+      display: block;
+    }
+  }
+
+  figcaption {
+    color: var(--color-faint);
+    font-size: 13px;
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  @media (max-width: 540px) {
+    figcaption {
+      font-size: 12px;
+    }
+  }
+</style>

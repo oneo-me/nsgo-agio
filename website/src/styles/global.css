@@ -1,0 +1,492 @@
+@import 'tailwindcss';
+
+/* Agio's site. A calm, almost monochrome canvas with the NSGo blue for
+   moments that matter and a green for what is live. The appearance follows
+   the system until the user chooses light, dark or system, which the head
+   script applies before the first paint. The app screenshot supplies the
+   color; the page stays out of its way. */
+
+@theme {
+  --color-bg: #08090c;
+  --color-bg-soft: #0b0d12;
+  --color-panel: #101319;
+  --color-panel-soft: #141821;
+  --color-line: #22262f;
+  --color-line-strong: #303643;
+  --color-text: #f1f3f7;
+  --color-muted: #9aa1ad;
+  --color-faint: #7f8794;
+  --color-accent: #57aaff;
+  --color-accent-strong: #007aff;
+  --color-accent-ink: #bfe0ff;
+  --color-live: #3ddc84;
+  --color-warn: #ffb454;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Noto Sans SC', 'Microsoft YaHei', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  --radius-window: 14px;
+}
+
+:root {
+  --window-inset: rgb(255 255 255 / 3%);
+  --window-shadow: 0 40px 120px -40px rgb(0 0 0 / 90%);
+  --page-glow: rgb(0 122 255 / 9%);
+  --hero-glow: rgb(0 122 255 / 16%);
+  --shot-glow: rgb(0 122 255 / 18%);
+  --arch-glow: rgb(0 122 255 / 7%);
+
+  --astro-code-foreground: #e6edf3;
+  --astro-code-background: transparent;
+  --astro-code-token-comment: #8b949e;
+  --astro-code-token-keyword: #ff7b72;
+  --astro-code-token-string: #a5d6ff;
+  --astro-code-token-string-expression: #a5d6ff;
+  --astro-code-token-function: #d2a8ff;
+  --astro-code-token-constant: #79c0ff;
+  --astro-code-token-parameter: #ffa657;
+  --astro-code-token-punctuation: #9da7b3;
+  --astro-code-token-link: #79c0ff;
+  --astro-code-token-number: #79c0ff;
+  --astro-code-token-boolean: #79c0ff;
+  --astro-code-token-builtin: #ffa657;
+  --astro-code-token-variable: #e6edf3;
+  --astro-code-token-operator: #9da7b3;
+  --astro-code-token-regexp: #a5d6ff;
+  --astro-code-token-tag: #7ee787;
+  --astro-code-token-attribute: #79c0ff;
+  --astro-code-token-property: #79c0ff;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+  --color-bg: #fbfbfd;
+  --color-bg-soft: #f4f5f8;
+  --color-panel: #ffffff;
+  --color-panel-soft: #f6f7fa;
+  --color-line: #e5e7ed;
+  --color-line-strong: #cfd3dc;
+  --color-text: #0c0e13;
+  --color-muted: #5f6673;
+  --color-faint: #737b88;
+  --color-accent: #0066cc;
+  --color-accent-strong: #0055b3;
+  --color-accent-ink: #004c99;
+  --color-live: #128a4d;
+  --color-warn: #a15c00;
+
+  --window-inset: rgb(16 24 40 / 4%);
+  --window-shadow: 0 40px 100px -50px rgb(16 24 40 / 30%);
+  --page-glow: rgb(0 102 204 / 7%);
+  --hero-glow: rgb(0 102 204 / 10%);
+  --shot-glow: rgb(0 102 204 / 12%);
+  --arch-glow: rgb(0 102 204 / 5%);
+
+  --astro-code-foreground: #1f2328;
+  --astro-code-background: transparent;
+  --astro-code-token-comment: #6e7781;
+  --astro-code-token-keyword: #cf222e;
+  --astro-code-token-string: #0a3069;
+  --astro-code-token-string-expression: #0a3069;
+  --astro-code-token-function: #8250df;
+  --astro-code-token-constant: #0550ae;
+  --astro-code-token-parameter: #953800;
+  --astro-code-token-punctuation: #57606a;
+  --astro-code-token-link: #0550ae;
+  --astro-code-token-number: #0550ae;
+  --astro-code-token-boolean: #0550ae;
+  --astro-code-token-builtin: #953800;
+  --astro-code-token-variable: #1f2328;
+  --astro-code-token-operator: #57606a;
+  --astro-code-token-regexp: #0a3069;
+  --astro-code-token-tag: #116329;
+  --astro-code-token-attribute: #0550ae;
+  --astro-code-token-property: #0550ae;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: dark;
+    scroll-padding-top: 88px;
+    background: var(--color-bg);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    min-width: 320px;
+    margin: 0;
+    background:
+      radial-gradient(1200px 800px at 50% -20%, var(--page-glow), transparent 62%),
+      var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgb(87 170 255 / 26%);
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  figure,
+  pre {
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  img,
+  svg {
+    display: block;
+  }
+
+  ul,
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  code,
+  pre {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .wrap {
+    width: min(1120px, calc(100% - 48px));
+    margin-inline: auto;
+  }
+
+  .skip-link {
+    position: fixed;
+    top: -80px;
+    left: 16px;
+    z-index: 100;
+    padding: 10px 16px;
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+    background: var(--color-panel);
+    font-size: 14px;
+    transition: top 0.15s ease;
+  }
+
+  .skip-link:focus {
+    top: 12px;
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .eyebrow::before {
+    width: 18px;
+    height: 1px;
+    background: currentColor;
+    content: '';
+    opacity: 0.7;
+  }
+
+  .section-title {
+    margin-top: 18px;
+    font-size: clamp(32px, 4.4vw, 48px);
+  }
+
+  .section-lead {
+    max-width: 58ch;
+    margin-top: 18px;
+    color: var(--color-muted);
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 22px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease,
+      opacity 0.15s ease;
+  }
+
+  .btn-primary {
+    background: var(--color-text);
+    color: var(--color-bg);
+  }
+
+  .btn-primary:hover {
+    opacity: 0.86;
+  }
+
+  .btn-secondary {
+    border-color: var(--color-line-strong);
+    background: transparent;
+    color: var(--color-text);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--color-faint);
+    background: var(--color-panel);
+  }
+
+  .btn-small {
+    height: 36px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    color: var(--color-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--color-live);
+    box-shadow: 0 0 0 3px rgb(61 220 132 / 12%);
+  }
+
+  .window {
+    overflow: hidden;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-window);
+    background: var(--color-panel);
+    box-shadow:
+      0 0 0 1px var(--window-inset) inset,
+      var(--window-shadow);
+  }
+
+  .window picture {
+    display: block;
+  }
+
+  .window img {
+    width: 100%;
+    height: auto;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Feature accents. The dot beside a feature is its only color; the text
+   stays the page's, as in a quiet control panel. */
+.accent-blue {
+  --dot: #57aaff;
+}
+
+.accent-green {
+  --dot: #3ddc84;
+}
+
+.accent-violet {
+  --dot: #b491ff;
+}
+
+.accent-amber {
+  --dot: #ffc35c;
+}
+
+.accent-cyan {
+  --dot: #5fd4d6;
+}
+
+.accent-coral {
+  --dot: #ff8a7a;
+}
+
+@layer components {
+  .feature-dot {
+    width: 7px;
+    height: 7px;
+    flex: none;
+    border-radius: 999px;
+    background: var(--dot);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--dot) 13%, transparent);
+  }
+
+  .mono-label {
+    color: var(--color-faint);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .rule {
+    height: 1px;
+    background: var(--color-line);
+  }
+}
+
+/* Appearance and language controls. The active choice is drawn from
+   data-theme-preference so it is right before the client script runs. */
+.theme-switch,
+.language-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 3px;
+  border: 1px solid var(--color-line);
+  border-radius: 9px;
+  background: var(--color-bg-soft);
+}
+
+.theme-switch button,
+.language-switch a,
+.language-switch span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  min-width: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.theme-switch button {
+  width: 28px;
+  padding: 0;
+}
+
+.language-switch a,
+.language-switch span {
+  padding: 0 8px;
+}
+
+.theme-switch button:hover,
+.language-switch a:hover {
+  color: var(--color-text);
+}
+
+html[data-theme-preference='light'] .theme-switch [data-theme-value='light'],
+html[data-theme-preference='dark'] .theme-switch [data-theme-value='dark'],
+html[data-theme-preference='system'] .theme-switch [data-theme-value='system'],
+.language-switch [aria-current='page'] {
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: 0 0 0 1px var(--color-line);
+}
+
+.theme-label {
+  display: none;
+}
+
+.theme-switch-wide,
+.language-switch-wide {
+  display: flex;
+  width: 100%;
+}
+
+.theme-switch-wide button,
+.language-switch-wide a,
+.language-switch-wide span {
+  flex: 1;
+  width: auto;
+  height: 34px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.theme-switch-wide .theme-label {
+  display: inline;
+  margin-left: 6px;
+}
+
+/* Keep Latin words such as Go and Agio in their own casing in Chinese
+   labels, where uppercase is not the convention. */
+html[lang='zh-CN'] .eyebrow,
+html[lang='zh-CN'] .mono-label {
+  text-transform: none;
+  letter-spacing: 0.08em;
+}

@@ -1,0 +1,34 @@
+---
+import Layout from './Layout.astro';
+import Mark from '../components/Mark.astro';
+import Icon from '../components/Icon.astro';
+import { copies } from '../copy';
+import { pagePath, type Lang } from '../site';
+
+interface Props {
+  lang: Lang;
+  zhRedirect?: string;
+}
+
+const { lang, zhRedirect } = Astro.props;
+const copy = copies[lang];
+---
+
+<Layout
+  lang={lang}
+  title={copy.notFound.title}
+  description={copy.notFound.body}
+  noindex
+  zhRedirect={zhRedirect}
+>
+  <section class="wrap flex min-h-[62vh] flex-col items-center justify-center py-24 text-center">
+    <Mark size={56} />
+    <p class="eyebrow mt-8">404</p>
+    <h1 class="mt-4 text-[clamp(34px,5vw,52px)]">{copy.notFound.heading}</h1>
+    <p class="mt-4 max-w-[42ch] text-[15px] leading-relaxed text-muted">{copy.notFound.body}</p>
+    <a class="btn btn-primary mt-8" href={pagePath(lang)}>
+      <Icon name="arrow-left" size={16} />
+      {copy.notFound.back}
+    </a>
+  </section>
+</Layout>

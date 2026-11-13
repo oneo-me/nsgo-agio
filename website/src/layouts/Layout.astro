@@ -1,0 +1,136 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { copies } from '../copy';
+import { langTag, pagePath, path, site, type Lang } from '../site';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  noindex?: boolean;
+  /** The Chinese twin an English page sends a Chinese browser to. */
+  zhRedirect?: string;
+}
+
+const { lang, title, description, noindex = false, zhRedirect } = Astro.props;
+const copy = copies[lang];
+const tag = langTag(lang);
+const origin = Astro.site ?? new URL('https://oneo-me.github.io');
+const canonical = new URL(Astro.url.pathname, origin);
+const enUrl = new URL(pagePath('en'), origin);
+const zhUrl = new URL(pagePath('zh'), origin);
+const ogImage = new URL(path(lang === 'zh' ? 'og-zh.png' : 'og.png'), origin);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareSourceCode',
+  name: 'Agio',
+  description,
+  url: canonical.href,
+  codeRepository: site.repo,
+  programmingLanguage: 'Go',
+  inLanguage: tag,
+  license: 'https://opensource.org/license/mit',
+  author: { '@type': 'Person', name: site.author, url: site.blog },
+  isPartOf: { '@type': 'SoftwareSourceCode', name: 'NSGo', codeRepository: site.nsgoRepo },
+};
+
+// One Umami site for the workspace, tagged per app; agio's domain is added
+// there beside the gallery's and the app's. data-domains keeps local servers
+// out of the counts.
+const umamiId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID ?? 'e8174058-eb31-40f8-bf9c-4ddc9ca5f4ac';
+---
+
+<!doctype html>
+<html lang={tag} data-zh-path={zhRedirect}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={site.author} />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#08090c" />
+    {noindex && <meta name="robots" content="noindex" />}
+    {!noindex && <link rel="canonical" href={canonical.href} />}
+    {!noindex && <link rel="alternate" hreflang="en" href={enUrl.href} />}
+    {!noindex && <link rel="alternate" hreflang="zh-CN" href={zhUrl.href} />}
+    {!noindex && <link rel="alternate" hreflang="x-default" href={enUrl.href} />}
+    <link rel="icon" type="image/svg+xml" href={path('favicon.svg')} />
+    <link rel="apple-touch-icon" href={path('apple-touch-icon.png')} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Agio" />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage.href} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={copy.meta.ogAlt} />
+    <meta property="og:locale" content={lang === 'zh' ? 'zh_CN' : 'en_US'} />
+    <meta property="og:locale:alternate" content={lang === 'zh' ? 'en_US' : 'zh_CN'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage.href} />
+    <meta name="twitter:image:alt" content={copy.meta.ogAlt} />
+
+    {!noindex && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>}
+
+    <!-- The appearance and a first visit's language, before the first paint. -->
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        var preference = 'system';
+        try {
+          preference = localStorage.getItem('agio-theme') || 'system';
+        } catch (error) {}
+        if (preference !== 'light' && preference !== 'dark' && preference !== 'system') preference = 'system';
+        var dark = preference === 'dark' || (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        root.dataset.theme = dark ? 'dark' : 'light';
+        root.dataset.themePreference = preference;
+        root.style.colorScheme = dark ? 'dark' : 'light';
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', dark ? '#08090c' : '#fbfbfd');
+
+        var zhPath = root.getAttribute('data-zh-path') || '';
+        if (!zhPath) return;
+        var lang = null;
+        try {
+          lang = localStorage.getItem('agio-lang');
+        } catch (error) {}
+        if (lang !== 'en' && lang !== 'zh') lang = null;
+        if (lang === 'en') return;
+        var languages = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+        var chinese = languages.some(function (value) {
+          return String(value).toLowerCase().indexOf('zh') === 0;
+        });
+        if (lang === 'zh' || (!lang && chinese)) location.replace(zhPath + location.search + location.hash);
+      })();
+    </script>
+
+    <script
+      is:inline
+      defer
+      src="https://umami.oneo.me/script.js"
+      data-website-id={umamiId}
+      data-domains="oneo-me.github.io,agio.oneo.me"
+      data-tag="agio-website"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{copy.nav.skip}</a>
+    <Header lang={lang} copy={copy} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer lang={lang} copy={copy} />
+
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>

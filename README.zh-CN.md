@@ -6,6 +6,7 @@
 </p>
 
 <p align="center">
+  <a href="https://oneo-me.github.io/nsgo-agio/zh/"><img alt="官网" src="https://img.shields.io/badge/%E5%AE%98%E7%BD%91-oneo--me.github.io-0969da?logo=astro&logoColor=white"></a>
   <a href="https://github.com/oneo-me"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-oneo--me-181717?logo=github&logoColor=white"></a>
   <a href="https://oneo.me"><img alt="博客" src="https://img.shields.io/badge/%E5%8D%9A%E5%AE%A2-oneo.me-0969da"></a>
   <a href="https://x.com/oneo666"><img alt="X" src="https://img.shields.io/badge/X-%40oneo666-000000?logo=x&logoColor=white"></a>
@@ -65,7 +66,7 @@ nsgo.Run(func(cx *core.Scope) core.Node {
 
 ## 开发
 
-在仓库根目录运行 `go tool nsgo check` 和 `go tool nsgo test`。修改方式见 [AGENTS.md](AGENTS.md)。
+在仓库根目录运行 `go tool nsgo check` 和 `go tool nsgo test`。修改方式见 [AGENTS.md](AGENTS.md)。官网位于 [website/](website/README.md)。
 
 发布说明见 [CHANGELOG.md](CHANGELOG.md)。
 

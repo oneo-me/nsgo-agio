@@ -1,0 +1,121 @@
+---
+import CodeBlock from './CodeBlock.astro';
+import Command from './Command.astro';
+
+interface Tab {
+  id: string;
+  label: string;
+  title: string;
+  command: string;
+  code: string;
+}
+
+interface Props {
+  tabs: readonly Tab[];
+  label?: string;
+  id?: string;
+  copyLabel?: string;
+  commandLabel?: string;
+}
+
+const {
+  tabs,
+  label = 'Examples',
+  id = 'start-tabs',
+  copyLabel = 'Copy code',
+  commandLabel = 'Copy command',
+} = Astro.props;
+---
+
+<div class="tabs" data-tabs id={id}>
+  <div class="tab-list" role="tablist" aria-label={label}>
+    {
+      tabs.map((tab, index) => (
+        <button
+          type="button"
+          role="tab"
+          id={`${id}-tab-${tab.id}`}
+          aria-controls={`${id}-panel-${tab.id}`}
+          aria-selected={index === 0 ? 'true' : 'false'}
+          tabindex={index === 0 ? 0 : -1}
+          data-tab={tab.id}
+        >
+          {tab.label}
+        </button>
+      ))
+    }
+  </div>
+  {
+    tabs.map((tab, index) => (
+      <div
+        role="tabpanel"
+        id={`${id}-panel-${tab.id}`}
+        aria-labelledby={`${id}-tab-${tab.id}`}
+        tabindex="0"
+        hidden={index !== 0}
+      >
+        <Command text={tab.command} label={commandLabel} />
+        <CodeBlock code={tab.code} title={tab.title} copyLabel={copyLabel} />
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .tabs {
+    min-width: 0;
+  }
+
+  .tab-list {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 14px;
+    padding: 4px;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+    background: var(--color-bg-soft);
+  }
+
+  [role='tab'] {
+    height: 32px;
+    padding: 0 13px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--color-faint);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  [role='tab']:hover {
+    color: var(--color-text);
+  }
+
+  [role='tab'][aria-selected='true'] {
+    background: var(--color-panel-soft);
+    color: var(--color-text);
+    box-shadow: 0 0 0 1px var(--color-line);
+  }
+
+  [role='tabpanel'] {
+    min-width: 0;
+    display: grid;
+    gap: 10px;
+  }
+
+  [role='tabpanel'][hidden] {
+    display: none;
+  }
+
+  [role='tabpanel']:focus-visible {
+    outline-offset: 4px;
+  }
+</style>
