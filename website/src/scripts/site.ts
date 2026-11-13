@@ -1,4 +1,4 @@
-// Appearance, language choice, copy buttons and tabs: the page's only
+// Appearance, language choice, copy buttons, tabs and the lightbox: the page's only
 // client-side behavior. The head script has already applied the stored
 // appearance and sent a first visit to its language.
 
@@ -26,7 +26,7 @@ function applyTheme(theme: Theme, persist = true) {
   root.style.colorScheme = dark ? 'dark' : 'light';
 
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '#08090c' : '#fbfbfd');
+  if (meta) meta.setAttribute('content', dark ? '#0b0b0d' : '#f7f7f8');
   for (const button of themeButtons) {
     button.setAttribute('aria-pressed', String(button.dataset.themeValue === theme));
   }
@@ -123,5 +123,56 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-tabs]')) {
       event.preventDefault();
       select(tabs[next], true);
     });
+  });
+}
+
+// The lightbox shows the clicked shot's visible picture at the size of the
+// screen, and steps through every shot on the page.
+const dialog = document.querySelector<HTMLDialogElement>('[data-lightbox-dialog]');
+const shots = [...document.querySelectorAll<HTMLButtonElement>('[data-lightbox]')];
+
+if (dialog && shots.length) {
+  const media = dialog.querySelector<HTMLElement>('[data-lightbox-media]')!;
+  const caption = dialog.querySelector<HTMLElement>('[data-lightbox-caption]')!;
+  const count = dialog.querySelector<HTMLElement>('[data-lightbox-count]')!;
+  const prev = dialog.querySelector<HTMLButtonElement>('[data-lightbox-prev]')!;
+  const next = dialog.querySelector<HTMLButtonElement>('[data-lightbox-next]')!;
+  let current = 0;
+  let opener: HTMLButtonElement | null = null;
+
+  const show = (index: number) => {
+    current = (index + shots.length) % shots.length;
+    const shot = shots[current];
+    const picture = [...shot.querySelectorAll('picture')].find((p) => p.getClientRects().length > 0);
+    if (!picture) return;
+    const copy = picture.cloneNode(true) as HTMLElement;
+    for (const el of copy.querySelectorAll('source, img')) el.setAttribute('sizes', 'min(1280px, 100vw)');
+    copy.querySelector('img')?.setAttribute('loading', 'eager');
+    media.replaceChildren(copy);
+    caption.textContent = shot.dataset.caption ?? '';
+    count.textContent = shots.length > 1 ? `${current + 1} / ${shots.length}` : '';
+  };
+
+  prev.hidden = next.hidden = shots.length < 2;
+  shots.forEach((shot, index) =>
+    shot.addEventListener('click', () => {
+      opener = shot;
+      show(index);
+      dialog.showModal();
+    }),
+  );
+  prev.addEventListener('click', () => show(current - 1));
+  next.addEventListener('click', () => show(current + 1));
+  dialog.querySelector('[data-lightbox-close]')?.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog || (event.target as Element).classList.contains('lightbox-stage')) dialog.close();
+  });
+  dialog.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') show(current - 1);
+    else if (event.key === 'ArrowRight') show(current + 1);
+  });
+  dialog.addEventListener('close', () => {
+    media.replaceChildren();
+    opener?.focus();
   });
 }

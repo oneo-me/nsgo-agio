@@ -24,7 +24,7 @@ const { text, label = 'Copy command', class: className } = Astro.props;
     min-height: 46px;
     padding: 0 8px 0 16px;
     border: 1px solid var(--color-line);
-    border-radius: 10px;
+    border-radius: 12px;
     background: var(--color-panel);
     font-family: var(--font-mono);
     font-size: 13px;
@@ -36,6 +36,7 @@ const { text, label = 'Copy command', class: className } = Astro.props;
   }
 
   .command-text {
+    flex: 1;
     min-width: 0;
     overflow: hidden;
     color: var(--color-text);

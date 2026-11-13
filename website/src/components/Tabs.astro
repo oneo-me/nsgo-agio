@@ -1,4 +1,6 @@
 ---
+// A segmented control over code: each tab says what it shows, gives the
+// command that runs it, and the code itself.
 import CodeBlock from './CodeBlock.astro';
 import Command from './Command.astro';
 
@@ -6,25 +8,20 @@ interface Tab {
   id: string;
   label: string;
   title: string;
+  body: string;
   command: string;
   code: string;
 }
 
 interface Props {
   tabs: readonly Tab[];
-  label?: string;
+  label: string;
   id?: string;
   copyLabel?: string;
   commandLabel?: string;
 }
 
-const {
-  tabs,
-  label = 'Examples',
-  id = 'start-tabs',
-  copyLabel = 'Copy code',
-  commandLabel = 'Copy command',
-} = Astro.props;
+const { tabs, label, id = 'tabs', copyLabel = 'Copy code', commandLabel = 'Copy command' } = Astro.props;
 ---
 
 <div class="tabs" data-tabs id={id}>
@@ -38,7 +35,6 @@ const {
           aria-controls={`${id}-panel-${tab.id}`}
           aria-selected={index === 0 ? 'true' : 'false'}
           tabindex={index === 0 ? 0 : -1}
-          data-tab={tab.id}
         >
           {tab.label}
         </button>
@@ -54,7 +50,10 @@ const {
         tabindex="0"
         hidden={index !== 0}
       >
-        <Command text={tab.command} label={commandLabel} />
+        <div class="tab-text">
+          <p class="text-[17px] leading-relaxed text-muted">{tab.body}</p>
+          <Command text={tab.command} label={commandLabel} />
+        </div>
         <CodeBlock code={tab.code} title={tab.title} copyLabel={copyLabel} />
       </div>
     ))
@@ -69,25 +68,24 @@ const {
   .tab-list {
     display: flex;
     gap: 2px;
-    margin-bottom: 14px;
-    padding: 4px;
     width: fit-content;
     max-width: 100%;
+    margin: 0 auto 40px;
+    padding: 4px;
     overflow-x: auto;
-    border: 1px solid var(--color-line);
-    border-radius: 10px;
-    background: var(--color-bg-soft);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-text) 6%, transparent);
   }
 
   [role='tab'] {
-    height: 32px;
-    padding: 0 13px;
+    height: 36px;
+    padding: 0 18px;
     border: 0;
-    border-radius: 7px;
+    border-radius: 999px;
     background: transparent;
-    color: var(--color-faint);
-    font-family: var(--font-mono);
-    font-size: 11.5px;
+    color: var(--color-muted);
+    font-size: 14.5px;
+    font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
     transition:
@@ -100,15 +98,25 @@ const {
   }
 
   [role='tab'][aria-selected='true'] {
-    background: var(--color-panel-soft);
+    background: var(--color-panel);
     color: var(--color-text);
-    box-shadow: 0 0 0 1px var(--color-line);
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 10%),
+      0 0 0 0.5px rgb(0 0 0 / 6%);
   }
 
   [role='tabpanel'] {
     min-width: 0;
     display: grid;
-    gap: 10px;
+    gap: 28px;
+    align-items: center;
+  }
+
+  @media (min-width: 900px) {
+    [role='tabpanel'] {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: 48px;
+    }
   }
 
   [role='tabpanel'][hidden] {
@@ -116,6 +124,12 @@ const {
   }
 
   [role='tabpanel']:focus-visible {
-    outline-offset: 4px;
+    outline-offset: 6px;
+  }
+
+  .tab-text {
+    min-width: 0;
+    display: grid;
+    gap: 20px;
   }
 </style>

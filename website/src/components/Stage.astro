@@ -1,0 +1,35 @@
+---
+// A wide, softly tinted panel a screenshot sits on, as an app's window sits
+// on its desktop. The tone picks the tint; see --stage-* in global.css.
+import type { Tone } from '../template';
+
+interface Props {
+  tone?: Tone;
+  class?: string;
+}
+
+const { tone = 'blue', class: className } = Astro.props;
+---
+
+<div class:list={['stage', className]} style={`--stage: var(--stage-${tone})`}>
+  <div class="stage-inner"><slot /></div>
+</div>
+
+<style>
+  .stage {
+    width: min(1280px, calc(100% - 32px));
+    margin-inline: auto;
+    padding: clamp(28px, 6vw, 72px) clamp(16px, 8vw, 120px);
+    border-radius: clamp(20px, 3vw, 36px);
+    background: var(--stage);
+  }
+
+  .stage-inner {
+    max-width: 1000px;
+    margin-inline: auto;
+  }
+
+  .stage :global(figcaption) {
+    color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  }
+</style>

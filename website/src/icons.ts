@@ -5,6 +5,8 @@ export type IconName =
   | 'arrow-up-right'
   | 'arrow-left'
   | 'chevron-down'
+  | 'chevron-left'
+  | 'chevron-right'
   | 'copy'
   | 'check'
   | 'menu'

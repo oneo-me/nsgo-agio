@@ -1,0 +1,121 @@
+---
+// A screenshot of the app in both appearances. CSS shows the one that
+// matches the page; a click opens it in the lightbox, which takes the
+// caption and the visible picture from the button.
+import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  light: ImageMetadata;
+  dark: ImageMetadata;
+  alt: string;
+  caption?: string;
+  /** Shown under the shot; the lightbox shows the caption either way. */
+  showCaption?: boolean;
+  enlarge: string;
+  loading?: 'eager' | 'lazy';
+  sizes?: string;
+  class?: string;
+}
+
+const {
+  light,
+  dark,
+  alt,
+  caption,
+  showCaption = true,
+  enlarge,
+  loading = 'lazy',
+  sizes = '(min-width: 1180px) 1000px, calc(100vw - 48px)',
+  class: className,
+} = Astro.props;
+
+const widths = (image: ImageMetadata) => [640, 960, 1280, 1800, image.width].filter((w) => w <= image.width);
+---
+
+<figure class:list={['shot', className]}>
+  <button
+    type="button"
+    class="shot-button"
+    data-lightbox
+    data-caption={caption ?? alt}
+    aria-label={`${enlarge}: ${caption ?? alt}`}
+  >
+    <span class="shot-light">
+      <Picture
+        src={light}
+        alt={alt}
+        widths={widths(light)}
+        sizes={sizes}
+        formats={['avif', 'webp']}
+        fallbackFormat="png"
+        loading={loading}
+        decoding="async"
+      />
+    </span>
+    <span class="shot-dark">
+      <Picture
+        src={dark}
+        alt={alt}
+        widths={widths(dark)}
+        sizes={sizes}
+        formats={['avif', 'webp']}
+        fallbackFormat="png"
+        loading={loading}
+        decoding="async"
+      />
+    </span>
+  </button>
+  {caption && showCaption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .shot {
+    min-width: 0;
+  }
+
+  .shot-button {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    cursor: zoom-in;
+  }
+
+  .shot-light,
+  .shot-dark {
+    display: none;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: var(--shadow-window);
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  html:not([data-theme='dark']) .shot-light,
+  html[data-theme='dark'] .shot-dark {
+    display: block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .shot-button:hover > span {
+      transform: translateY(-2px);
+    }
+  }
+
+  .shot :global(img) {
+    width: 100%;
+    height: auto;
+  }
+
+  figcaption {
+    margin-top: 16px;
+    color: var(--color-muted);
+    font-size: 15px;
+    text-align: center;
+    text-wrap: balance;
+  }
+</style>

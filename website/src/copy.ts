@@ -3,23 +3,13 @@
 // code does. Chinese headings, titles and kickers omit the trailing 。;
 // body sentences keep it.
 
-import type { IconName } from './icons';
 import type { Lang } from './site';
+import type { Led, Tone } from './template';
 
-type FeatureCopy = {
-  icon: IconName;
-  accent: 'blue' | 'green' | 'violet' | 'amber' | 'cyan' | 'coral';
-  title: string;
-  body: string;
-};
-
-type TabCopy = {
-  id: string;
-  label: string;
-  title: string;
-  command: string;
-  code: string;
-};
+type Feature = { led: Led; title: string; body: string };
+type Note = { led: Led; title: string; body: string };
+type Column = { value: string; title: string; body: string };
+type Tab = { id: string; label: string; title: string; body: string; command: string; code: string };
 
 const en = {
   meta: {
@@ -33,168 +23,108 @@ const en = {
     skip: 'Skip to content',
     primary: 'Primary',
     home: 'Agio home',
-    features: 'Features',
-    how: 'How it works',
-    start: 'Quick start',
+    links: [
+      { label: 'Features', href: '#features' },
+      { label: 'How it works', href: '#how' },
+      { label: 'Under the hood', href: '#under' },
+    ],
     github: 'GitHub',
-    getStarted: 'Get started',
-    preview: 'preview',
+    cta: 'Get started',
     menu: 'Open menu',
     close: 'Close menu',
     menuLabel: 'Menu',
   },
 
-  theme: {
-    label: 'Appearance',
-    light: 'Light',
-    dark: 'Dark',
-    system: 'System',
-  },
+  theme: { label: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' },
+  language: { label: 'Language', en: 'English', zh: '中文' },
+  code: { copy: 'Copy code', command: 'Copy command' },
 
-  language: {
-    label: 'Language',
-    en: 'English',
-    zh: '中文',
-  },
-
-  code: {
-    copy: 'Copy code',
-    command: 'Copy command',
+  lightbox: {
+    label: 'Screenshot',
+    enlarge: 'Enlarge',
+    close: 'Close',
+    previous: 'Previous',
+    next: 'Next',
   },
 
   hero: {
-    title: 'Agio',
-    lede: 'Coding agents, in one calm stream.',
-    body: 'The agent core of Neorio: four coding agents behind one neutral API, with NSGo conversations — here or across the wire.',
+    badge: { tag: 'New', text: 'Serve agents over TCP, a pipe or SSH' },
+    title: 'Coding agents.\nIn one calm stream.',
+    lede: 'Agio runs pi, Codex, Claude Code and CodeBuddy Code behind one neutral API, and shows their conversations in a native window — here, or across the wire.',
     primary: 'Get started',
-    secondary: 'GitHub',
-    installLabel: 'Install with Go',
-    fine: ['MIT', 'Go 1.27', 'Your agents, your sign-ins'],
-    glanceLabel: 'At a glance',
+    secondary: 'View on GitHub',
+    fine: 'Free and open source · MIT · Go 1.27',
     alt: 'Agio’s window: a conversation with two turns beside a list of conversations',
-    caption: 'chatview.App — every conversation, its turns, and where they run.',
+    caption: 'Every conversation, its turns, and where they run.',
+    tone: 'blue' as Tone,
   },
 
   agents: {
-    label: 'Supported agents',
-    title: 'One stream for the agents you already use',
+    title: 'Works with the agents you already use',
     names: ['pi', 'Codex', 'Claude Code', 'CodeBuddy Code'],
     note: 'and any Agent Client Protocol CLI',
   },
 
   features: {
-    eyebrow: 'Why Agio',
     title: 'The parts between a CLI and your window.',
-    lead: 'Agio is small on purpose: drivers translate, a host folds, and a view shows. Each layer only knows the one below it.',
+    lead: 'Drivers translate, a host folds, and a view shows. Each layer only knows the one below it.',
     items: [
       {
-        icon: 'terminal',
-        accent: 'blue',
+        led: 'blue',
         title: 'Four drivers, one vocabulary',
-        body: 'pi, Codex, Claude Code and CodeBuddy Code each speak their own protocol. Agio turns them into the same events, turns and statuses; nothing above the drivers knows which one is running.',
+        body: 'Each agent speaks its own protocol. Agio turns them into the same events, turns and statuses; nothing above the drivers knows which one runs.',
       },
       {
-        icon: 'messages',
-        accent: 'green',
-        title: 'A transcript, not a log',
-        body: 'Thinking, tool calls, streamed markdown and the time a turn took fold into a conversation you can read. A running turn stays open; a finished one gets out of the way.',
+        led: 'green',
+        title: 'Turns you can read',
+        body: 'Thinking, tool calls, streamed markdown and the time a turn took fold into a conversation. A running turn stays open; a finished one steps aside.',
       },
       {
-        icon: 'server',
-        accent: 'violet',
+        led: 'violet',
         title: 'Here, or across the wire',
-        body: 'host.Host runs agents in this process. wire serves the same backend over TCP, a pipe or an SSH session — and the view cannot tell where the agents run.',
+        body: 'host.Host runs agents in this process. wire serves the same backend over TCP, a pipe or SSH, and the view cannot tell the difference.',
       },
       {
-        icon: 'window',
-        accent: 'amber',
+        led: 'amber',
         title: 'The window is included',
-        body: 'chatview.App gives you conversations, a sidebar, a composer, model and reasoning choices, agent and model settings, and each account’s limits. chatview.Conversation is one conversation for a layout of your own.',
+        body: 'chatview.App brings conversations, a sidebar, a composer, model and reasoning choices, settings and each account’s limits.',
       },
       {
-        icon: 'layers',
-        accent: 'cyan',
+        led: 'teal',
         title: 'A server without a UI',
-        body: 'Everything below chatview is headless. A server builds without NSGo, drivers speak only neutral types, and views reach agents only through agio.Backend.',
+        body: 'Everything below chatview is headless. A server builds without NSGo, and views reach agents only through agio.Backend.',
       },
       {
-        icon: 'shield',
-        accent: 'coral',
+        led: 'pink',
         title: 'Nothing kept behind your back',
-        body: 'Agio persists nothing. Your app stores a conversation’s cursor, directory and model. Agents work with full access, so keep a server private and give it a token.',
+        body: 'Agio persists nothing; your app keeps a conversation’s cursor, folder and model. Keep a server private and give it a token.',
       },
-    ] satisfies FeatureCopy[],
+    ] satisfies Feature[],
   },
 
-  how: {
-    eyebrow: 'The shape',
-    title: 'One contract. Two places to run.',
-    lead: 'A view shows an agio.Backend. A host is one; a wire client is another. That is the whole trick.',
-    diagramLabel: 'Agio’s architecture',
-    viewLabel: 'your view',
-    viewNode: 'chatview.App / Conversation',
-    contract: 'agio.Backend',
-    localLabel: 'in this process',
-    localNode: 'host.Host',
-    remoteLabel: 'somewhere else',
-    remoteClient: 'wire.Client',
-    remoteServer: 'wire.Serve',
-    driversLabel: 'drivers',
-    drivers: 'pi · Codex · Claude Code · CodeBuddy Code',
-    note: 'Swap the backend and the same view shows local or remote agents. The server example serves this host over TCP; the client passes a wire.Client to the same chatview.App.',
-    codeTitle: 'Single process',
-    link: 'Read the architecture',
-  },
-
-  turns: {
-    eyebrow: 'The transcript',
+  showcase: {
     title: 'A transcript, not a log.',
     lead: 'Open a finished turn and read what happened: the reasoning, the files it opened, the commands it ran, the answer that streamed in.',
     alt: 'An Agio turn opened: thinking, an edit, a command, and a markdown answer',
     caption: 'Worked for 4s, opened: thinking, an edit, a command, and the answer.',
+    tone: 'violet' as Tone,
     notes: [
-      { label: 'Thinking', body: 'Reasoning stays a step, not a wall of text.' },
-      { label: 'Tools', body: 'Each call keeps its target and output.' },
-      { label: 'Answer', body: 'The final reply streams in markdown.' },
-    ],
+      { led: 'violet', title: 'Thinking', body: 'Reasoning stays a step, not a wall of text.' },
+      { led: 'amber', title: 'Tools', body: 'Each call keeps its target and its output.' },
+      { led: 'green', title: 'Answer', body: 'The reply streams in as markdown.' },
+    ] satisfies Note[],
   },
 
-  under: {
-    eyebrow: 'Under the hood',
-    title: 'Built for the wire.',
-    lead: 'Remote conversations should read live and cost little. The design follows from that.',
-    items: [
-      {
-        value: '30/s',
-        title: 'Published, not pushed',
-        body: 'A served session coalesces changes and publishes at most about 30 times a second, so a streamed reply reads live without flooding a slow link.',
-      },
-      {
-        value: 'patches',
-        title: 'Only what changed',
-        body: 'Each conversation’s turns travel as transcript patches. Streamed text sends only what arrived, not the whole conversation again.',
-      },
-      {
-        value: 'groups',
-        title: 'Only its own processes',
-        body: 'Agents start in their own process group. Stopping one stops what it started, and a host signals only the processes it launched.',
-      },
-    ],
-  },
-
-  start: {
-    eyebrow: 'Quick start',
-    title: 'A working window in a few lines.',
-    lead: 'Install the module, pick where agents run, and hand the backend to a view.',
-    requirements:
-      'Needs Go 1.27 and the agent CLIs you want on the login shell’s PATH. They run with your own sign-ins.',
-    installLabel: 'Install the module',
-    tabsLabel: 'Examples',
+  how: {
+    title: 'One contract. Two places to run.',
+    lead: 'A view shows an agio.Backend. A host is one; a wire client is another. Swap it, and the same window shows local or remote agents.',
+    tabsLabel: 'Where agents run',
     tabs: [
       {
         id: 'single',
-        label: 'Single process',
+        label: 'In this process',
         title: 'main.go',
+        body: 'host.Host starts the agent CLIs on this machine and hands their conversations straight to the view.',
         command: 'go tool nsgo dev examples/single',
         code: `h := host.New(host.Options{Dir: workDir})
 
@@ -206,8 +136,9 @@ h.Close()`,
       },
       {
         id: 'server',
-        label: 'Server',
+        label: 'As a server',
         title: 'server.go',
+        body: 'wire serves the same host over TCP with a token. It builds without NSGo, so it runs anywhere Go does.',
         command: 'go run ./examples/server -token secret',
         code: `h := host.New(host.Options{Dir: workDir})
 defer h.Close()
@@ -216,8 +147,9 @@ log.Fatal(wire.ListenAndServe(h, "127.0.0.1:7788", token))`,
       },
       {
         id: 'client',
-        label: 'Client',
+        label: 'As a client',
         title: 'client.go',
+        body: 'wire.Client is a backend too. Hand it to the same chatview.App and the agents run somewhere else.',
         command: 'AGIO_TOKEN=secret go tool nsgo dev examples/client',
         code: `c, err := wire.Dial("127.0.0.1:7788", token)
 if err != nil {
@@ -229,32 +161,54 @@ nsgo.Run(func(cx *core.Scope) core.Node {
 	return chatview.App{Model: chatview.Bind(cx, c)}
 })`,
       },
-    ] satisfies TabCopy[],
+    ] satisfies Tab[],
+    link: 'Read the architecture',
+  },
+
+  under: {
+    title: 'Built for the wire.',
+    lead: 'Remote conversations should read live and cost little.',
+    items: [
+      {
+        value: '30/s',
+        title: 'Published, not pushed',
+        body: 'A served session coalesces changes and publishes at most about 30 times a second, so a reply reads live without flooding a slow link.',
+      },
+      {
+        value: 'patches',
+        title: 'Only what changed',
+        body: 'Turns travel as transcript patches. Streamed text sends only what arrived, not the whole conversation again.',
+      },
+      {
+        value: 'groups',
+        title: 'Only its own processes',
+        body: 'Agents start in their own process group. Stopping one stops what it started, and a host signals only what it launched.',
+      },
+    ] satisfies Column[],
+  },
+
+  start: {
+    title: 'A working window in a few lines.',
+    lead: 'Install the module, pick where agents run, and hand the backend to a view.',
+    requirements: 'Needs Go 1.27 and the agent CLIs you want on the login shell’s PATH. They run with your own sign-ins.',
     readme: 'Read the README',
     examples: 'Run the examples',
   },
 
   built: {
-    eyebrow: 'Built with',
-    title: 'Go and NSGo.',
-    body: 'The core is headless Go. The views are NSGo components, written once and shown in English and Chinese. This site is Astro and Tailwind, built to static files for GitHub Pages.',
+    title: 'Built with NSGo',
+    body: 'Agio’s views are NSGo components: native Go UI, written once and shown in English and Chinese. The core below them is plain, headless Go.',
     nsgo: 'nsgo.dev',
-    nsgoRepo: 'NSGo on GitHub',
+    nsgoRepo: 'GitHub',
   },
 
   footer: {
-    note: 'The agent core of Neorio. MIT licensed.',
-    project: 'Project',
-    elsewhere: 'Elsewhere',
-    github: 'GitHub',
+    note: 'The agent core of Neorio.',
+    links: 'Project',
     readme: 'README',
-    chinese: '简体中文',
-    issues: 'Issues',
-    architecture: 'Architecture',
-    wire: 'Wire protocol',
     changelog: 'Changelog',
-    license: 'License',
-    bottom: 'Go and NSGo. Static on GitHub Pages.',
+    issues: 'Issues',
+    license: 'MIT License',
   },
 
   notFound: {
@@ -269,7 +223,7 @@ const zh: typeof en = {
   meta: {
     title: 'Agio — 编程智能体，汇入一条平静的流',
     description:
-      'Neorio 的智能体核心：四个编程智能体共用一套统一的 API，并用 NSGo 展示对话——就在本机，或隔着一条线。',
+      'Neorio 的智能体核心：pi、Codex、Claude Code 和 CodeBuddy Code 共用一套中立的 API，用 NSGo 展示它们的对话——在同一个进程里，或作为服务端和它的客户端。',
     ogAlt: 'Agio — 编程智能体，汇入一条平静的流',
   },
 
@@ -277,146 +231,144 @@ const zh: typeof en = {
     skip: '跳到内容',
     primary: '主导航',
     home: 'Agio 首页',
-    features: '功能',
-    how: '工作方式',
-    start: '快速开始',
+    links: [
+      { label: '功能', href: '#features' },
+      { label: '工作方式', href: '#how' },
+      { label: '技术细节', href: '#under' },
+    ],
     github: 'GitHub',
-    getStarted: '开始使用',
-    preview: '预览',
+    cta: '开始使用',
     menu: '打开菜单',
     close: '关闭菜单',
     menuLabel: '菜单',
   },
 
-  theme: {
-    label: '外观',
-    light: '浅色',
-    dark: '深色',
-    system: '跟随系统',
-  },
+  theme: { label: '外观', light: '浅色', dark: '深色', system: '跟随系统' },
+  language: { label: '语言', en: 'English', zh: '中文' },
+  code: { copy: '复制代码', command: '复制命令' },
 
-  language: {
-    label: '语言',
-    en: 'English',
-    zh: '中文',
-  },
-
-  code: {
-    copy: '复制代码',
-    command: '复制命令',
+  lightbox: {
+    label: '截图',
+    enlarge: '放大',
+    close: '关闭',
+    previous: '上一张',
+    next: '下一张',
   },
 
   hero: {
-    title: 'Agio',
-    lede: '编程智能体，汇入一条平静的流',
-    body: 'Neorio 的智能体核心：四个编程智能体，一套统一的 API，用 NSGo 展示对话——就在本机，或隔着一条线。',
+    badge: { tag: '新', text: '通过 TCP、管道或 SSH 提供智能体' },
+    title: '编程智能体\n汇入一条平静的流',
+    lede: 'Agio 用一套中立的 API 运行 pi、Codex、Claude Code 和 CodeBuddy Code，并在原生窗口里展示它们的对话——就在本机，或隔着一条线。',
     primary: '开始使用',
-    secondary: 'GitHub',
-    installLabel: '用 Go 安装',
-    fine: ['MIT', 'Go 1.27', '你的智能体，你的登录'],
-    glanceLabel: '一览',
+    secondary: '在 GitHub 查看',
+    fine: '免费开源 · MIT · Go 1.27',
     alt: 'Agio 的窗口：一个有两个轮次的对话，旁边是对话列表',
-    caption: 'chatview.App——每个对话、它的轮次，以及它们在哪里运行。',
+    caption: '每个对话、它的轮次，以及它们在哪里运行。',
+    tone: 'blue',
   },
 
   agents: {
-    label: '支持的智能体',
-    title: '一条流，接上你已经在用的智能体',
+    title: '接上你已经在用的智能体',
     names: ['pi', 'Codex', 'Claude Code', 'CodeBuddy Code'],
     note: '以及任何 Agent Client Protocol CLI',
   },
 
   features: {
-    eyebrow: '为什么是 Agio',
     title: 'CLI 与你的窗口之间的那些部分',
-    lead: 'Agio 刻意保持小巧：驱动负责翻译，host 负责折叠，视图负责展示。每一层只认识下一层。',
+    lead: '驱动负责翻译，host 负责折叠，视图负责展示。每一层只认识下一层。',
     items: [
       {
-        icon: 'terminal',
-        accent: 'blue',
+        led: 'blue',
         title: '四个驱动，一套词汇',
-        body: 'pi、Codex、Claude Code、CodeBuddy Code 各说各的协议。Agio 把它们变成同一套事件、轮次和状态；驱动之上，没有人知道正在运行哪一个。',
+        body: '每个智能体各说各的协议。Agio 把它们变成同一套事件、轮次和状态；驱动之上，没有人知道正在运行哪一个。',
       },
       {
-        icon: 'messages',
-        accent: 'green',
-        title: '一份记录，不是日志',
-        body: '思考、工具调用、流式 Markdown 和一轮所花的时间，折叠成一段可以读的对话。运行中的轮次保持展开，结束的轮次让到一边。',
+        led: 'green',
+        title: '读得懂的轮次',
+        body: '思考、工具调用、流式 Markdown 和一轮所花的时间，折叠成一段对话。运行中的轮次保持展开，结束的轮次让到一边。',
       },
       {
-        icon: 'server',
-        accent: 'violet',
+        led: 'violet',
         title: '就在这里，或隔着一条线',
-        body: 'host.Host 在本进程运行智能体。wire 通过 TCP、管道或 SSH 会话提供同一个后端——视图看不出智能体在哪里运行。',
+        body: 'host.Host 在本进程运行智能体。wire 通过 TCP、管道或 SSH 提供同一个后端，视图看不出区别。',
       },
       {
-        icon: 'window',
-        accent: 'amber',
+        led: 'amber',
         title: '窗口也是现成的',
-        body: 'chatview.App 给你对话、侧边栏、输入框、模型和推理档位、智能体与模型设置，以及每个账户的限额。chatview.Conversation 是其中一个对话，适合你自己的布局。',
+        body: 'chatview.App 带来对话、侧边栏、输入框、模型与推理档位、设置，以及每个账户的限额。',
       },
       {
-        icon: 'layers',
-        accent: 'cyan',
+        led: 'teal',
         title: '没有 UI 的服务端',
-        body: 'chatview 以下都是无头的。服务端不依赖 NSGo 就能构建，驱动只说中立类型，视图只通过 agio.Backend 接触智能体。',
+        body: 'chatview 以下都是无头的。服务端不依赖 NSGo 就能构建，视图只通过 agio.Backend 接触智能体。',
       },
       {
-        icon: 'shield',
-        accent: 'coral',
-        title: '不留下任何东西',
-        body: 'Agio 不持久化任何东西。你的应用保存对话的 cursor、目录和模型。智能体拥有完全访问权限，所以把服务端放在私有网络，并给它一个令牌。',
+        led: 'pink',
+        title: '不在背后留下任何东西',
+        body: 'Agio 不持久化任何东西；你的应用保存对话的 cursor、目录和模型。把服务端放在私有网络，并给它一个令牌。',
       },
     ],
   },
 
-  how: {
-    eyebrow: '结构',
-    title: '一个契约，两个运行地点',
-    lead: '视图展示 agio.Backend。host 是其中一个，wire 客户端是另一个。整个把戏就这么多。',
-    diagramLabel: 'Agio 的架构',
-    viewLabel: '你的视图',
-    viewNode: 'chatview.App / Conversation',
-    contract: 'agio.Backend',
-    localLabel: '在这个进程',
-    localNode: 'host.Host',
-    remoteLabel: '在别处',
-    remoteClient: 'wire.Client',
-    remoteServer: 'wire.Serve',
-    driversLabel: '驱动',
-    drivers: 'pi · Codex · Claude Code · CodeBuddy Code',
-    note: '换掉后端，同一个视图就能展示本机或远程的智能体。服务端示例通过 TCP 提供这个 host；客户端把 wire.Client 交给同一个 chatview.App。',
-    codeTitle: '单进程',
-    link: '阅读架构',
-  },
-
-  turns: {
-    eyebrow: '记录',
+  showcase: {
     title: '一份记录，不是日志',
     lead: '展开一个结束的轮次，读一读发生了什么：推理、打开的文件、运行的命令、流式写出的回答。',
     alt: '展开的 Agio 轮次：思考、一次编辑、一条命令，以及 Markdown 回答',
     caption: '工作了 4 秒，已展开：思考、一次编辑、一条命令，以及回答。',
+    tone: 'violet',
     notes: [
-      { label: '思考', body: '推理是一个步骤，不是一堵文字墙。' },
-      { label: '工具', body: '每次调用都保留目标和输出。' },
-      { label: '回答', body: '最终回复以 Markdown 流式写出。' },
+      { led: 'violet', title: '思考', body: '推理是一个步骤，不是一堵文字墙。' },
+      { led: 'amber', title: '工具', body: '每次调用都保留目标和输出。' },
+      { led: 'green', title: '回答', body: '回复以 Markdown 流式写出。' },
     ],
   },
 
+  how: {
+    title: '一个契约，两个运行地点',
+    lead: '视图展示 agio.Backend。host 是一个，wire 客户端是另一个。换掉它，同一个窗口就能展示本机或远程的智能体。',
+    tabsLabel: '智能体在哪里运行',
+    tabs: [
+      {
+        id: 'single',
+        label: '在本进程',
+        title: 'main.go',
+        body: 'host.Host 在本机启动智能体 CLI，把它们的对话直接交给视图。',
+        command: 'go tool nsgo dev examples/single',
+        code: en.how.tabs[0].code,
+      },
+      {
+        id: 'server',
+        label: '作为服务端',
+        title: 'server.go',
+        body: 'wire 用令牌通过 TCP 提供同一个 host。它不依赖 NSGo，Go 能跑的地方它都能跑。',
+        command: 'go run ./examples/server -token secret',
+        code: en.how.tabs[1].code,
+      },
+      {
+        id: 'client',
+        label: '作为客户端',
+        title: 'client.go',
+        body: 'wire.Client 也是一个后端。把它交给同一个 chatview.App，智能体就在别处运行。',
+        command: 'AGIO_TOKEN=secret go tool nsgo dev examples/client',
+        code: en.how.tabs[2].code,
+      },
+    ],
+    link: '阅读架构',
+  },
+
   under: {
-    eyebrow: '在表面之下',
     title: '为线路而生',
-    lead: '远程对话应该读起来是实时的，而且花费很少。设计由此而来。',
+    lead: '远程对话应该读起来是实时的，而且花费很少。',
     items: [
       {
         value: '30/s',
         title: '发布，而不是推送',
-        body: '服务端上的会话会合并变化，每秒最多发布约 30 次，所以流式回复读起来是实时的，又不会淹没慢连接。',
+        body: '服务端上的会话会合并变化，每秒最多发布约 30 次，回复读起来是实时的，又不会淹没慢连接。',
       },
       {
         value: 'patches',
         title: '只发送变化',
-        body: '每个对话的轮次以补丁的形式增量传输。流式文本只发送到达的部分，而不是整段对话重来。',
+        body: '轮次以补丁的形式传输。流式文本只发送新到达的部分，而不是整段对话重来。',
       },
       {
         value: 'groups',
@@ -427,78 +379,27 @@ const zh: typeof en = {
   },
 
   start: {
-    eyebrow: '快速开始',
-    title: '几行代码，\n一个能用的窗口',
+    title: '几行代码，一个能用的窗口',
     lead: '安装模块，选择智能体在哪里运行，然后把后端交给视图。',
-    requirements:
-      '需要 Go 1.27，以及登录 shell 的 PATH 中你想用的智能体 CLI。它们使用你自己的登录状态运行。',
-    installLabel: '安装模块',
-    tabsLabel: '示例',
-    tabs: [
-      {
-        id: 'single',
-        label: '单进程',
-        title: 'main.go',
-        command: 'go tool nsgo dev examples/single',
-        code: `h := host.New(host.Options{Dir: workDir})
-
-nsgo.Run(func(cx *core.Scope) core.Node {
-	return chatview.App{Model: chatview.Bind(cx, h)}
-}, nsgo.WindowSize(1040, 720))
-
-h.Close()`,
-      },
-      {
-        id: 'server',
-        label: '服务端',
-        title: 'server.go',
-        command: 'go run ./examples/server -token secret',
-        code: `h := host.New(host.Options{Dir: workDir})
-defer h.Close()
-
-log.Fatal(wire.ListenAndServe(h, "127.0.0.1:7788", token))`,
-      },
-      {
-        id: 'client',
-        label: '客户端',
-        title: 'client.go',
-        command: 'AGIO_TOKEN=secret go tool nsgo dev examples/client',
-        code: `c, err := wire.Dial("127.0.0.1:7788", token)
-if err != nil {
-	log.Fatal(err)
-}
-defer c.Close()
-
-nsgo.Run(func(cx *core.Scope) core.Node {
-	return chatview.App{Model: chatview.Bind(cx, c)}
-})`,
-      },
-    ],
+    requirements: '需要 Go 1.27，以及登录 shell 的 PATH 中你想用的智能体 CLI。它们使用你自己的登录状态运行。',
     readme: '阅读 README',
     examples: '运行示例',
   },
 
   built: {
-    eyebrow: '构建于',
-    title: 'Go 与 NSGo',
-    body: '核心是无头 Go。视图是 NSGo 组件，写一次，以英文和中文展示。这个网站用 Astro 和 Tailwind，构建成静态文件，托管在 GitHub Pages。',
+    title: '用 NSGo 构建',
+    body: 'Agio 的视图是 NSGo 组件：原生的 Go 界面，写一次，以英文和中文展示。它们之下的核心是纯粹的无头 Go。',
     nsgo: 'nsgo.dev',
-    nsgoRepo: 'NSGo 的 GitHub',
+    nsgoRepo: 'GitHub',
   },
 
   footer: {
-    note: 'Neorio 的智能体核心。MIT 许可。',
-    project: '项目',
-    elsewhere: '别处',
-    github: 'GitHub',
+    note: 'Neorio 的智能体核心。',
+    links: '项目',
     readme: 'README',
-    chinese: '简体中文',
-    issues: '问题',
-    architecture: '架构',
-    wire: 'Wire 协议',
     changelog: '更新日志',
-    license: '许可证',
-    bottom: 'Go 与 NSGo。静态托管于 GitHub Pages。',
+    issues: '问题反馈',
+    license: 'MIT 许可证',
   },
 
   notFound: {

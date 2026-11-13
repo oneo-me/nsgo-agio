@@ -3,7 +3,8 @@
 The site at <https://oneo-me.github.io/nsgo-agio/>: the product page in English
 and Simplified Chinese, in light and dark appearances. It is built with Astro,
 Tailwind and TypeScript; the page ships no UI framework and a small script
-for the appearance, language choice, copy buttons, tabs and the mobile menu.
+for the appearance, language choice, copy buttons, tabs, the screenshot
+lightbox and the mobile menu.
 
 ```sh
 bun install
@@ -13,6 +14,24 @@ bun run preview      # serve dist/ at /nsgo-agio/
 bun run screenshots  # retake src/assets/screens/ from website/demo (macOS)
 bun run og           # redraw public/og*.png and the touch icons (macOS)
 ```
+
+## As a template
+
+The site doubles as the template for the workspace's product sites. It
+reads like an app's own page: a centered hero, the app's window on a softly
+tinted stage, features marked by one colored LED each, screenshots that open
+in a lightbox, and a quiet footer. To start another app's site, copy
+`website/` and replace:
+
+- `src/copy.ts` and `src/site.ts`: the words in both languages, the links and
+  the install command;
+- `src/assets/screens/` and the `Shot` imports in `src/layouts/Home.astro`;
+- `src/components/Mark.astro`, `public/favicon.svg` and the social cards;
+- the sections in `src/layouts/Home.astro` the app does not need;
+- `agio-` in the storage keys and the Umami tag in `src/layouts/Layout.astro`.
+
+`Stage` takes a tone and features and notes take an LED, named in
+`src/template.ts` and drawn in `src/styles/global.css` for light and dark.
 
 ## Language and appearance
 

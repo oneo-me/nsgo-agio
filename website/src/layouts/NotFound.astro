@@ -23,8 +23,8 @@ const copy = copies[lang];
 >
   <section class="wrap flex min-h-[62vh] flex-col items-center justify-center py-24 text-center">
     <Mark size={56} />
-    <p class="eyebrow mt-8">404</p>
-    <h1 class="mt-4 text-[clamp(34px,5vw,52px)]">{copy.notFound.heading}</h1>
+    <p class="mono-label mt-8">404</p>
+    <h1 class="mt-4 text-[clamp(34px,5vw,52px)] tracking-[-0.035em]">{copy.notFound.heading}</h1>
     <p class="mt-4 max-w-[42ch] text-[15px] leading-relaxed text-muted">{copy.notFound.body}</p>
     <a class="btn btn-primary mt-8" href={pagePath(lang)}>
       <Icon name="arrow-left" size={16} />

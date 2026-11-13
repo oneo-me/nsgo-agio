@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Lightbox from '../components/Lightbox.astro';
 import { copies } from '../copy';
 import { langTag, pagePath, path, site, type Lang } from '../site';
 
@@ -51,8 +52,8 @@ const umamiId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID ?? 'e8174058-eb31-40f8-b
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="author" content={site.author} />
-    <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#08090c" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f7f7f8" />
     {noindex && <meta name="robots" content="noindex" />}
     {!noindex && <link rel="canonical" href={canonical.href} />}
     {!noindex && <link rel="alternate" hreflang="en" href={enUrl.href} />}
@@ -95,7 +96,7 @@ const umamiId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID ?? 'e8174058-eb31-40f8-b
         root.dataset.themePreference = preference;
         root.style.colorScheme = dark ? 'dark' : 'light';
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', dark ? '#08090c' : '#fbfbfd');
+        if (meta) meta.setAttribute('content', dark ? '#0b0b0d' : '#f7f7f8');
 
         var zhPath = root.getAttribute('data-zh-path') || '';
         if (!zhPath) return;
@@ -128,6 +129,7 @@ const umamiId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID ?? 'e8174058-eb31-40f8-b
       <slot />
     </main>
     <Footer lang={lang} copy={copy} />
+    <Lightbox copy={copy} />
 
     <script>
       import '../scripts/site';
