@@ -26,6 +26,8 @@ func TestSettingsApplyTheLanguageAndKeepProviders(t *testing.T) {
 	}, nsgotest.Size(minWindowWidth, minWindowHeight))
 	app.Press("id:open-settings")
 	app.WaitFor("text:语言", 5*time.Second)
+	// Privacy ends the list under a section of its own.
+	app.WaitFor("text:关于", 5*time.Second)
 	app.Press("role:button 添加提供商")
 	app.Press("text:OpenAI 兼容")
 	app.WaitUntil(5*time.Second, func() bool { return len(st.get().Providers) == 1 })

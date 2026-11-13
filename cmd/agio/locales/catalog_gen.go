@@ -112,6 +112,7 @@ const (
 	textAutomatic
 	textHideLauncher
 	textModelServices
+	textAbout
 	textProviderType
 	textProviderEmpty
 	textAddProvider
@@ -186,6 +187,7 @@ var keyOfText = [numTexts]string{
 	"automatic",
 	"hideLauncher",
 	"modelServices",
+	"about",
 	"providerType",
 	"providerEmpty",
 	"addProvider",
@@ -258,6 +260,7 @@ var textsEn = i18n.NewTexts(""+
 	"Automatic"+
 	"Don't show"+
 	"Model services"+
+	"About"+
 	"OpenAI-compatible"+
 	"No model services"+
 	"Add provider"+
@@ -327,6 +330,7 @@ var textsEn = i18n.NewTexts(""+
 		9,
 		10,
 		14,
+		5,
 		17,
 		17,
 		12,
@@ -399,6 +403,7 @@ var textsZhHans = i18n.NewTexts(""+
 	"自动"+
 	"不显示"+
 	"模型服务"+
+	"关于"+
 	"OpenAI 兼容"+
 	"未添加模型服务"+
 	"添加提供商"+
@@ -468,6 +473,7 @@ var textsZhHans = i18n.NewTexts(""+
 		6,
 		9,
 		12,
+		6,
 		13,
 		21,
 		15,
@@ -965,6 +971,13 @@ func ModelServices(cx *core.Scope) string { return For(cx).ModelServices() }
 
 // ModelServices is the package's ModelServices in the language of msgs.
 func (msgs Messages) ModelServices() string { return msgs.text(textModelServices) }
+
+// About says "About"
+// in the language the app shows under cx.
+func About(cx *core.Scope) string { return For(cx).About() }
+
+// About is the package's About in the language of msgs.
+func (msgs Messages) About() string { return msgs.text(textAbout) }
 
 // ProviderType says "OpenAI-compatible"
 // in the language the app shows under cx.

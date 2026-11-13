@@ -19,7 +19,7 @@
 - Add Agio's settings for language, theme and the shortcut modifier, keeping the computer awake while agents work, a sound and notification when an agent stops, shown as Agio and opening its task when pressed, the terminal, development tool and Git tool its title bar opens the folder in, and OpenAI-compatible model services.
 - Keep Agio's window at least 820 × 740.
 - Title Agio's new tasks with a model of its model services, in a title language of their own, and let `agio.Choice` rename a conversation.
-- List privacy and updates last in Agio's settings.
+- List privacy and updates last in Agio's settings, under About.
 - Resume Agio's tasks, projects, last used project, window and sidebar after a restart.
 - Send anonymous usage statistics from Agio, with a setting to turn them off.
 - Add the app icon, a prompt in a speech bubble, to Agio, the client and the website.

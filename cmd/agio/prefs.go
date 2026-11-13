@@ -201,9 +201,14 @@ func (a *app) settingsCategories(own []ui.SettingsCategory) []ui.SettingsCategor
 	for i := range tasks {
 		tasks[i].Section = m.Tasks()
 	}
+	// Privacy and the updates end the list, under a section of their own.
+	about := append([]ui.SettingsCategory{a.statsSettings()}, own[1:]...)
+	for i := range about {
+		about[i].Section = m.About()
+	}
 	categories := append(application, tasks...)
 	categories = append(categories, a.providerCategories()...)
-	return append(append(categories, a.statsSettings()), own[1:]...)
+	return append(categories, about...)
 }
 
 // sectionActions add a model service from its section's heading.
