@@ -1,22 +1,24 @@
 // The page's words, in English and Simplified Chinese. Short, specific and
-// calm; the product is a library, so every claim should be something the
-// code does. Chinese headings, titles and kickers omit the trailing 。;
+// calm; Agio is a library first and an app second, and every claim should
+// be something the code does. Chinese headings, titles and kickers omit the trailing 。;
 // body sentences keep it.
 
+import type { IconName } from './icons';
 import type { Lang } from './site';
 import type { Led, Tone } from './template';
 
 type Feature = { led: Led; title: string; body: string };
+type Card = { icon: IconName; kicker: string; title: string; body: string; link: string; href: string };
 type Note = { led: Led; title: string; body: string };
 type Column = { value: string; title: string; body: string };
 type Tab = { id: string; label: string; title: string; body: string; command: string; code: string };
 
 const en = {
   meta: {
-    title: 'Agio — coding agents, in one calm stream',
+    title: 'Agio — coding agents, inside your app',
     description:
-      'The agent core of Neorio: run pi, Codex, Claude Code and CodeBuddy Code behind one neutral API, and show their conversations with NSGo — in one process, or as a server and its clients.',
-    ogAlt: 'Agio — coding agents, in one calm stream',
+      'Agio is the agent core of NSGo apps: it runs pi, Codex, Claude Code and CodeBuddy Code and shows their work on phones and desktops. Agio, the app, is that core on its own, for macOS, Windows and Linux.',
+    ogAlt: 'Agio — coding agents, inside your app',
   },
 
   nav: {
@@ -24,12 +26,13 @@ const en = {
     primary: 'Primary',
     home: 'Agio home',
     links: [
-      { label: 'Features', href: '#features' },
+      { label: 'What it is', href: '#what' },
+      { label: 'The app', href: '#app' },
+      { label: 'The library', href: '#features' },
       { label: 'How it works', href: '#how' },
-      { label: 'Under the hood', href: '#under' },
     ],
     github: 'GitHub',
-    cta: 'Get started',
+    cta: 'Download',
     menu: 'Open menu',
     close: 'Close menu',
     menuLabel: 'Menu',
@@ -48,14 +51,14 @@ const en = {
   },
 
   hero: {
-    badge: { tag: 'New', text: 'Serve agents over TCP, a pipe or SSH' },
-    title: 'Coding agents.\nIn one calm stream.',
-    lede: 'Agio runs pi, Codex, Claude Code and CodeBuddy Code behind one neutral API, and shows their conversations in a native window — here, or across the wire.',
-    primary: 'Get started',
+    badge: { tag: 'New', text: 'Agio for macOS, Windows and Linux' },
+    title: 'Coding agents.\nInside your app.',
+    lede: 'Agio is the agent core of NSGo apps: it runs pi, Codex, Claude Code and CodeBuddy Code, and shows their work on phones and desktops. Agio, the app, is that core on its own — to try, to test, or simply to use.',
+    primary: 'Download Agio',
     secondary: 'View on GitHub',
-    fine: 'Free and open source · MIT · Go 1.27',
-    alt: 'Agio’s window: a conversation with two turns beside a list of conversations',
-    caption: 'Every conversation, its turns, and where they run.',
+    fine: 'Free and open source · MIT · Updates itself',
+    alt: 'Agio’s window: a task with two turns beside the sidebar’s tasks, running ones first',
+    caption: 'Tasks, their turns, and the project each works in.',
     tone: 'blue' as Tone,
   },
 
@@ -63,6 +66,69 @@ const en = {
     title: 'Works with the agents you already use',
     names: ['pi', 'Codex', 'Claude Code', 'CodeBuddy Code'],
     note: 'and any Agent Client Protocol CLI',
+  },
+
+  what: {
+    title: 'One core. Two ways to use it.',
+    lead: 'Most of Agio is a Go module other NSGo apps build their development environments on. The rest is an app that shows what it can do.',
+    cards: [
+      {
+        icon: 'layers',
+        kicker: 'Library',
+        title: 'The agent core of NSGo apps',
+        body: 'Bring the agents you use into your own app: drivers, a host, a wire protocol and ready views behind one neutral API, with screens for phones and desktops and agents on every desktop system.',
+        link: 'Build with it',
+        href: '#features',
+      },
+      {
+        icon: 'window',
+        kicker: 'App',
+        title: 'Agio, the app',
+        body: 'The same core in a window of its own: a demo of what Agio does, a place to test it, and a simple tool for working with agents. Released on GitHub, and it updates itself.',
+        link: 'Download',
+        href: '#download',
+      },
+    ] satisfies Card[],
+  },
+
+  app: {
+    title: 'Agio, the app.',
+    lead: 'Start a task, pick the project and the model, and follow the agent as it works. Everything here comes from the library; the app adds the rest of a desktop tool.',
+    alt: 'Agio’s New task: the app’s icon over “What should we work on in neorio?” and a centered composer',
+    caption: 'New task asks which project to work in.',
+    tone: 'green' as Tone,
+    items: [
+      {
+        led: 'blue',
+        title: 'Tasks, not chats',
+        body: 'New task asks which project to work in. Running tasks lead the sidebar, the rest follow by when they were last active, and all of them come back after a restart.',
+      },
+      {
+        led: 'violet',
+        title: 'The agents you already have',
+        body: 'Agio finds the agent CLIs on your login shell’s PATH and runs them with your own sign-ins. Turn agents and models on and off in the settings.',
+      },
+      {
+        led: 'green',
+        title: 'Your project, one click away',
+        body: 'The title bar opens a task’s folder in Finder, your terminal, your editor or your Git client.',
+      },
+      {
+        led: 'amber',
+        title: 'Made to look like yours',
+        body: 'Color schemes for light and dark over a translucent window, an optional grain, in English or Chinese.',
+      },
+      {
+        led: 'teal',
+        title: 'It tells you when it’s done',
+        body: 'A sound and a notification when an agent stops, and the computer kept awake while agents work.',
+      },
+      {
+        led: 'pink',
+        title: 'Up to date by itself',
+        body: 'Signed releases on GitHub. Agio installs them in place on macOS and Windows, and opens the release on Linux.',
+      },
+    ] satisfies Feature[],
   },
 
   features: {
@@ -82,12 +148,12 @@ const en = {
       {
         led: 'violet',
         title: 'Here, or across the wire',
-        body: 'host.Host runs agents in this process. wire serves the same backend over TCP, a pipe or SSH, and the view cannot tell the difference.',
+        body: 'host.Host runs agents on macOS, Windows or Linux. wire serves the same backend over TCP, a pipe or SSH, so a phone can show the agents a computer runs.',
       },
       {
         led: 'amber',
-        title: 'The window is included',
-        body: 'chatview.App brings conversations, a sidebar, a composer, model and reasoning choices, settings and each account’s limits.',
+        title: 'Views for phones and desktops',
+        body: 'chatview.App brings tasks, a sidebar, a composer, model and reasoning choices, settings and each account’s limits, built with NSGo.',
       },
       {
         led: 'teal',
@@ -106,7 +172,7 @@ const en = {
     title: 'A transcript, not a log.',
     lead: 'Open a finished turn and read what happened: the reasoning, the files it opened, the commands it ran, the answer that streamed in.',
     alt: 'An Agio turn opened: thinking, an edit, a command, and a markdown answer',
-    caption: 'Worked for 4s, opened: thinking, an edit, a command, and the answer.',
+    caption: 'Worked for 4s, opened: thinking, an edit and a command, then the answer.',
     tone: 'violet' as Tone,
     notes: [
       { led: 'violet', title: 'Thinking', body: 'Reasoning stays a step, not a wall of text.' },
@@ -188,22 +254,31 @@ nsgo.Run(func(cx *core.Scope) core.Node {
   },
 
   start: {
-    title: 'A working window in a few lines.',
+    title: 'Build your own on Agio.',
     lead: 'Install the module, pick where agents run, and hand the backend to a view.',
     requirements: 'Needs Go 1.27 and the agent CLIs you want on the login shell’s PATH. They run with your own sign-ins.',
     readme: 'Read the README',
     examples: 'Run the examples',
   },
 
+  download: {
+    title: 'Download Agio.',
+    lead: 'For macOS, Windows and Linux, on arm64 and x64. Agio checks GitHub for new releases and updates itself.',
+    button: 'Download from GitHub',
+    notes: 'Release notes',
+    platforms: ['macOS', 'Windows', 'Linux'],
+    fine: 'Agio runs the agent CLIs on your login shell’s PATH with your own sign-ins. It sends anonymous usage statistics, never prompts or folders, and its settings turn them off.',
+  },
+
   built: {
     title: 'Built with NSGo',
-    body: 'Agio’s views are NSGo components: native Go UI, written once and shown in English and Chinese. The core below them is plain, headless Go.',
+    body: 'Agio’s views are NSGo components: native Go UI for phones and desktops, written once and shown in English and Chinese. The core below them is plain, headless Go.',
     nsgo: 'nsgo.dev',
     nsgoRepo: 'GitHub',
   },
 
   footer: {
-    note: 'The agent core of Neorio.',
+    note: 'The agent core of NSGo apps.',
     links: 'Project',
     readme: 'README',
     changelog: 'Changelog',
@@ -221,10 +296,10 @@ nsgo.Run(func(cx *core.Scope) core.Node {
 
 const zh: typeof en = {
   meta: {
-    title: 'Agio — 编程智能体，汇入一条平静的流',
+    title: 'Agio — 把编程智能体放进你的应用',
     description:
-      'Neorio 的智能体核心：pi、Codex、Claude Code 和 CodeBuddy Code 共用一套中立的 API，用 NSGo 展示它们的对话——在同一个进程里，或作为服务端和它的客户端。',
-    ogAlt: 'Agio — 编程智能体，汇入一条平静的流',
+      'Agio 是 NSGo 应用的智能体核心：运行 pi、Codex、Claude Code 和 CodeBuddy Code，并在手机与桌面上展示它们的工作。Agio 应用就是这个核心本身，支持 macOS、Windows 和 Linux。',
+    ogAlt: 'Agio — 把编程智能体放进你的应用',
   },
 
   nav: {
@@ -232,12 +307,13 @@ const zh: typeof en = {
     primary: '主导航',
     home: 'Agio 首页',
     links: [
-      { label: '功能', href: '#features' },
+      { label: '是什么', href: '#what' },
+      { label: '应用', href: '#app' },
+      { label: '库', href: '#features' },
       { label: '工作方式', href: '#how' },
-      { label: '技术细节', href: '#under' },
     ],
     github: 'GitHub',
-    cta: '开始使用',
+    cta: '下载',
     menu: '打开菜单',
     close: '关闭菜单',
     menuLabel: '菜单',
@@ -256,14 +332,14 @@ const zh: typeof en = {
   },
 
   hero: {
-    badge: { tag: '新', text: '通过 TCP、管道或 SSH 提供智能体' },
-    title: '编程智能体\n汇入一条平静的流',
-    lede: 'Agio 用一套中立的 API 运行 pi、Codex、Claude Code 和 CodeBuddy Code，并在原生窗口里展示它们的对话——就在本机，或隔着一条线。',
-    primary: '开始使用',
+    badge: { tag: '新', text: 'Agio 支持 macOS、Windows 和 Linux' },
+    title: '编程智能体\n放进你的应用',
+    lede: 'Agio 是 NSGo 应用的智能体核心：运行 pi、Codex、Claude Code 和 CodeBuddy Code，并在手机与桌面上展示它们的工作。Agio 应用就是这个核心本身——拿来试用、测试，或者直接当工具用。',
+    primary: '下载 Agio',
     secondary: '在 GitHub 查看',
-    fine: '免费开源 · MIT · Go 1.27',
-    alt: 'Agio 的窗口：一个有两个轮次的对话，旁边是对话列表',
-    caption: '每个对话、它的轮次，以及它们在哪里运行。',
+    fine: '免费开源 · MIT · 自动更新',
+    alt: 'Agio 的窗口：一个有两个轮次的任务，旁边是侧边栏的任务，进行中的排在最前',
+    caption: '任务、它们的轮次，以及各自所在的项目。',
     tone: 'blue',
   },
 
@@ -271,6 +347,69 @@ const zh: typeof en = {
     title: '接上你已经在用的智能体',
     names: ['pi', 'Codex', 'Claude Code', 'CodeBuddy Code'],
     note: '以及任何 Agent Client Protocol CLI',
+  },
+
+  what: {
+    title: '一个核心，两种用法',
+    lead: 'Agio 的主体是一个 Go 模块，其他 NSGo 应用在它之上搭建自己的开发环境；其余部分是一个展示它能做什么的应用。',
+    cards: [
+      {
+        icon: 'layers',
+        kicker: '库',
+        title: 'NSGo 应用的智能体核心',
+        body: '把你在用的智能体接进自己的应用：驱动、host、wire 协议和现成的视图共用一套中立的 API，界面适配手机与桌面，智能体运行在各大桌面系统上。',
+        link: '用它构建',
+        href: '#features',
+      },
+      {
+        icon: 'window',
+        kicker: '应用',
+        title: 'Agio 应用',
+        body: '同一个核心，装进它自己的窗口：用来演示 Agio 能做什么、测试它的功能，也是一个与智能体协作的简单工具。在 GitHub 发布，并会自动更新。',
+        link: '下载',
+        href: '#download',
+      },
+    ],
+  },
+
+  app: {
+    title: 'Agio 应用',
+    lead: '新建任务，选好项目和模型，看着智能体一步步完成。这里的一切都来自库，应用补上了桌面工具的其余部分。',
+    alt: 'Agio 的新建任务：应用图标下是“要在 neorio 中处理什么任务？”和居中的输入框',
+    caption: '新建任务时先问在哪个项目里做。',
+    tone: 'green',
+    items: [
+      {
+        led: 'blue',
+        title: '是任务，不只是聊天',
+        body: '新建任务时先选项目。进行中的任务排在侧边栏最前，其余按最近活动排列，重启后全部恢复。',
+      },
+      {
+        led: 'violet',
+        title: '用你已有的智能体',
+        body: 'Agio 在登录 shell 的 PATH 中找到智能体 CLI，用你自己的登录状态运行。在设置中开关智能体和模型。',
+      },
+      {
+        led: 'green',
+        title: '一键打开项目',
+        body: '标题栏可以在访达、终端、编辑器或 Git 客户端中打开任务所在的文件夹。',
+      },
+      {
+        led: 'amber',
+        title: '照你的喜好来',
+        body: '浅色与深色各有配色方案，铺在半透明的窗口上，可选颗粒质感，界面支持中文和英文。',
+      },
+      {
+        led: 'teal',
+        title: '做完了会告诉你',
+        body: '智能体停下时播放声音并发送通知，智能体工作时保持电脑唤醒。',
+      },
+      {
+        led: 'pink',
+        title: '自己保持最新',
+        body: '在 GitHub 发布签名的版本。macOS 和 Windows 上就地安装更新，Linux 上打开发布页面。',
+      },
+    ],
   },
 
   features: {
@@ -290,12 +429,12 @@ const zh: typeof en = {
       {
         led: 'violet',
         title: '就在这里，或隔着一条线',
-        body: 'host.Host 在本进程运行智能体。wire 通过 TCP、管道或 SSH 提供同一个后端，视图看不出区别。',
+        body: 'host.Host 在 macOS、Windows 或 Linux 上运行智能体。wire 通过 TCP、管道或 SSH 提供同一个后端，手机也能展示电脑上运行的智能体。',
       },
       {
         led: 'amber',
-        title: '窗口也是现成的',
-        body: 'chatview.App 带来对话、侧边栏、输入框、模型与推理档位、设置，以及每个账户的限额。',
+        title: '手机与桌面的视图',
+        body: 'chatview.App 带来任务、侧边栏、输入框、模型与推理档位、设置，以及每个账户的限额，用 NSGo 构建。',
       },
       {
         led: 'teal',
@@ -314,7 +453,7 @@ const zh: typeof en = {
     title: '一份记录，不是日志',
     lead: '展开一个结束的轮次，读一读发生了什么：推理、打开的文件、运行的命令、流式写出的回答。',
     alt: '展开的 Agio 轮次：思考、一次编辑、一条命令，以及 Markdown 回答',
-    caption: '工作了 4 秒，已展开：思考、一次编辑、一条命令，以及回答。',
+    caption: '用时 4 秒，已展开：思考、一次编辑和一条命令，然后是回答。',
     tone: 'violet',
     notes: [
       { led: 'violet', title: '思考', body: '推理是一个步骤，不是一堵文字墙。' },
@@ -379,22 +518,31 @@ const zh: typeof en = {
   },
 
   start: {
-    title: '几行代码，一个能用的窗口',
+    title: '在 Agio 之上构建你的应用',
     lead: '安装模块，选择智能体在哪里运行，然后把后端交给视图。',
     requirements: '需要 Go 1.27，以及登录 shell 的 PATH 中你想用的智能体 CLI。它们使用你自己的登录状态运行。',
     readme: '阅读 README',
     examples: '运行示例',
   },
 
+  download: {
+    title: '下载 Agio',
+    lead: '支持 macOS、Windows 和 Linux，arm64 与 x64。Agio 会检查 GitHub 上的新版本并自动更新。',
+    button: '从 GitHub 下载',
+    notes: '更新日志',
+    platforms: ['macOS', 'Windows', 'Linux'],
+    fine: 'Agio 用你自己的登录状态运行登录 shell 的 PATH 中的智能体 CLI。它会发送匿名使用统计，从不包含提示词或文件夹，可在设置中关闭。',
+  },
+
   built: {
     title: '用 NSGo 构建',
-    body: 'Agio 的视图是 NSGo 组件：原生的 Go 界面，写一次，以英文和中文展示。它们之下的核心是纯粹的无头 Go。',
+    body: 'Agio 的视图是 NSGo 组件：面向手机与桌面的原生 Go 界面，写一次，以英文和中文展示。它们之下的核心是纯粹的无头 Go。',
     nsgo: 'nsgo.dev',
     nsgoRepo: 'GitHub',
   },
 
   footer: {
-    note: 'Neorio 的智能体核心。',
+    note: 'NSGo 应用的智能体核心。',
     links: '项目',
     readme: 'README',
     changelog: '更新日志',

@@ -1,8 +1,10 @@
 ---
 // The product page. Each section is self-contained and draws its words
 // from src/copy.ts, so another app's site keeps the order it needs and
-// drops the rest: hero and stage, a strip of names, features, a showcase,
-// an interactive section, three columns, a call to start, and "built with".
+// drops the rest: hero and stage, a strip of names, two cards, the app on a
+// stage with its features, a showcase, features, an interactive section,
+// three columns, a call to start, downloads, and "built with". Screenshots
+// are in each language's own words.
 import Layout from './Layout.astro';
 import Mark from '../components/Mark.astro';
 import Icon from '../components/Icon.astro';
@@ -12,10 +14,18 @@ import Shot from '../components/Shot.astro';
 import Stage from '../components/Stage.astro';
 import { copies } from '../copy';
 import { pagePath, site, type Lang } from '../site';
-import appDark from '../assets/screens/app-dark.png';
-import appLight from '../assets/screens/app-light.png';
-import appDetailDark from '../assets/screens/app-detail-dark.png';
-import appDetailLight from '../assets/screens/app-detail-light.png';
+import enAppDark from '../assets/screens/en/app-dark.png';
+import enAppLight from '../assets/screens/en/app-light.png';
+import enDetailDark from '../assets/screens/en/detail-dark.png';
+import enDetailLight from '../assets/screens/en/detail-light.png';
+import enNewDark from '../assets/screens/en/new-dark.png';
+import enNewLight from '../assets/screens/en/new-light.png';
+import zhAppDark from '../assets/screens/zh/app-dark.png';
+import zhAppLight from '../assets/screens/zh/app-light.png';
+import zhDetailDark from '../assets/screens/zh/detail-dark.png';
+import zhDetailLight from '../assets/screens/zh/detail-light.png';
+import zhNewDark from '../assets/screens/zh/new-dark.png';
+import zhNewLight from '../assets/screens/zh/new-light.png';
 
 interface Props {
   lang: Lang;
@@ -23,6 +33,18 @@ interface Props {
 
 const { lang } = Astro.props;
 const copy = copies[lang];
+const shots = {
+  en: {
+    app: { light: enAppLight, dark: enAppDark },
+    detail: { light: enDetailLight, dark: enDetailDark },
+    new: { light: enNewLight, dark: enNewDark },
+  },
+  zh: {
+    app: { light: zhAppLight, dark: zhAppDark },
+    detail: { light: zhDetailLight, dark: zhDetailDark },
+    new: { light: zhNewLight, dark: zhNewDark },
+  },
+}[lang];
 ---
 
 <Layout
@@ -34,7 +56,7 @@ const copy = copies[lang];
   <!-- Hero ------------------------------------------------------------ -->
   <section class="hero" aria-labelledby="hero-title">
     <div class="wrap hero-copy">
-      <a class="announce" href={site.wire} target="_blank" rel="noopener noreferrer">
+      <a class="announce" href={site.releases} target="_blank" rel="noopener noreferrer">
         <span class="announce-tag">{copy.hero.badge.tag}</span>
         <span>{copy.hero.badge.text}</span>
         <Icon name="chevron-right" size={15} class="text-faint" />
@@ -42,7 +64,10 @@ const copy = copies[lang];
       <h1 id="hero-title" class="hero-title">{copy.hero.title}</h1>
       <p class="hero-lede">{copy.hero.lede}</p>
       <div class="hero-actions">
-        <a class="btn btn-primary btn-large" href="#start">{copy.hero.primary}</a>
+        <a class="btn btn-primary btn-large" href="#download">
+          <Icon name="download" size={18} />
+          {copy.hero.primary}
+        </a>
         <a class="btn btn-secondary btn-large" href={site.repo} target="_blank" rel="noopener noreferrer">
           <Icon name="github" size={18} />
           {copy.hero.secondary}
@@ -53,8 +78,8 @@ const copy = copies[lang];
 
     <Stage tone={copy.hero.tone} class="hero-stage">
       <Shot
-        light={appLight}
-        dark={appDark}
+        light={shots.app.light}
+        dark={shots.app.dark}
         alt={copy.hero.alt}
         caption={copy.hero.caption}
         showCaption={false}
@@ -71,6 +96,64 @@ const copy = copies[lang];
       {copy.agents.names.map((name) => <li>{name}</li>)}
     </ul>
     <p class="names-note">{copy.agents.note}</p>
+  </section>
+
+  <!-- What it is ------------------------------------------------------ -->
+  <section id="what" class="section" aria-labelledby="what-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="what-title" class="section-title">{copy.what.title}</h2>
+        <p class="section-lead">{copy.what.lead}</p>
+      </div>
+      <div class="cards">
+        {
+          copy.what.cards.map((card) => (
+            <article class="card">
+              <span class="card-icon">
+                <Icon name={card.icon} size={22} />
+              </span>
+              <p class="card-kicker">{card.kicker}</p>
+              <h3 class="card-title">{card.title}</h3>
+              <p class="feature-body">{card.body}</p>
+              <a class="text-link card-link" href={card.href}>
+                {card.link}
+                <Icon name="arrow-right" size={15} />
+              </a>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- The app --------------------------------------------------------- -->
+  <section id="app" class="pb-[120px] max-md:pb-20" aria-labelledby="app-title">
+    <div class="wrap section-head mb-14">
+      <h2 id="app-title" class="section-title">{copy.app.title}</h2>
+      <p class="section-lead">{copy.app.lead}</p>
+    </div>
+    <Stage tone={copy.app.tone}>
+      <Shot
+        light={shots.new.light}
+        dark={shots.new.dark}
+        alt={copy.app.alt}
+        caption={copy.app.caption}
+        enlarge={copy.lightbox.enlarge}
+      />
+    </Stage>
+    <div class="wrap features">
+      {
+        copy.app.items.map((item) => (
+          <article>
+            <h3 class="feature-title">
+              <span class:list={['led', `led-${item.led}`]} />
+              {item.title}
+            </h3>
+            <p class="feature-body">{item.body}</p>
+          </article>
+        ))
+      }
+    </div>
   </section>
 
   <!-- Features -------------------------------------------------------- -->
@@ -104,8 +187,8 @@ const copy = copies[lang];
     </div>
     <Stage tone={copy.showcase.tone}>
       <Shot
-        light={appDetailLight}
-        dark={appDetailDark}
+        light={shots.detail.light}
+        dark={shots.detail.dark}
         alt={copy.showcase.alt}
         caption={copy.showcase.caption}
         enlarge={copy.lightbox.enlarge}
@@ -188,6 +271,29 @@ const copy = copies[lang];
         </a>
       </div>
       <p class="start-fine">{copy.start.requirements}</p>
+    </div>
+  </section>
+
+  <!-- Download ------------------------------------------------------- -->
+  <section id="download" class="section band" aria-labelledby="download-title">
+    <div class="wrap download">
+      <Mark size={64} id="agio-download" class="start-mark" />
+      <h2 id="download-title" class="section-title">{copy.download.title}</h2>
+      <p class="section-lead">{copy.download.lead}</p>
+      <ul class="platforms">
+        {copy.download.platforms.map((name) => <li>{name}</li>)}
+      </ul>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-large" href={site.releases} target="_blank" rel="noopener noreferrer">
+          <Icon name="download" size={18} />
+          {copy.download.button}
+        </a>
+        <a class="btn btn-secondary btn-large" href={site.changelog} target="_blank" rel="noopener noreferrer">
+          {copy.download.notes}
+          <Icon name="arrow-up-right" size={15} />
+        </a>
+      </div>
+      <p class="start-fine">{copy.download.fine}</p>
     </div>
   </section>
 
@@ -382,6 +488,61 @@ const copy = copies[lang];
     }
   }
 
+  /* Cards ---------------------------------------------------------- */
+  .cards {
+    display: grid;
+    gap: 24px;
+    margin-top: 64px;
+  }
+
+  @media (min-width: 760px) {
+    .cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    padding: clamp(28px, 4vw, 40px);
+    border: 1px solid var(--color-line);
+    border-radius: 24px;
+    background: var(--color-panel);
+  }
+
+  .card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    color: var(--color-accent);
+  }
+
+  .card-kicker {
+    margin-top: 22px;
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .card-title {
+    margin-top: 6px;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .card .feature-body {
+    flex-grow: 1;
+  }
+
+  .card-link {
+    margin-top: 20px;
+  }
+
   /* How it works ----------------------------------------------------- */
   .band {
     background: var(--color-bg-soft);
@@ -460,6 +621,35 @@ const copy = copies[lang];
     margin-top: 22px;
     color: color-mix(in srgb, var(--color-text) 55%, transparent);
     font-size: 13.5px;
+  }
+
+  /* Download --------------------------------------------------------- */
+  .download {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .download :global(.start-mark) {
+    margin-bottom: 24px;
+  }
+
+  .platforms {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 32px;
+    margin-top: 28px;
+    font-family: var(--font-display);
+    font-size: clamp(18px, 2.2vw, 22px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    opacity: 0.75;
+  }
+
+  .download .hero-actions {
+    margin-top: 28px;
   }
 
   /* Built with ------------------------------------------------------- */

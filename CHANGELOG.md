@@ -26,4 +26,4 @@
 - Add eight light and eight dark color schemes to Agio's settings over the window's translucent blur, the defaults leaving it plain and the others tinting it with a soft gradient behind the cards, chosen apart for each appearance and previewed as squares of their colors, the logo on New task drawn in their accent.
 - Show the selected task on a rounded card inset from the window and the sidebar, with an edge and a shadow while the sidebar shows, the inset and the window controls following the sidebar as it slides.
 - Add an optional background grain to Agio, with its strength in the settings.
-- Add the [website](https://oneo-me.github.io/nsgo-agio/) in English and Chinese, in light and dark appearances, with a quick start and the chat views.
+- Add the [website](https://oneo-me.github.io/nsgo-agio/) in English and Chinese, in light and dark appearances, saying what Agio is as a library and as an app, with screenshots of the app in each language and a download from the latest GitHub release.

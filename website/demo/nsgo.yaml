@@ -1,9 +1,0 @@
-name: Agio
-id: me.oneo.agio.demo
-version: 0.1.0
-
-dev:
-  target: native
-
-build:
-  output: dist

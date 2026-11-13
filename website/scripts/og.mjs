@@ -12,7 +12,9 @@ const website = path.resolve(scripts, '..');
 const scratch = path.join(website, '.screenshots');
 const chrome = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const mark = readFileSync(path.join(website, 'public', 'favicon.svg'), 'utf8');
-const shot = readFileSync(path.join(website, 'src', 'assets', 'screens', 'app-dark.png')).toString('base64');
+// The app in a language's words, from `bun run screenshots`.
+const shot = (lang) =>
+  readFileSync(path.join(website, 'src', 'assets', 'screens', lang, 'app-dark.png')).toString('base64');
 
 const font =
   "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif";
@@ -50,7 +52,7 @@ function render(name, width, height, file) {
   );
 }
 
-function socialCard({ name, title, lede, titleStyle }) {
+function socialCard({ name, lang, title, lede, titleStyle }) {
   const file = page(
     name,
     1200,
@@ -62,7 +64,7 @@ function socialCard({ name, title, lede, titleStyle }) {
       <p>${lede}</p>
       <div class="command">$ go get github.com/oneo-me/nsgo-agio</div>
     </div>
-    <div class="shot"><img src="data:image/png;base64,${shot}" alt=""></div>
+    <div class="shot"><img src="data:image/png;base64,${shot(lang)}" alt=""></div>
     <div class="foot">oneo-me/nsgo-agio · MIT</div>`,
     `
     .glow { position: absolute; left: 340px; top: -260px; width: 1000px; height: 900px;
@@ -87,15 +89,17 @@ function socialCard({ name, title, lede, titleStyle }) {
 
 socialCard({
   name: 'og',
-  title: 'Coding agents,<br>in one calm stream.',
-  lede: 'The agent core of Neorio. Four coding agents behind one neutral API, with NSGo conversations — here or across the wire.',
+  lang: 'en',
+  title: 'Coding agents,<br>inside your app.',
+  lede: 'The agent core of NSGo apps, for phones and desktops — and Agio, the app, for macOS, Windows and Linux.',
   titleStyle: '',
 });
 
 socialCard({
   name: 'og-zh',
-  title: '编程智能体，<br>汇入一条平静的流。',
-  lede: 'Neorio 的智能体核心。四个编程智能体，一套统一的 API，用 NSGo 展示对话——就在本机，或隔着一条线。',
+  lang: 'zh',
+  title: '编程智能体，<br>放进你的应用。',
+  lede: 'NSGo 应用的智能体核心，适配手机与桌面——以及支持 macOS、Windows 和 Linux 的 Agio 应用。',
   titleStyle: 'font-size: 48px; letter-spacing: -.02em; line-height: 1.16;',
 });
 

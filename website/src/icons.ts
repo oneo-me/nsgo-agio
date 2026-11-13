@@ -25,4 +25,6 @@ export type IconName =
   | 'sun'
   | 'moon'
   | 'monitor'
-  | 'globe';
+  | 'globe'
+  | 'download'
+  | 'phone';

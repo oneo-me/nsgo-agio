@@ -22,8 +22,6 @@ import (
 	"github.com/nsgo-dev/nsgo/i18n"
 	"github.com/oneo-me/nsgo-agio/agent"
 	"github.com/oneo-me/nsgo-agio/chatview"
-	"github.com/oneo-me/nsgo-agio/host"
-	"github.com/oneo-me/nsgo-agio/quota"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -155,8 +153,7 @@ func main() {
 	st := openStore[settings]("settings")
 	ws := openStore[state]("state")
 	ws.update((*state).normalize)
-	h := host.New(host.Options{Dir: dir, Disabled: st.get().Disabled, DisabledModels: st.get().DisabledModels,
-		ReadQuota: quota.Reader(home)})
+	h := openBackend(dir, home, st.get())
 	// Tasks resume before their list is followed, which would drop those
 	// not resumed yet.
 	kept := restoreTasks(h, ws.get().Tasks)
@@ -202,7 +199,7 @@ func main() {
 		window = keepWindow(cx, ws)
 		cx.Effect(func() { lang.Store(i18n.Language(cx)) })
 		// Pressing an agent's notification shows its conversation.
-		selected := core.NewSignal(cx, "")
+		selected := core.NewSignal(cx, shownFirst)
 		al.attach(cx, selected, func(id string) bool { return h.State().Conversation(id) != nil })
 		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title, Updates: true, Icon: logo{},
 			Projects: func() []string { return ws.get().Projects }, SidebarOpen: window.open, SidebarWidth: window.width, Selected: selected,

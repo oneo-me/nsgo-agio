@@ -15,6 +15,7 @@ export const site = {
   repo,
   readme: `${repo}#readme`,
   examples: `${repo}/tree/main/examples`,
+  releases: `${repo}/releases/latest`,
   readmeZh: `${repo}/blob/main/README.zh-CN.md`,
   architecture: `${repo}/blob/main/ARCHITECTURE.md`,
   wire: `${repo}/blob/main/docs/architecture/wire.md`,

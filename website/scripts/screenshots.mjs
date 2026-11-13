@@ -1,9 +1,9 @@
-// Retakes the website's light and dark screenshots from website/demo on
-// macOS. The demo is a scripted backend, so the images show the real chatview
-// without an agent CLI. Run `bun run screenshots` after changing the view's
-// look.
+// Retakes the website's screenshots from Agio's demo build on macOS: the
+// real app showing scripted tasks (cmd/agio/demo.go), so the images need no
+// agent CLI. Each language and appearance gets a task, its turn opened and
+// New task. Run `bun run screenshots` after changing the app's look.
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,6 +18,14 @@ const repo = path.resolve(website, '..');
 const scratch = path.join(website, '.screenshots');
 const binary = path.join(scratch, 'agio-demo');
 const screens = path.join(website, 'src', 'assets', 'screens');
+
+// The color schemes shown, from cmd/agio/themes.go.
+const schemes = { light: 'ocean', dark: 'ink' };
+// The words the clicks look for, from chatview/locales.
+const words = {
+  en: { worked: 'Worked for', ran: 'Ran ', latest: 'Jump to latest' },
+  zh: { worked: '用时', ran: '已执行', latest: '跳到最新' },
+};
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -36,31 +44,64 @@ function osascript(lines) {
   execFileSync('osascript', lines.flatMap((line) => ['-e', line]), { stdio: ['ignore', 'ignore', 'inherit'] });
 }
 
-// clickButton presses the first button whose description starts with text,
-// such as the turn's fold row and its activity group; their order changes as
-// the view gains buttons.
+// clickButton presses the first button anywhere in the window whose
+// description starts with text, such as the turn's fold row and its activity
+// group; their order changes as the view gains buttons.
 function clickButton(text) {
   osascript([
     'tell application "System Events"',
     '  tell process "agio-demo"',
-    '    set btns to every button of window 1',
-    '    repeat with b in btns',
-    `      if (description of b) starts with ${JSON.stringify(text)} then`,
-    '        click b',
-    '        return',
-    '      end if',
+    '    set els to entire contents of window 1',
+    '    repeat with i from 1 to count of els',
+    '      set e to item i of els',
+    '      try',
+    `        if role of e is "AXButton" and (description of e) starts with ${JSON.stringify(text)} then`,
+    '          click e',
+    '          return',
+    '        end if',
+    '      end try',
     '    end repeat',
     '  end tell',
     'end tell',
   ]);
 }
 
-async function capture({ dark = false, detail = false, output }) {
-  const env = { ...process.env };
-  if (dark) env.AGIO_DEMO_DARK = '1';
-  else delete env.AGIO_DEMO_DARK;
-  if (detail) env.AGIO_DEMO_DETAIL = '1';
-  else delete env.AGIO_DEMO_DETAIL;
+// home writes a HOME of the demo's own, whose Agio settings choose the
+// language and appearance and whose state sizes the window, so the user's
+// own settings are neither read nor changed.
+function home(lang, appearance) {
+  const dir = path.join(scratch, 'home');
+  rmSync(dir, { recursive: true, force: true });
+  const agio = path.join(dir, 'Library', 'Application Support', 'Agio');
+  mkdirSync(agio, { recursive: true });
+  writeFileSync(
+    path.join(agio, 'settings.yaml'),
+    [
+      `language: ${lang === 'zh' ? 'zh-Hans' : 'en'}`,
+      `appearance: ${appearance}`,
+      `light_scheme: ${schemes.light}`,
+      `dark_scheme: ${schemes.dark}`,
+      'stats_off: true',
+      '',
+    ].join('\n'),
+  );
+  writeFileSync(
+    path.join(agio, 'state.yaml'),
+    ['window:', '  width: 1180', '  height: 780', 'projects: [~/src/agio, ~/src/neorio, ~/src/nsgo]', ''].join('\n'),
+  );
+  return dir;
+}
+
+async function capture({ lang, appearance, shot }) {
+  const { AGIO_DEMO_DETAIL, AGIO_DEMO_NEW, ...inherited } = process.env;
+  const env = {
+    ...inherited,
+    HOME: home(lang, appearance),
+    AGIO_DEMO_LANG: lang,
+    ...(shot === 'detail' && { AGIO_DEMO_DETAIL: '1' }),
+    ...(shot === 'new' && { AGIO_DEMO_NEW: '1' }),
+  };
+  const output = path.join(screens, lang, `${shot}-${appearance}.png`);
 
   const child = spawn(binary, { cwd: repo, env, stdio: 'ignore' });
 
@@ -73,18 +114,17 @@ async function capture({ dark = false, detail = false, output }) {
     }
     if (!id) throw new Error('The demo window did not appear.');
 
-    if (detail) {
-      osascript([
-        'tell application "System Events"',
-        '  set frontmost of process "agio-demo" to true',
-        'end tell',
-      ]);
-      await sleep(350);
-      // A single-turn demo: open the fold row, then its activity group.
-      clickButton('Worked for');
+    osascript(['tell application "System Events"', '  set frontmost of process "agio-demo" to true', 'end tell']);
+    await sleep(600);
+    if (shot === 'detail') {
+      // A single-turn task: open the fold row, then its activity group.
+      clickButton(words[lang].worked);
       await sleep(450);
-      clickButton('Ran ');
+      clickButton(words[lang].ran);
       await sleep(700);
+      // Opening the steps can leave the jump to the latest turn showing.
+      clickButton(words[lang].latest);
+      await sleep(500);
     }
 
     mkdirSync(path.dirname(output), { recursive: true });
@@ -92,19 +132,18 @@ async function capture({ dark = false, detail = false, output }) {
     console.log(`wrote ${path.relative(website, output)}`);
   } finally {
     child.kill('SIGTERM');
-    await Promise.race([
-      new Promise((resolve) => child.once('exit', resolve)),
-      sleep(2000),
-    ]);
+    await Promise.race([new Promise((resolve) => child.once('exit', resolve)), sleep(2000)]);
   }
 }
 
 console.log('Building the demo…');
 mkdirSync(scratch, { recursive: true });
-mkdirSync(screens, { recursive: true });
-execFileSync('go', ['build', '-o', binary, './website/demo'], { cwd: repo, stdio: 'inherit' });
+execFileSync('go', ['build', '-tags', 'agiodemo', '-o', binary, './cmd/agio'], { cwd: repo, stdio: 'inherit' });
 
-await capture({ output: path.join(screens, 'app-light.png') });
-await capture({ dark: true, output: path.join(screens, 'app-dark.png') });
-await capture({ detail: true, output: path.join(screens, 'app-detail-light.png') });
-await capture({ dark: true, detail: true, output: path.join(screens, 'app-detail-dark.png') });
+for (const lang of ['en', 'zh']) {
+  for (const appearance of ['light', 'dark']) {
+    for (const shot of ['app', 'detail', 'new']) {
+      await capture({ lang, appearance, shot });
+    }
+  }
+}

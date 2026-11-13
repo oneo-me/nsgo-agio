@@ -11,7 +11,6 @@ import (
 	"github.com/nsgo-dev/nsgo/core"
 	"github.com/nsgo-dev/nsgo/desktop"
 	agio "github.com/oneo-me/nsgo-agio"
-	"github.com/oneo-me/nsgo-agio/host"
 )
 
 // state is what Agio keeps of its window and tasks between runs, apart from
@@ -86,7 +85,7 @@ func (w windowState) frame() *core.WindowFrame {
 // restoreTasks resumes the saved tasks, oldest first so the newest leads,
 // and returns those that could not be, such as in a folder not mounted now,
 // to keep for next time.
-func restoreTasks(h *host.Host, tasks []savedTask) []savedTask {
+func restoreTasks(h agio.Backend, tasks []savedTask) []savedTask {
 	var kept []savedTask
 	for _, t := range slices.Backward(tasks) {
 		_, err := h.Create(agio.Create{Dir: t.Dir, Title: t.Title, Model: t.Model, Effort: t.Effort, Tier: t.Tier,

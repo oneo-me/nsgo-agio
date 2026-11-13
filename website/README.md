@@ -1,7 +1,9 @@
 # Agio website
 
 The site at <https://oneo-me.github.io/nsgo-agio/>: the product page in English
-and Simplified Chinese, in light and dark appearances. It is built with Astro,
+and Simplified Chinese, in light and dark appearances. It says what Agio is,
+the agent core of NSGo apps and an app of its own, and links the app's
+download to the latest GitHub release. It is built with Astro,
 Tailwind and TypeScript; the page ships no UI framework and a small script
 for the appearance, language choice, copy buttons, tabs, the screenshot
 lightbox and the mobile menu.
@@ -11,7 +13,7 @@ bun install
 bun run dev          # http://localhost:4321/
 bun run build        # typecheck, then build dist/
 bun run preview      # serve dist/ at /nsgo-agio/
-bun run screenshots  # retake src/assets/screens/ from website/demo (macOS)
+bun run screenshots  # retake src/assets/screens/ from Agio's demo build (macOS)
 bun run og           # redraw public/og*.png and the touch icons (macOS)
 ```
 
@@ -25,7 +27,7 @@ in a lightbox, and a quiet footer. To start another app's site, copy
 
 - `src/copy.ts` and `src/site.ts`: the words in both languages, the links and
   the install command;
-- `src/assets/screens/` and the `Shot` imports in `src/layouts/Home.astro`;
+- `src/assets/screens/` and the `shots` in `src/layouts/Home.astro`;
 - `src/components/Mark.astro`, `public/favicon.svg` and the social cards;
 - the sections in `src/layouts/Home.astro` the app does not need;
 - `agio-` in the storage keys and the Umami website ID and domains in
@@ -61,14 +63,16 @@ SITE_URL=https://agio.example BASE_PATH=/ bun run build
 
 ## Screenshots
 
-`src/assets/screens/` holds the app in both appearances:
-`app-light.png`, `app-dark.png`, `app-detail-light.png` and
-`app-detail-dark.png`. They come from `website/demo`, a Go program with a
-scripted backend and no agent CLI. `bun run screenshots` builds it, opens a
-native window, captures both appearances, and opens the turn's steps for the
-detail images. The script needs macOS, a screen, and permission for Terminal
-or the agent to control `System Events`; approve the prompt once, or the clicks
-that open the steps do nothing.
+`src/assets/screens/en/` and `zh/` hold the app in each language's words and
+both appearances: `app` a task, `detail` a turn with its steps open and `new`
+New task, each as `-light.png` and `-dark.png`. They come from Agio's demo
+build (`cmd/agio/demo.go`), the real app showing scripted tasks without an
+agent CLI. `bun run screenshots` builds it, runs it with a HOME of its own
+whose settings choose the language, appearance and color schemes, and
+captures each window. The script needs macOS, a screen, and permission for
+Terminal or the agent to control `System Events`; approve the prompt once, or
+the clicks that open the steps do nothing. Quit any demo still open first, as
+the script captures the first window it finds. The READMEs show `app` too.
 
 The site imports the PNGs and lets Astro make AVIF and WebP versions at
 several widths; CSS shows the image that matches the chosen appearance.

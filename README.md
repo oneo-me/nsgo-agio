@@ -14,10 +14,28 @@
 </p>
 
 <p align="center">
-  The agent core of Neorio: run coding agents (pi, Codex, Claude Code, CodeBuddy Code) and show their conversations with NSGo, in one process or as a server and its clients.
+  The agent core of NSGo apps: run coding agents (pi, Codex, Claude Code, CodeBuddy Code) and show their work on phones and desktops, in one process or as a server and its clients.
 </p>
 
-## Install
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="website/src/assets/screens/en/app-dark.png">
+    <img alt="Agio's window: a task with two turns beside the sidebar's tasks" src="website/src/assets/screens/en/app-light.png" width="860">
+  </picture>
+</p>
+
+Agio is two things:
+
+- **A library.** Other NSGo apps build their own development environments on it: drivers for each agent CLI, a host that runs them on macOS, Windows or Linux, a wire protocol to reach them from another process or a phone, and views for phones and desktops, behind one neutral API.
+- **An app.** Agio, in `cmd/agio`, is that core in a window of its own, to demonstrate and test it, and a simple tool for working with agents: tasks in projects, agent and model settings, color schemes, notifications and automatic updates.
+
+## Download
+
+Download Agio for macOS, Windows or Linux, on arm64 or x64, from the [latest release](https://github.com/oneo-me/nsgo-agio/releases/latest). It updates itself from GitHub's releases: on macOS and Windows it installs them, and on Linux it opens the release.
+
+Agio runs the agent CLIs on the login shell's `PATH` with your own sign-ins. It sends anonymous usage statistics to Umami: when it is open and used, and which agents messages go to, never prompts or folders. Builds run with `nsgo dev` send nothing, and its settings turn them off.
+
+## Install the library
 
 ```sh
 go get github.com/oneo-me/nsgo-agio
@@ -52,7 +70,7 @@ nsgo.Run(func(cx *core.Scope) core.Node {
 
 `chatview.Conversation` shows a single conversation for an application with its own layout, and `wire.Serve` serves any byte stream, such as an SSH session. Agents run with full access to the server's files, so keep a server on a private network and give it a token.
 
-Agio, the app in `cmd/agio`, runs its agents in one process; the examples run as a server and its client:
+Agio runs its agents in one process; the examples run as a server and its client:
 
 | Program | Run |
 | --- | --- |
@@ -60,9 +78,7 @@ Agio, the app in `cmd/agio`, runs its agents in one process; the examples run as
 | Server | `go run ./examples/server -token secret` |
 | Client | `AGIO_TOKEN=secret go tool nsgo dev examples/client` |
 
-Agio sends anonymous usage statistics to Umami: when it is open and used, and which agents messages go to, never prompts or folders. Builds run with `nsgo dev` send nothing, and its settings turn them off.
-
-`go tool nsgo build cmd/agio` builds Agio for macOS, Windows and Linux, on arm64 and x64. Releases update themselves from the latest GitHub release when built with `NSGO_UPDATES_KEY`, the secret key of `updates.key` in `cmd/agio/nsgo.yaml`.
+`go tool nsgo build cmd/agio` builds Agio for macOS, Windows and Linux, on arm64 and x64. Releases update themselves from the latest GitHub release when built with `NSGO_UPDATES_KEY`, the secret key of `updates.key` in `cmd/agio/nsgo.yaml`. `go build -tags agiodemo ./cmd/agio` builds a demo that shows scripted tasks instead of running agents, which the website's screenshots use.
 
 ## Documentation
 

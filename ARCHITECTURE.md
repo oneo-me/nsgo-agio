@@ -1,6 +1,6 @@
 # Agio architecture
 
-Agio is the agent core split out of Neorio: drivers that run coding agent CLIs and turn their protocols into one neutral event stream, a host that folds those events into conversations, a wire protocol that carries a host to other processes, and NSGo views that show any of them. Applications compose these into a single process or a server and its clients.
+Agio is the agent core of NSGo apps, split out of Neorio: drivers that run coding agent CLIs and turn their protocols into one neutral event stream, a host that folds those events into conversations, a wire protocol that carries a host to other processes, and NSGo views that show any of them. Applications compose these into a single process or a server and its clients.
 
 ## Code map
 
@@ -17,7 +17,7 @@ Agio is the agent core split out of Neorio: drivers that run coding agent CLIs a
 | `shellenv`, `internal/childproc` | The login shell's environment, and process groups started and stopped as a whole |
 | `internal/launchers` | The file manager, terminals, development tools and Git clients installed, which open a folder |
 | `internal/naming` | A task's title from its first message, asked of an OpenAI-compatible model |
-| `cmd/agio` | Agio, the single-process app: its settings and their pages, the window, projects and tasks it resumes, naming new tasks, alerts, keeping awake, launchers and usage statistics |
+| `cmd/agio` | Agio, the single-process app: its settings and their pages, the window, projects and tasks it resumes, naming new tasks, alerts, keeping awake, launchers and usage statistics; built with `agiodemo`, it shows scripted tasks for the website's screenshots |
 | `examples/` | A server and a client |
 
 ## Boundaries
