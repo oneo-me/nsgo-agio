@@ -16,7 +16,7 @@
 - Let an app place its own categories among the settings', and its actions in the window's header, with `chatview.App`.
 - Show conversations as tasks: New task opens a page of its own, a hero choosing the project above a centered composer, and the sidebar lists the running tasks, then the others by when they were last active, each with its folder.
 - End the sidebar with Settings and an appearance menu, and bind New task and Settings outside macOS.
-- Add Agio's settings for language, theme and the shortcut modifier, keeping the computer awake while agents work, a sound and notification when an agent stops, the terminal, development tool and Git tool its title bar opens the folder in, and OpenAI-compatible model services.
+- Add Agio's settings for language, theme and the shortcut modifier, keeping the computer awake while agents work, a sound and notification when an agent stops, shown as Agio and opening its task when pressed, the terminal, development tool and Git tool its title bar opens the folder in, and OpenAI-compatible model services.
 - Keep Agio's window at least 820 × 740.
 - Title Agio's new tasks with a model of its model services, in a title language of their own, and let `agio.Choice` rename a conversation.
 - List privacy and updates last in Agio's settings.

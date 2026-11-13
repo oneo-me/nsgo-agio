@@ -163,7 +163,7 @@ func (a *app) settingsCategories(own []ui.SettingsCategory) []ui.SettingsCategor
 			}, {
 				ID: "notification", Title: m.TaskNotification(),
 				Keywords: []string{"notification", "alert", "finish", "通知", "提醒", "完成"},
-				Control:  a.switchSetting(func(s *settings) *bool { return &s.TaskNotification }, m.TaskNotification()),
+				Control:  a.notificationSetting(),
 			}},
 		}},
 	}
@@ -253,6 +253,17 @@ func (a *app) selectChoice(field func(*settings) *string, label string, choices 
 func (a *app) switchSetting(field func(*settings) *bool, label string) core.Node {
 	return ui.Switch{Label: label, Checked: func() bool { s := a.get(); return *field(&s) }, OnChange: func(on bool) {
 		a.change(func(s *settings) { *field(s) = on })
+	}}
+}
+
+// notificationSetting turns the notifications on, asking the system to let
+// the app show them as the user does.
+func (a *app) notificationSetting() core.Node {
+	return ui.Switch{Label: a.msgs().TaskNotification(), Checked: func() bool { return a.get().TaskNotification }, OnChange: func(on bool) {
+		a.change(func(s *settings) { s.TaskNotification = on })
+		if on {
+			a.cx.RequestNotificationPermission(nil)
+		}
 	}}
 }
 

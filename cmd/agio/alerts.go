@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"sync/atomic"
 
+	"github.com/nsgo-dev/nsgo/core"
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/cmd/agio/locales"
 	"github.com/oneo-me/nsgo-agio/transcript"
@@ -24,6 +26,8 @@ type alerts struct {
 	// tests.
 	play   func(id string, failed bool)
 	notify func(taskNotification)
+	// scope shows the notifications once the window is up.
+	scope atomic.Pointer[core.Scope]
 }
 
 // look compares the conversations with the last look; lang is the language
@@ -70,22 +74,54 @@ func (al *alerts) alert(s settings, c *agio.Conversation, failed bool, lang stri
 		}
 		notify := al.notify
 		if notify == nil {
-			notify = showTaskNotification
+			notify = func(n taskNotification) { showTaskNotification(al.scope.Load(), n) }
 		}
 		// The sound preference replaces the system's notification sound.
-		notify(taskNotification{Title: title, Body: body, Silent: s.TaskSound != ""})
+		notify(taskNotification{ID: c.ID, Title: title, Body: body, Silent: s.TaskSound != ""})
 	}
 }
 
-// taskNotification is a system notification about a conversation.
-type taskNotification struct {
-	Title, Body string
-	Silent      bool
+// attach shows the notifications as the app through cx, and pressing one
+// shows its conversation in selected while has reports it still exists.
+func (al *alerts) attach(cx *core.Scope, selected *core.Signal[string], has func(id string) bool) {
+	cx.OnNotificationPress(func(id string) {
+		if has(id) {
+			selected.Set(id)
+		}
+	})
+	al.scope.Store(cx)
 }
 
-// showTaskNotification asks the system to show a notification off the main
-// thread, through the command each system has.
-func showTaskNotification(n taskNotification) {
+// taskNotification is a system notification about a conversation.
+// Its ID is the conversation's, which pressing it shows.
+type taskNotification struct {
+	ID, Title, Body string
+	Silent          bool
+}
+
+// showTaskNotification shows a notification as the app through cx, from any
+// goroutine. Without cx, or where the app can show none, as a macOS build
+// run outside its bundle, the system's command shows it instead.
+func showTaskNotification(cx *core.Scope, n taskNotification) {
+	if cx == nil {
+		runNotifyCommand(n)
+		return
+	}
+	cx.Post(func() {
+		cx.RequestNotificationPermission(func(p core.NotificationPermission) {
+			switch p {
+			case core.NotificationsGranted:
+				_ = cx.ShowNotification(core.Notification{ID: n.ID, Title: n.Title, Body: n.Body, Silent: n.Silent}, nil)
+			case core.NotificationsUnavailable:
+				runNotifyCommand(n)
+			}
+		})
+	})
+}
+
+// runNotifyCommand shows a notification off the main thread through the
+// command each system has.
+func runNotifyCommand(n taskNotification) {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":

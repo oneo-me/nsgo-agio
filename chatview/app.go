@@ -62,7 +62,10 @@ type App struct {
 	// shows and how wide, so the app can keep them.
 	SidebarOpen  *core.Signal[bool]
 	SidebarWidth *core.Signal[core.Points]
-	TestID       string
+	// Selected, when set, holds the conversation shown, "" for New task,
+	// so the app can show one.
+	Selected *core.Signal[string]
+	TestID   string
 }
 
 // Render implements core.Node.
@@ -70,7 +73,10 @@ func (a App) Render(cx *core.Scope) core.Node {
 	m := a.Model
 	colors := ui.ColorsOf(cx)
 	// selected is the conversation shown, "" for New task.
-	selected := core.NewSignal(cx, "")
+	selected := a.Selected
+	if selected == nil {
+		selected = core.NewSignal(cx, "")
+	}
 	open, width := a.SidebarOpen, a.SidebarWidth
 	if open == nil {
 		open = core.NewSignal(cx, true)

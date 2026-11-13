@@ -199,8 +199,11 @@ func main() {
 		a := newApp(cx, st, aw, nm)
 		window = keepWindow(cx, ws)
 		cx.Effect(func() { lang.Store(i18n.Language(cx)) })
+		// Pressing an agent's notification shows its conversation.
+		selected := core.NewSignal(cx, "")
+		al.attach(cx, selected, func(id string) bool { return h.State().Conversation(id) != nil })
 		return chatview.App{Model: chatview.Bind(cx, h), Dir: dir, Name: agent.Client.Title, Updates: true, Icon: heroIcon,
-			Projects: func() []string { return ws.get().Projects }, SidebarOpen: window.open, SidebarWidth: window.width,
+			Projects: func() []string { return ws.get().Projects }, SidebarOpen: window.open, SidebarWidth: window.width, Selected: selected,
 			Header: a.launchButtons, Settings: a.settingsCategories, SettingsKey: a.settingsKey,
 			SettingsSectionActions: a.sectionActions, SettingsCategory: a.category,
 			OnAppearanceChange: a.setAppearance, AltShortcuts: a.altShortcuts}

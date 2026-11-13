@@ -2,7 +2,10 @@ package main
 
 import (
 	"testing"
+	"time"
 
+	"github.com/nsgo-dev/nsgo/core"
+	"github.com/nsgo-dev/nsgo/nsgotest"
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/transcript"
 )
@@ -29,8 +32,8 @@ func TestAlertsWhenAnAgentStops(t *testing.T) {
 	if len(sounds) != 2 || sounds[0] != (sound{"chime", false}) || sounds[1] != (sound{"chime", true}) {
 		t.Fatalf("sounds %v", sounds)
 	}
-	if len(notes) != 2 || notes[0] != (taskNotification{"Fix", "The agent completed", true}) ||
-		notes[1] != (taskNotification{"Untitled task", "The agent failed", true}) {
+	if len(notes) != 2 || notes[0] != (taskNotification{"a", "Fix", "The agent completed", true}) ||
+		notes[1] != (taskNotification{"b", "Untitled task", "The agent failed", true}) {
 		t.Fatalf("notifications %v", notes)
 	}
 	// Agents that stay idle alert once.
@@ -38,4 +41,21 @@ func TestAlertsWhenAnAgentStops(t *testing.T) {
 	if len(sounds) != 2 {
 		t.Fatalf("alerted again: %v", sounds)
 	}
+}
+
+func TestNotificationsShowAsTheAppAndOpenTheirTask(t *testing.T) {
+	var selected *core.Signal[string]
+	al := &alerts{}
+	app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
+		selected = core.NewSignal(cx, "")
+		al.attach(cx, selected, func(id string) bool { return id == "a" })
+		return core.Text{Content: "agio"}
+	})
+	showTaskNotification(al.scope.Load(), taskNotification{ID: "a", Title: "Fix", Body: "The agent completed", Silent: true})
+	app.WaitUntil(5*time.Second, func() bool { return len(app.Notifications) == 1 })
+	if n := app.Notifications[0]; n != (core.Notification{ID: "a", Title: "Fix", Body: "The agent completed", Silent: true}) {
+		t.Fatalf("notification %+v", n)
+	}
+	app.PressNotification("a")
+	app.WaitUntil(5*time.Second, func() bool { return selected.GetUntracked() == "a" })
 }
