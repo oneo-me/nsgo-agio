@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -52,6 +53,9 @@ type Options struct {
 	// SystemPrompt is appended to every agent's system prompt, before a
 	// conversation's own.
 	SystemPrompt string
+	// Skills are skill directories, each holding SKILL.md, offered to
+	// every agent beside a conversation's own.
+	Skills []string
 	// Home is where catalogs are read and paths shortened to ~; empty is
 	// the user's home directory.
 	Home string
@@ -283,6 +287,12 @@ func (h *Host) Create(o agio.Create) (string, error) {
 		if o.Cursor != "" && o.Model == "" {
 			return errors.New("resuming a session needs its model")
 		}
+		skills := joinSkills(h.opts.Skills, o.Skills)
+		for _, skill := range skills {
+			if err := agent.CheckSkill(skill); err != nil {
+				return err
+			}
+		}
 		now := h.opts.Now()
 		created, updated := o.Created, o.Updated
 		if created.IsZero() {
@@ -291,7 +301,7 @@ func (h *Host) Create(o agio.Create) (string, error) {
 		if updated.IsZero() {
 			updated = created
 		}
-		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, system: joinPrompts(h.opts.SystemPrompt, o.SystemPrompt), model: o.Model, effort: o.Effort, tier: o.Tier,
+		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, system: joinPrompts(h.opts.SystemPrompt, o.SystemPrompt), skills: skills, model: o.Model, effort: o.Effort, tier: o.Tier,
 			cursor: o.Cursor, bound: o.Cursor != "", created: created, updated: updated, loaded: o.Cursor == ""}
 		h.conversations = append([]*conversation{c}, h.conversations...)
 		h.loadHistory(c)
@@ -358,6 +368,19 @@ func joinPrompts(prompts ...string) string {
 		}
 	}
 	return strings.Join(parts, "\n\n")
+}
+
+// joinSkills lists each skill directory once, in order.
+func joinSkills(lists ...[]string) []string {
+	var skills []string
+	for _, list := range lists {
+		for _, skill := range list {
+			if skill = filepath.Clean(skill); !slices.Contains(skills, skill) {
+				skills = append(skills, skill)
+			}
+		}
+	}
+	return skills
 }
 
 // background runs fn off the lock with a fresh context.

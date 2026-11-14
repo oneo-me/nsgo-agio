@@ -238,6 +238,40 @@ func TestSystemPromptGoesInMetaOrTheCLIsOption(t *testing.T) {
 	}
 }
 
+func TestSkillsGoInATemporaryPlugin(t *testing.T) {
+	d, methods := fakeDriver(t)
+	d.PluginDir = "--plugin-dir"
+	skill := t.TempDir()
+	os.WriteFile(filepath.Join(skill, agent.SkillFile), nil, 0o644)
+	s, _, err := d.Start(agent.StartOptions{Dir: t.TempDir(), Skills: []string{skill}}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plugin, ok := strings.CutPrefix(methods()[0], "args --plugin-dir=")
+	if _, err := os.Stat(filepath.Join(plugin, "skills", filepath.Base(skill), agent.SkillFile)); !ok || err != nil {
+		t.Fatalf("launch %q: %v", methods()[0], err)
+	}
+	s.Close(time.Second)
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(10 * time.Millisecond) {
+		if _, err := os.Stat(plugin); os.IsNotExist(err) {
+			break
+		} else if time.Now().After(deadline) {
+			t.Fatalf("plugin left behind: %v", err)
+		}
+	}
+
+	// Without the CLI's option the agent gets none.
+	d, methods = fakeDriver(t)
+	s, _, err = d.Start(agent.StartOptions{Dir: t.TempDir(), Skills: []string{skill}}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	if log := methods(); strings.HasPrefix(log[0], "args") {
+		t.Fatalf("launch: %q", log)
+	}
+}
+
 func TestSessionStreamsApprovesAndCancels(t *testing.T) {
 	d, methods := fakeDriver(t)
 	var r recorder

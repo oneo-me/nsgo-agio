@@ -142,7 +142,9 @@ func (r *recorder) settled(t *testing.T, n int) []agent.Event {
 func TestSessionStreamsInterruptsAndRelaunchesForEffort(t *testing.T) {
 	d, dir := fakeDriver(t)
 	var r recorder
-	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), SystemPrompt: "Be brief", Settings: agent.Settings{Model: "opus", Effort: "high"}}, r.add, nil)
+	skill := t.TempDir()
+	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), SystemPrompt: "Be brief", Skills: []string{skill},
+		Settings: agent.Settings{Model: "opus", Effort: "high"}}, r.add, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,6 +222,16 @@ func TestSessionStreamsInterruptsAndRelaunchesForEffort(t *testing.T) {
 		!strings.Contains(lines[1], "--dangerously-skip-permissions") ||
 		!strings.Contains(lines[0], "--append-system-prompt Be brief") || !strings.Contains(lines[1], "--append-system-prompt Be brief") {
 		t.Fatalf("launches: %q", lines)
+	}
+	// Both launches load the same plugin, which Close removes.
+	plugin := s.(*session).plugin
+	if target, _ := os.Readlink(filepath.Join(plugin, "skills", filepath.Base(skill))); target != skill ||
+		!strings.Contains(lines[0], "--plugin-dir "+plugin) || !strings.Contains(lines[1], "--plugin-dir "+plugin) {
+		t.Fatalf("plugin %s links %q, launches %q", plugin, target, lines)
+	}
+	s.Close(time.Second)
+	if _, err := os.Stat(plugin); !os.IsNotExist(err) {
+		t.Fatalf("plugin left behind: %v", err)
 	}
 }
 

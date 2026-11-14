@@ -32,6 +32,10 @@ type Spec struct {
 	// prompt, such as --append-system-prompt. Without one, sessions ask
 	// for it in _meta.systemPrompt.append, as Claude Code's adapter reads.
 	AppendSystemPrompt string
+	// PluginDir is the CLI's option loading a plugin directory for one
+	// session, such as --plugin-dir; sessions give their skills to it as
+	// agent.PluginDir lays them out. Without one, agents get no skills.
+	PluginDir string
 }
 
 // Driver runs an ACP agent CLI as an agent.Driver.

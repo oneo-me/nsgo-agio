@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -25,6 +26,16 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	}
 	s.client = c
 	close(s.ready)
+	ctx := context.Background()
+	if len(o.Skills) > 0 {
+		// Each session runs its own app server, so its extra skill roots
+		// reach this thread alone. A root is searched for SKILL.md files,
+		// so a skill directory is one.
+		if _, err := c.call(ctx, "skills/extraRoots/set", map[string]any{"extraRoots": o.Skills}); err != nil {
+			go c.proc.Close(3 * time.Second)
+			return nil, agent.Info{}, fmt.Errorf("codex could not add skills, it may need updating: %w", err)
+		}
+	}
 	params := map[string]any{"cwd": o.Dir, "approvalPolicy": "never", "sandbox": "danger-full-access"}
 	if o.Settings.Model != "" {
 		params["model"] = o.Settings.Model
@@ -47,7 +58,6 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 		Model           string `json:"model"`
 		ReasoningEffort string `json:"reasoningEffort"`
 	}
-	ctx := context.Background()
 	if err := c.callInto(ctx, method, params, &opened); err != nil {
 		go c.proc.Close(3 * time.Second)
 		return nil, agent.Info{}, err

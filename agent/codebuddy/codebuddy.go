@@ -20,6 +20,7 @@ var Spec = acp.Spec{
 	Args:               []string{"--acp"},
 	Modes:              []string{"fullAccess", "bypassPermissions"},
 	AppendSystemPrompt: "--append-system-prompt",
+	PluginDir:          "--plugin-dir",
 }
 
 // Locate finds codebuddy, or its short name cbc, as agent.LocateScript

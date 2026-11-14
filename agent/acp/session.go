@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -24,13 +25,24 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	if o.SystemPrompt != "" && d.AppendSystemPrompt != "" {
 		args = []string{d.AppendSystemPrompt, o.SystemPrompt}
 	}
+	plugin := ""
+	if len(o.Skills) > 0 && d.PluginDir != "" {
+		dir, err := agent.PluginDir(o.Skills)
+		if err != nil {
+			return nil, agent.Info{}, err
+		}
+		// Joined, as such options may take several values.
+		plugin, args = dir, append(args, d.PluginDir+"="+dir)
+	}
 	c, err := dial(d.command(o.Dir, args...), d.name(), func(c *conn) {
 		c.onUpdate, c.onRequest = s.update, s.request
 	}, func(err error) {
 		s.exited()
+		os.RemoveAll(plugin)
 		exited <- err
 	})
 	if err != nil {
+		os.RemoveAll(plugin)
 		return nil, agent.Info{}, err
 	}
 	s.conn = c

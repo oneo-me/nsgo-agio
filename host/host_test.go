@@ -2,6 +2,9 @@ package host
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -66,6 +69,34 @@ func TestSystemPromptsJoinTheHostsAndTheConversations(t *testing.T) {
 	started := d.Started()
 	if len(started) != 2 || started[0].SystemPrompt != "Use the app's tools." ||
 		started[1].SystemPrompt != "Use the app's tools.\n\nFix the bug." {
+		t.Fatalf("started = %+v", started)
+	}
+}
+
+func TestSkillsJoinTheHostsAndTheConversations(t *testing.T) {
+	skill := func() string {
+		dir := t.TempDir()
+		os.WriteFile(filepath.Join(dir, agent.SkillFile), nil, 0o644)
+		return dir
+	}
+	shared, own := skill(), skill()
+	d := &fakeagent.Driver{}
+	h := New(Options{Env: []string{}, Tools: []agent.Tool{agent.Claude}, Drivers: map[agent.Tool]agent.Driver{agent.Claude: d},
+		Home: t.TempDir(), Skills: []string{shared}})
+	t.Cleanup(func() { h.Close() })
+	waitFor(t, h, func(s agio.State) bool { return !s.Discovering && s.Ready() })
+	if _, err := h.Create(agio.Create{Dir: t.TempDir(), Skills: []string{t.TempDir()}}); err == nil {
+		t.Fatal("created a conversation with a directory that is no skill")
+	}
+	id, err := h.Create(agio.Create{Dir: t.TempDir(), Skills: []string{own, shared + string(filepath.Separator)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Send(id, agio.Message{Text: "go"}); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, h, func(s agio.State) bool { return s.Conversation(id).Cursor != "" })
+	if started := d.Started(); len(started) != 1 || !slices.Equal(started[0].Skills, []string{shared, own}) {
 		t.Fatalf("started = %+v", started)
 	}
 }

@@ -27,7 +27,15 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	if s.id == "" {
 		s.id = newSessionID()
 	}
+	if len(o.Skills) > 0 {
+		dir, err := agent.PluginDir(o.Skills)
+		if err != nil {
+			return nil, agent.Info{}, err
+		}
+		s.plugin = dir
+	}
 	if err := s.launch(); err != nil {
+		os.RemoveAll(s.plugin)
 		return nil, agent.Info{}, err
 	}
 	s.emitter.Open()
@@ -41,7 +49,10 @@ type session struct {
 	driver  *Driver
 	dir, id string
 	// system is appended to Claude Code's system prompt at every launch.
-	system  string
+	system string
+	// plugin holds the session's skills for every launch; Close removes
+	// it.
+	plugin  string
 	emitter *agent.Emitter
 	onExit  func(error)
 
@@ -89,6 +100,9 @@ func (s *session) args() []string {
 	}
 	if s.system != "" {
 		args = append(args, "--append-system-prompt", s.system)
+	}
+	if s.plugin != "" {
+		args = append(args, "--plugin-dir", s.plugin)
 	}
 	if s.resume {
 		return append(args, "--resume", s.id)
@@ -258,6 +272,7 @@ func (s *session) Close(grace time.Duration) {
 	if proc != nil {
 		proc.Close(grace)
 	}
+	os.RemoveAll(s.plugin)
 }
 
 // record is one stream-json output line.

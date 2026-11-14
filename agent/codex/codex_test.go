@@ -30,7 +30,7 @@ while IFS= read -r line; do
     *'"method":"thread/start"'*|*'"method":"thread/resume"'*)
       printf '{"method":"thread/started","params":{"thread":{"id":"t1"}}}\n'
       printf '{"id":%s,"result":{"thread":{"id":"t1"},"model":"gpt-6-luna","reasoningEffort":"low"}}\n' "$id" ;;
-    *'"method":"thread/name/set"'*) printf '{"id":%s,"result":{}}\n' "$id" ;;
+    *'"method":"thread/name/set"'*|*'"method":"skills/extraRoots/set"'*) printf '{"id":%s,"result":{}}\n' "$id" ;;
     *'"method":"turn/start"'*'"text":"Slow'*)
       printf '{"id":%s,"result":{"turn":{"id":"u2","status":"inProgress"}}}\n' "$id"
       printf '{"method":"turn/started","params":{"threadId":"t1","turn":{"id":"u2"}}}\n' ;;
@@ -122,14 +122,16 @@ func (r *recorder) wait(t *testing.T, settled int) []agent.Event {
 func TestSessionStreamsInterruptsAndReadsHistory(t *testing.T) {
 	d := fakeDriver(t)
 	var r recorder
-	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), Title: "Task", SystemPrompt: "Be brief",
+	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), Title: "Task", SystemPrompt: "Be brief", Skills: []string{"/skills/review"},
 		Settings: agent.Settings{Model: "gpt-6-luna", Tier: "priority"}}, r.add, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer s.Close(time.Second)
-	if requests, _ := os.ReadFile(filepath.Join(filepath.Dir(d.Path), "requests.txt")); !strings.Contains(string(requests), `"developerInstructions":"Be brief"`) {
-		t.Fatalf("thread/start without instructions: %s", requests)
+	requests, _ := os.ReadFile(filepath.Join(filepath.Dir(d.Path), "requests.txt"))
+	roots, start := strings.Index(string(requests), `"extraRoots":["/skills/review"]`), strings.Index(string(requests), `"method":"thread/start"`)
+	if !strings.Contains(string(requests), `"developerInstructions":"Be brief"`) || roots < 0 || roots > start {
+		t.Fatalf("requests: %s", requests)
 	}
 	if info.Cursor != "t1" || info.Settings.Model != "gpt-6-luna" || info.Settings.Effort != "low" {
 		t.Fatalf("info: %+v", info)

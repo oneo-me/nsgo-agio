@@ -64,7 +64,7 @@ func TestModelLevels(t *testing.T) {
 	}
 }
 
-func TestDriverAppendsTheSystemPrompt(t *testing.T) {
+func TestDriverAppendsTheSystemPromptAndSkills(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("requires a Unix shell")
 	}
@@ -79,12 +79,12 @@ done
 `
 	os.WriteFile(fake, []byte(script), 0755)
 	d := &Driver{Command: Command{Path: fake, Env: os.Environ()}}
-	s, _, err := d.Start(agent.StartOptions{Dir: dir, SystemPrompt: "Be brief"}, func(agent.Event) {}, nil)
+	s, _, err := d.Start(agent.StartOptions{Dir: dir, SystemPrompt: "Be brief", Skills: []string{"/skills/a", "/skills/b"}}, func(agent.Event) {}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	s.Close(time.Second)
-	if args, _ := os.ReadFile(filepath.Join(dir, "args.txt")); !strings.Contains(string(args), "--append-system-prompt\nBe brief\n") {
+	if args, _ := os.ReadFile(filepath.Join(dir, "args.txt")); !strings.Contains(string(args), "--append-system-prompt\nBe brief\n--skill\n/skills/a\n--skill\n/skills/b\n") {
 		t.Fatalf("args: %q", args)
 	}
 }

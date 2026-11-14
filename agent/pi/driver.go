@@ -63,6 +63,9 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	if o.SystemPrompt != "" {
 		args = []string{"--append-system-prompt", o.SystemPrompt}
 	}
+	for _, skill := range o.Skills {
+		args = append(args, "--skill", skill)
+	}
 	c, err := Start(Options{Command: d.Command, Dir: o.Dir, Session: o.Cursor, Args: args},
 		s.translate,
 		func(err error) { exited <- err })
