@@ -10,6 +10,7 @@ import (
 	"github.com/nsgo-dev/nsgo/core"
 	"github.com/nsgo-dev/nsgo/desktop"
 	menus "github.com/nsgo-dev/nsgo/desktop/locales"
+	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/nsgotest"
 	"github.com/nsgo-dev/nsgo/ui"
 	agio "github.com/oneo-me/nsgo-agio"
@@ -190,6 +191,38 @@ func TestNewTaskWorksWhereTheShownTaskDid(t *testing.T) {
 		s := h.State()
 		return len(s.Conversations) == 2 && s.Conversations[0].ID != first.ID && s.Conversations[0].Dir == other
 	})
+}
+
+func TestAppPagesShowFromTheSidebar(t *testing.T) {
+	h := host.New(host.Options{Env: []string{}, Tools: []agent.Tool{agent.Claude},
+		Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}}, Home: t.TempDir()})
+	t.Cleanup(func() { h.Close() })
+	dir := t.TempDir()
+	app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
+		return App{Model: Bind(cx, h), Dir: dir, Pages: []Page{{ID: "board", Title: func() string { return "Board" }, Icon: lucide.Layers,
+			Content: func(cx *core.Scope) core.Node { return core.Text{Content: "board content"} }}}}
+	}, nsgotest.Size(900, 640))
+	app.WaitUntil(5*time.Second, func() bool { return len(h.State().Conversations) == 1 && h.State().Ready() })
+	app.Type("id:composer", "hello")
+	app.Press("role:button Send")
+	app.WaitUntil(5*time.Second, func() bool { return hasText(app, "echo: hello") })
+	task := h.State().Conversations[0].ID
+	// The page shows over the task, and pressing the task again shows it.
+	app.Press("id:page-board")
+	app.WaitFor("text:board content", 5*time.Second)
+	if app.Exists("id:conversation") {
+		t.Fatal("the task still shows")
+	}
+	app.Press("id:task-" + task)
+	app.WaitFor("id:conversation", 5*time.Second)
+	app.Press("id:page-board")
+	app.WaitFor("text:board content", 5*time.Second)
+	// New task leaves it too.
+	app.Press("id:new-task")
+	app.WaitFor("id:new-task-project", 5*time.Second)
+	if app.Exists("text:board content") {
+		t.Fatal("the page still shows")
+	}
 }
 
 func TestSettingsTurnModelsOffAndOn(t *testing.T) {

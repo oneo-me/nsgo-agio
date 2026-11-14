@@ -102,9 +102,10 @@ func taskGroups(msgs locales.Messages, s agio.State, now time.Time) []taskGroup 
 	return slices.DeleteFunc(groups, func(g taskGroup) bool { return len(g.tasks) == 0 })
 }
 
-// sidebar lists the tasks in collapsible groups with their counts. Its
-// rows are built again only when what they show changes.
-func (a App) sidebar(cx *core.Scope, selected *core.Signal[string]) core.Node {
+// sidebar lists the tasks in collapsible groups with their counts, none
+// selected while the app's page shows. Its rows are built again only when
+// what they show changes.
+func (a App) sidebar(cx *core.Scope, selected, page *core.Signal[string]) core.Node {
 	m := a.Model
 	// closed are the groups folded away; folding bumps folds.
 	closed, folds := map[string]bool{}, core.NewSignal(cx, 0)
@@ -148,7 +149,18 @@ func (a App) sidebar(cx *core.Scope, selected *core.Signal[string]) core.Node {
 		})
 		return sections
 	}
-	return ui.Sidebar{SectionsFunc: sections, Selected: selected.Get, OnSelect: selected.Set, TestID: "tasks"}
+	// A task shows over the app's page, even the one selected under it.
+	return ui.Sidebar{SectionsFunc: sections, TestID: "tasks",
+		Selected: func() string {
+			if page.Get() != "" {
+				return ""
+			}
+			return selected.Get()
+		},
+		OnSelect: func(id string) {
+			page.Set("")
+			selected.Set(id)
+		}}
 }
 
 // taskItem is a task's row: its title, and below it the name of the folder

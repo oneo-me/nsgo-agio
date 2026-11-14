@@ -73,7 +73,22 @@ type App struct {
 	// Selected, when set, holds the conversation shown, "" for New task,
 	// so the app can show one.
 	Selected *core.Signal[string]
-	TestID   string
+	// Pages are the app's own pages, listed after New task in the sidebar;
+	// showing a conversation or New task leaves them.
+	Pages  []Page
+	TestID string
+}
+
+// Page is a page of the app's own in the window's content.
+type Page struct {
+	// ID names the page, and its sidebar button's test ID is "page-"+ID.
+	ID string
+	// Title names it in the sidebar and the window's header, in the
+	// language shown.
+	Title func() string
+	Icon  func() *core.SVG
+	// Content builds the page each time it shows.
+	Content func(cx *core.Scope) core.Node
 }
 
 // Render implements core.Node.
@@ -93,6 +108,13 @@ func (a App) Render(cx *core.Scope) core.Node {
 		width = core.NewSignal(cx, core.Points(220))
 	}
 	settingsOpen := core.NewSignal(cx, false)
+	// page is the app's page shown over the selection, "" for none.
+	page := core.NewSignal(cx, "")
+	cx.Effect(func() {
+		if selected.Get() != "" {
+			cx.Untrack(func() { page.Set("") })
+		}
+	})
 	draft := live(m, func() string { return draftID(m.State()) })
 	// dir is where the shown conversation works: New task's draft's, else
 	// Dir.
@@ -161,6 +183,7 @@ func (a App) Render(cx *core.Scope) core.Node {
 			}
 		}
 		failed = ""
+		page.Set("")
 		selected.Set("")
 		// A draft kept from before moves to where the shown conversation works.
 		if id, d := core.Untracked(cx, draft), next; id != "" && d != "" && core.Untracked(cx, m.State).Conversation(id).Dir != d {
@@ -170,6 +193,9 @@ func (a App) Render(cx *core.Scope) core.Node {
 	}
 	title := live(m, func() string {
 		msgs := locales.For(cx)
+		if p := a.page(page.Get()); p != nil {
+			return p.Title()
+		}
 		id := selected.Get()
 		if id == "" {
 			return msgs.NewTask()
@@ -179,7 +205,7 @@ func (a App) Render(cx *core.Scope) core.Node {
 		}
 		return msgs.Untitled()
 	})
-	sidebar := a.sidebar(cx, selected)
+	sidebar := a.sidebar(cx, selected, page)
 	if a.Name != "" && runtime.GOOS == "darwin" {
 		cx.Effect(func() {
 			var checkUpdates func()
@@ -211,9 +237,10 @@ func (a App) Render(cx *core.Scope) core.Node {
 				Width: width.Get, OnWidthChange: width.Set, ResizeLabel: msgs.ResizeSidebar(),
 				DefaultWidth: 220, MinWidth: 220, MaxWidth: 420,
 				Sidebar: []core.Node{core.View{Style: ui.FillRest.Merge(core.Style{Gap: 2}), Children: []core.Node{
-					core.View{Style: core.Style{Padding: core.Symmetric(0, 12), FlexShrink: 0}, Children: []core.Node{
+					core.View{Style: core.Style{Padding: core.Symmetric(0, 12), FlexShrink: 0, Gap: 2}, Children: append([]core.Node{
 						ui.SidebarButton{Text: msgs.NewTask(), Icon: lucide.SquarePen, TestID: "new-task", Shortcut: a.shortcutKey("n"),
-							Selected: func() bool { return selected.Get() == "" }, OnPress: newTask}}},
+							Selected: func() bool { return selected.Get() == "" && page.Get() == "" }, OnPress: newTask}},
+						a.pageButtons(page)...)},
 					sidebar,
 					a.quotas(cx),
 				}}},
@@ -223,6 +250,9 @@ func (a App) Render(cx *core.Scope) core.Node {
 					StyleFunc: func() core.Style { return core.Style{Color: colors.Text()} }}},
 				Actions: actions,
 				Content: []core.Node{core.Dynamic(func(cx *core.Scope) core.Node {
+					if p := a.page(page.Get()); p != nil {
+						return core.View{Style: ui.FillRest, TestID: "page-content-" + p.ID, Children: []core.Node{p.Content(cx)}}
+					}
 					id := selected.Get()
 					if id == "" {
 						return a.newTaskPane(cx, draft, selected.Set)
@@ -234,6 +264,27 @@ func (a App) Render(cx *core.Scope) core.Node {
 		return node
 	})
 	return core.Group([]core.Node{shell, a.settings(cx, settingsOpen)})
+}
+
+// page is the app's page of id, nil for none.
+func (a App) page(id string) *Page {
+	for i := range a.Pages {
+		if id != "" && a.Pages[i].ID == id {
+			return &a.Pages[i]
+		}
+	}
+	return nil
+}
+
+// pageButtons show the app's pages from the sidebar, built again with the
+// shell when the language changes.
+func (a App) pageButtons(page *core.Signal[string]) []core.Node {
+	var buttons []core.Node
+	for _, p := range a.Pages {
+		buttons = append(buttons, ui.SidebarButton{Text: p.Title(), Icon: p.Icon, TestID: "page-" + p.ID,
+			Selected: func() bool { return page.Get() == p.ID }, OnPress: func() { page.Set(p.ID) }})
+	}
+	return buttons
 }
 
 // The size of the sidebar's toolbar buttons and their icons.
