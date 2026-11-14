@@ -213,14 +213,21 @@ func TestSettingsTurnModelsOffAndOn(t *testing.T) {
 	app.WaitUntil(5*time.Second, func() bool { return len(h.State().Tools[0].DisabledModels) == 0 })
 }
 
-func TestComposerShowsTheModelsLimit(t *testing.T) {
+func TestSidebarShowsTheAccountsLimits(t *testing.T) {
 	read := func(_ context.Context, _ []string, p quota.Provider) (quota.Usage, error) {
-		if p != quota.Claude {
+		switch p {
+		case quota.PiXAI:
+			return quota.Usage{}, quota.ErrExpired
+		case quota.DeepSeek:
+			return quota.Usage{Balances: []quota.Balance{{Currency: "CNY", Amount: "12.00"}}}, nil
+		case quota.Claude:
+		default:
 			return quota.Usage{}, quota.ErrNoCredentials
 		}
 		return quota.Usage{Plan: "Max", Windows: []quota.Window{
-			{Minutes: 300, Percent: 25, ResetsAt: time.Now().Add(2 * time.Hour)},
 			{Minutes: 7 * 24 * 60, Percent: 60},
+			{Minutes: 7 * 24 * 60, Scope: "Opus", Percent: 100, ResetsAt: time.Now().Add(48 * time.Hour)},
+			{Minutes: 300, Percent: 25, ResetsAt: time.Now().Add(2 * time.Hour)},
 		}}, nil
 	}
 	h := host.New(host.Options{Env: []string{}, Tools: []agent.Tool{agent.Claude},
@@ -228,26 +235,38 @@ func TestComposerShowsTheModelsLimit(t *testing.T) {
 	t.Cleanup(func() { h.Close() })
 	dir := t.TempDir()
 	app := nsgotest.Start(t, func(cx *core.Scope) core.Node { return App{Model: Bind(cx, h), Dir: dir} }, nsgotest.Size(900, 640))
-	app.WaitFor("id:quota", 5*time.Second)
-	if !hasText(app, "Resets in 1h 59m") && !hasText(app, "Resets in 2h") {
-		t.Fatalf("the five-hour window's reset is missing: %q", app.Texts())
+	app.WaitFor("id:quota-claude", 5*time.Second)
+	// The five-hour window limits every model, so the scoped one waits.
+	if !hasText(app, "75% left") {
+		t.Fatalf("what is left of the five-hour window is missing: %q", app.Texts())
 	}
-	app.Press("id:quota")
+	app.Press("id:quota-claude")
 	app.WaitUntil(5*time.Second, func() bool {
-		return hasText(app, "Claude · Max") && hasText(app, "75% left") && hasText(app, "Weekly limit")
+		return hasText(app, "Claude · Max") && hasText(app, "Weekly limit") && (hasText(app, "Resets in 1h 59m") || hasText(app, "Resets in 2h"))
 	})
-	app.Press("id:quota")
-	// The model picker's heading shows the account's limit too.
+	app.Press("id:quota-claude")
+	// An account whose limits cannot be read says why.
+	app.WaitFor("id:quota-pi-xai", 5*time.Second)
+	if !hasText(app, "Sign-in expired") {
+		t.Fatalf("the expired sign-in is missing: %q", app.Texts())
+	}
+	// It goes after the accounts read, though xAI's precedes DeepSeek's.
+	app.WaitFor("id:quota-deepseek", 5*time.Second)
+	if app.Find("id:quota-pi-xai").Frame.Origin.Y < app.Find("id:quota-deepseek").Frame.Origin.Y {
+		t.Fatal("the expired sign-in is listed before an account read")
+	}
+	// The composer and the model picker leave the limits to the sidebar.
 	app.Press("id:model-picker")
-	app.WaitUntil(5*time.Second, func() bool {
-		n := 0
-		for _, text := range app.Texts() {
-			if strings.HasPrefix(text, "Resets in") {
-				n++
-			}
+	app.WaitFor("id:model-claude:opus", 5*time.Second)
+	n := 0
+	for _, text := range app.Texts() {
+		if strings.HasSuffix(text, "% left") {
+			n++
 		}
-		return n == 2
-	})
+	}
+	if n != 1 {
+		t.Fatalf("the limits show %d times, not once in the sidebar: %q", n, app.Texts())
+	}
 }
 
 func TestAppMenuChecksForUpdatesOnlyWhenAsked(t *testing.T) {

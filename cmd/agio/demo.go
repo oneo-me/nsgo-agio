@@ -119,6 +119,16 @@ func openBackend(string, string, settings) agio.Backend {
 			conv("task-4", w.Titles[3], "~/src/agio", "anthropic/claude-opus-4-6", 3*time.Hour, 2*time.Hour),
 			conv("task-5", w.Titles[4], "~/src/nsgo", "openai/gpt-5.4", 26*time.Hour, 25*time.Hour),
 		},
+		Quotas: []agio.Quota{
+			{Provider: quota.Claude, Next: now.Add(12 * time.Minute), Usage: &quota.Usage{Plan: "Max", Windows: []quota.Window{
+				{Minutes: 300, Percent: 37, ResetsAt: now.Add(2*time.Hour + 14*time.Minute)},
+				{Minutes: 7 * 24 * 60, Percent: 58, ResetsAt: now.Add(3 * 24 * time.Hour)},
+			}}},
+			{Provider: quota.Codex, Next: now.Add(4 * time.Minute), Usage: &quota.Usage{Plan: "Pro", Windows: []quota.Window{
+				{Minutes: 300, Percent: 82, ResetsAt: now.Add(48 * time.Minute)},
+				{Minutes: 7 * 24 * 60, Percent: 24, ResetsAt: now.Add(5 * 24 * time.Hour)},
+			}}},
+		},
 	}}
 }
 

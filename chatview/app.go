@@ -215,6 +215,7 @@ func (a App) Render(cx *core.Scope) core.Node {
 						ui.SidebarButton{Text: msgs.NewTask(), Icon: lucide.SquarePen, TestID: "new-task", Shortcut: a.shortcutKey("n"),
 							Selected: func() bool { return selected.Get() == "" }, OnPress: newTask}}},
 					sidebar,
+					a.quotas(cx),
 				}}},
 				SidebarFooter: a.toolbar(cx, msgs, openSettings),
 				Header: []core.Node{core.Text{ContentFunc: title, MaxLines: 1,

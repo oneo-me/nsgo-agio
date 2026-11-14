@@ -214,9 +214,8 @@ func (v Conversation) composer(cx *core.Scope, state *chat.ConversationState, dr
 		OnSend:        send,
 		OnStop:        func() { m.Do(func(b agio.Backend) error { return b.Stop(v.ID) }, nil) },
 		Accessory:     func(cx *core.Scope) core.Node { return v.choices(cx) },
-		Trailing:      func(cx *core.Scope) core.Node { return v.contextMeter(cx) },
 		Footer: func(cx *core.Scope) core.Node {
-			return core.Group{v.project(cx), core.View{Style: core.Style{FlexGrow: 1}}, v.quotaFooter(cx)}
+			return core.Group{v.project(cx), core.View{Style: core.Style{FlexGrow: 1}}, v.contextMeter(cx)}
 		}}
 }
 
@@ -384,7 +383,7 @@ func (v Conversation) modelRows(cx *core.Scope, query, selected string, choose f
 		}
 		key := mo.Key()
 		if heading := modelGroup(mo); count == 0 || heading != group {
-			rows = append(rows, modelGroupHeading(cx, m, heading, key))
+			rows = append(rows, modelGroupHeading(cx, heading))
 			group = heading
 		}
 		count++
@@ -410,28 +409,10 @@ func (v Conversation) modelRows(cx *core.Scope, query, selected string, choose f
 	return core.View{Style: core.Style{Gap: 1}, Children: rows}
 }
 
-// modelGroupHeading shows, beside a group's name, the limit its first
-// model shows in the composer. It only informs; the composer opens the
-// account's limits.
-func modelGroupHeading(cx *core.Scope, m *Model, heading, key string) core.Node {
-	msgs := locales.For(cx)
-	colors := ui.ColorsOf(cx)
-	children := []core.Node{fillLine(heading, 11.5, colors.Muted)}
-	if r, tooltip, ok := quotaSummary(msgs, m.State(), key, m.now()); ok {
-		var glance []core.Node
-		if r.Fraction >= 0 && r.Detail != "" {
-			glance = append(glance, ui.Text(r.Detail, 11.5, ui.Regular, colors.Muted))
-		}
-		if r.Fraction >= 0 {
-			glance = append(glance, ui.Progress{Value: func() float32 { return float32(100 * r.Fraction) }, Label: r.Label,
-				Style: core.Style{Width: core.Pt(64), Height: core.Pt(4), FlexShrink: 0}})
-		} else {
-			glance = append(glance, ui.Text(r.Value, 11.5, ui.Regular, colors.Muted))
-		}
-		children = append(children, ui.Tooltip{Text: tooltip, Trigger: row(6, glance...)})
-	}
-	return core.View{Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, Gap: 8, MinWidth: core.Pt(0),
-		Padding: core.Edges{Top: 8, Right: 8, Bottom: 3, Left: 8}}, Children: children}
+// modelGroupHeading names a group of models.
+func modelGroupHeading(cx *core.Scope, heading string) core.Node {
+	return core.View{Style: core.Style{Direction: core.Row, AlignItems: core.AlignCenter, MinWidth: core.Pt(0),
+		Padding: core.Edges{Top: 8, Right: 8, Bottom: 3, Left: 8}}, Children: []core.Node{fillLine(heading, 11.5, ui.ColorsOf(cx).Muted)}}
 }
 
 // optionRow is a row styled as chat.Picker's, with the choice's content

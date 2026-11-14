@@ -85,7 +85,7 @@ noMatchingSettings: "No matching settings"
 closeSettings: "Close"
 agents: "Agents"
 chooseFolder: "Choose a folder…"
-quotaDetails: "Account limits"
+quotaDetails: "{account} limits"
 quotaLimit: "Usage limit"
 quotaWeekly: "Weekly limit"
 quotaHours:
@@ -126,6 +126,8 @@ quotaResetsDaysHours:
     days: {type: int}
     hours: {type: int}
 quotaExpired: "Sign-in expired. Use the agent again to refresh it."
+quotaExpiredShort: "Sign-in expired"
+quotaUnavailable: "Unavailable"
 quotaRateLimited: "Limits are rate-limited right now; retrying shortly."
 quotaSignin: "Sign in again to read limits."
 quotaFailed: "Couldn't read limits: {error}"

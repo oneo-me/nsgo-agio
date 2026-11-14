@@ -55,6 +55,7 @@ var Parameters = map[string][]string{
 	"WorkedFor":               {"duration"},
 	"WorkingFor":              {"duration"},
 	"StoppedAfter":            {"duration"},
+	"QuotaDetails":            {"account"},
 	"QuotaHours":              {"count"},
 	"QuotaDays":               {"count"},
 	"QuotaLeft":               {"percent"},
@@ -96,6 +97,7 @@ type Translation struct {
 	WorkedFor               func(duration string) string
 	WorkingFor              func(duration string) string
 	StoppedAfter            func(duration string) string
+	QuotaDetails            func(account string) string
 	QuotaHours              func(count int) string
 	QuotaDays               func(count int) string
 	QuotaLeft               func(percent string) string
@@ -164,12 +166,13 @@ const (
 	textCloseSettings
 	textAgents
 	textChooseFolder
-	textQuotaDetails
 	textQuotaLimit
 	textQuotaWeekly
 	textQuotaBalance
 	textQuotaResetsSoon
 	textQuotaExpired
+	textQuotaExpiredShort
+	textQuotaUnavailable
 	textQuotaRateLimited
 	textQuotaSignin
 	textQuotaRefreshing
@@ -256,12 +259,13 @@ var keyOfText = [numTexts]string{
 	"closeSettings",
 	"agents",
 	"chooseFolder",
-	"quotaDetails",
 	"quotaLimit",
 	"quotaWeekly",
 	"quotaBalance",
 	"quotaResetsSoon",
 	"quotaExpired",
+	"quotaExpiredShort",
+	"quotaUnavailable",
 	"quotaRateLimited",
 	"quotaSignin",
 	"quotaRefreshing",
@@ -346,12 +350,13 @@ var textsEn = i18n.NewTexts(""+
 	"Close"+
 	"Agents"+
 	"Choose a folder…"+
-	"Account limits"+
 	"Usage limit"+
 	"Weekly limit"+
 	"Balance"+
 	"Resets soon"+
 	"Sign-in expired. Use the agent again to refresh it."+
+	"Sign-in expired"+
+	"Unavailable"+
 	"Limits are rate-limited right now; retrying shortly."+
 	"Sign in again to read limits."+
 	"Refreshing…"+
@@ -433,12 +438,13 @@ var textsEn = i18n.NewTexts(""+
 		5,
 		6,
 		18,
-		14,
 		11,
 		12,
 		7,
 		11,
 		51,
+		15,
+		11,
 		52,
 		29,
 		13,
@@ -523,12 +529,13 @@ var textsZhHans = i18n.NewTexts(""+
 	"关闭"+
 	"智能体"+
 	"选择文件夹…"+
-	"账户额度"+
 	"用量限额"+
 	"每周限额"+
 	"余额"+
 	"即将重置"+
 	"登录已过期，再次使用该智能体即可刷新。"+
+	"登录已过期"+
+	"无法读取"+
 	"读取限额过于频繁，稍后自动重试。"+
 	"请重新登录以读取限额。"+
 	"正在刷新…"+
@@ -612,10 +619,11 @@ var textsZhHans = i18n.NewTexts(""+
 		18,
 		12,
 		12,
-		12,
 		6,
 		12,
 		57,
+		15,
+		12,
 		48,
 		33,
 		15,
@@ -754,6 +762,9 @@ func Supply(lang string, t Translation) {
 	}
 	if t.StoppedAfter != nil {
 		s.StoppedAfter = t.StoppedAfter
+	}
+	if t.QuotaDetails != nil {
+		s.QuotaDetails = t.QuotaDetails
 	}
 	if t.QuotaHours != nil {
 		s.QuotaHours = t.QuotaHours
@@ -1565,12 +1576,27 @@ func ChooseFolder(cx *core.Scope) string { return For(cx).ChooseFolder() }
 // ChooseFolder is the package's ChooseFolder in the language of msgs.
 func (msgs Messages) ChooseFolder() string { return msgs.text(textChooseFolder) }
 
-// QuotaDetails says "Account limits"
+// QuotaDetails says "{account} limits"
 // in the language the app shows under cx.
-func QuotaDetails(cx *core.Scope) string { return For(cx).QuotaDetails() }
+func QuotaDetails(cx *core.Scope, account string) string { return For(cx).QuotaDetails(account) }
 
 // QuotaDetails is the package's QuotaDetails in the language of msgs.
-func (msgs Messages) QuotaDetails() string { return msgs.text(textQuotaDetails) }
+func (msgs Messages) QuotaDetails(account string) string {
+	if i18n.IsPseudo(msgs.lang) {
+		return i18n.Pseudo(msgs.lang, Messages{lang: Source, mark: true}.QuotaDetails(account))
+	}
+	for lang := msgs.lang; ; lang = i18n.Parent(lang) {
+		if f := supplied[lang].QuotaDetails; f != nil {
+			return f(account)
+		}
+		switch lang {
+		case "", "en":
+			return msgs.arg(account) + " limits"
+		case "zh-Hans":
+			return account + " 额度"
+		}
+	}
+}
 
 // QuotaLimit says "Usage limit"
 // in the language the app shows under cx.
@@ -1808,6 +1834,20 @@ func QuotaExpired(cx *core.Scope) string { return For(cx).QuotaExpired() }
 
 // QuotaExpired is the package's QuotaExpired in the language of msgs.
 func (msgs Messages) QuotaExpired() string { return msgs.text(textQuotaExpired) }
+
+// QuotaExpiredShort says "Sign-in expired"
+// in the language the app shows under cx.
+func QuotaExpiredShort(cx *core.Scope) string { return For(cx).QuotaExpiredShort() }
+
+// QuotaExpiredShort is the package's QuotaExpiredShort in the language of msgs.
+func (msgs Messages) QuotaExpiredShort() string { return msgs.text(textQuotaExpiredShort) }
+
+// QuotaUnavailable says "Unavailable"
+// in the language the app shows under cx.
+func QuotaUnavailable(cx *core.Scope) string { return For(cx).QuotaUnavailable() }
+
+// QuotaUnavailable is the package's QuotaUnavailable in the language of msgs.
+func (msgs Messages) QuotaUnavailable() string { return msgs.text(textQuotaUnavailable) }
 
 // QuotaRateLimited says "Limits are rate-limited right now; retrying shortly."
 // in the language the app shows under cx.

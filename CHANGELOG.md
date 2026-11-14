@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Show each account's limit at the sidebar's end, and the context window at the composer's end.
+
 ## [0.1.0] - 2026-11-13
 
 Agio 0.1.0 is the first release of Neorio's agent core as a Go library, and of Agio, the app built on it, for macOS, Windows and Linux.
