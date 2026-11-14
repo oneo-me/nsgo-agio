@@ -22,7 +22,7 @@ const abortTimeout = 30 * time.Second
 // accepts a caller-chosen session ID, so the cursor exists before the first
 // prompt.
 func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit func(error)) (agent.Session, agent.Info, error) {
-	s := &session{driver: d, dir: o.Dir, id: o.Cursor, resume: o.Cursor != "", settings: o.Settings,
+	s := &session{driver: d, dir: o.Dir, id: o.Cursor, system: o.SystemPrompt, resume: o.Cursor != "", settings: o.Settings,
 		emitter: agent.NewEmitter(onEvent), onExit: onExit}
 	if s.id == "" {
 		s.id = newSessionID()
@@ -40,6 +40,8 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 type session struct {
 	driver  *Driver
 	dir, id string
+	// system is appended to Claude Code's system prompt at every launch.
+	system  string
 	emitter *agent.Emitter
 	onExit  func(error)
 
@@ -84,6 +86,9 @@ func (s *session) args() []string {
 	}
 	if s.settings.Effort != "" {
 		args = append(args, "--effort", s.settings.Effort)
+	}
+	if s.system != "" {
+		args = append(args, "--append-system-prompt", s.system)
 	}
 	if s.resume {
 		return append(args, "--resume", s.id)

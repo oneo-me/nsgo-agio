@@ -28,6 +28,10 @@ type Spec struct {
 	// Modes are mode IDs that skip permission prompts, most permissive
 	// first; a session selects the first one the agent offers.
 	Modes []string
+	// AppendSystemPrompt is the CLI's option appending to its system
+	// prompt, such as --append-system-prompt. Without one, sessions ask
+	// for it in _meta.systemPrompt.append, as Claude Code's adapter reads.
+	AppendSystemPrompt string
 }
 
 // Driver runs an ACP agent CLI as an agent.Driver.
@@ -51,8 +55,8 @@ func (d *Driver) Tool() agent.Tool { return d.Spec.Tool }
 
 func (d *Driver) name() string { return d.Spec.Tool.Name() }
 
-func (d *Driver) command(dir string) *exec.Cmd {
-	cmd := exec.Command(d.Path, append(append([]string{}, d.PathArgs...), d.Args...)...)
+func (d *Driver) command(dir string, args ...string) *exec.Cmd {
+	cmd := exec.Command(d.Path, append(append(append([]string{}, d.PathArgs...), d.Args...), args...)...)
 	cmd.Dir, cmd.Env = dir, d.Env
 	return cmd
 }
@@ -154,6 +158,14 @@ func defaultEffort(levels []string) string {
 
 func newSession(dir string) map[string]any {
 	return map[string]any{"cwd": dir, "mcpServers": []any{}}
+}
+
+// withSystemPrompt asks the agent to append system to its system prompt.
+func withSystemPrompt(params map[string]any, system string) map[string]any {
+	if system != "" {
+		params["_meta"] = map[string]any{"systemPrompt": map[string]any{"append": system}}
+	}
+	return params
 }
 
 // Session configuration option categories ACP defines.

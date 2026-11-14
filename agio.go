@@ -207,16 +207,19 @@ type Conversation struct {
 // the backend chooses when it is empty; Cursor resumes a session the agent
 // saved, whose history it reads, and then Model must name the session's
 // tool, and Created and Updated, when set, keep when it was. Empty choices
-// follow the tools' defaults.
+// follow the tools' defaults. SystemPrompt is appended to the agent's system
+// prompt, after the backend's own; resuming needs it again, as agents do
+// not keep it.
 type Create struct {
-	Dir     string    `json:"dir"`
-	Title   string    `json:"title,omitempty"`
-	Model   string    `json:"model,omitempty"`
-	Effort  string    `json:"effort,omitempty"`
-	Tier    string    `json:"tier,omitempty"`
-	Cursor  string    `json:"cursor,omitempty"`
-	Created time.Time `json:"created,omitzero"`
-	Updated time.Time `json:"updated,omitzero"`
+	Dir          string    `json:"dir"`
+	Title        string    `json:"title,omitempty"`
+	SystemPrompt string    `json:"systemPrompt,omitempty"`
+	Model        string    `json:"model,omitempty"`
+	Effort       string    `json:"effort,omitempty"`
+	Tier         string    `json:"tier,omitempty"`
+	Cursor       string    `json:"cursor,omitempty"`
+	Created      time.Time `json:"created,omitzero"`
+	Updated      time.Time `json:"updated,omitzero"`
 }
 
 // Message is what the user sends. Files are paths on the backend's

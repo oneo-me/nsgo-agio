@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -13,11 +14,13 @@ import (
 	"github.com/oneo-me/nsgo-agio/agent"
 )
 
-// fakeCodex answers the app-server requests Agio sends. A "Slow" prompt
-// starts a turn that only an interrupt completes.
+// fakeCodex answers the app-server requests Agio sends, appending them to
+// requests.txt beside the script. A "Slow" prompt starts a turn that only an
+// interrupt completes.
 const fakeCodex = `#!/bin/sh
 [ "$1" = "app-server" ] || exit 2
 while IFS= read -r line; do
+  printf '%s\n' "$line" >> "$(dirname "$0")/requests.txt"
   id=$(printf '%s' "$line" | sed -n 's/^{"id":\([0-9]*\),.*/\1/p')
   case "$line" in
     *'"method":"initialize"'*) printf '{"id":%s,"result":{"userAgent":"fake"}}\n' "$id" ;;
@@ -119,11 +122,15 @@ func (r *recorder) wait(t *testing.T, settled int) []agent.Event {
 func TestSessionStreamsInterruptsAndReadsHistory(t *testing.T) {
 	d := fakeDriver(t)
 	var r recorder
-	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), Title: "Task", Settings: agent.Settings{Model: "gpt-6-luna", Tier: "priority"}}, r.add, nil)
+	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), Title: "Task", SystemPrompt: "Be brief",
+		Settings: agent.Settings{Model: "gpt-6-luna", Tier: "priority"}}, r.add, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer s.Close(time.Second)
+	if requests, _ := os.ReadFile(filepath.Join(filepath.Dir(d.Path), "requests.txt")); !strings.Contains(string(requests), `"developerInstructions":"Be brief"`) {
+		t.Fatalf("thread/start without instructions: %s", requests)
+	}
 	if info.Cursor != "t1" || info.Settings.Model != "gpt-6-luna" || info.Settings.Effort != "low" {
 		t.Fatalf("info: %+v", info)
 	}

@@ -15,10 +15,11 @@ var ErrNotFound = errors.New("codebuddy was not found on PATH")
 // Spec describes CodeBuddy Code's ACP server. Full Access skips every
 // permission check; older versions offer bypassPermissions instead.
 var Spec = acp.Spec{
-	Tool:     agent.CodeBuddy,
-	Provider: "CodeBuddy",
-	Args:     []string{"--acp"},
-	Modes:    []string{"fullAccess", "bypassPermissions"},
+	Tool:               agent.CodeBuddy,
+	Provider:           "CodeBuddy",
+	Args:               []string{"--acp"},
+	Modes:              []string{"fullAccess", "bypassPermissions"},
+	AppendSystemPrompt: "--append-system-prompt",
 }
 
 // Locate finds codebuddy, or its short name cbc, as agent.LocateScript

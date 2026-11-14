@@ -49,6 +49,9 @@ type Options struct {
 	// Dir is where a conversation created without a directory works;
 	// empty refuses such conversations.
 	Dir string
+	// SystemPrompt is appended to every agent's system prompt, before a
+	// conversation's own.
+	SystemPrompt string
 	// Home is where catalogs are read and paths shortened to ~; empty is
 	// the user's home directory.
 	Home string
@@ -288,7 +291,7 @@ func (h *Host) Create(o agio.Create) (string, error) {
 		if updated.IsZero() {
 			updated = created
 		}
-		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, model: o.Model, effort: o.Effort, tier: o.Tier,
+		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, system: joinPrompts(h.opts.SystemPrompt, o.SystemPrompt), model: o.Model, effort: o.Effort, tier: o.Tier,
 			cursor: o.Cursor, bound: o.Cursor != "", created: created, updated: updated, loaded: o.Cursor == ""}
 		h.conversations = append([]*conversation{c}, h.conversations...)
 		h.loadHistory(c)
@@ -344,6 +347,17 @@ func titleFromPrompt(prompt string) string {
 		}
 	}
 	return ""
+}
+
+// joinPrompts separates the nonempty prompts with a blank line.
+func joinPrompts(prompts ...string) string {
+	var parts []string
+	for _, p := range prompts {
+		if p = strings.TrimSpace(p); p != "" {
+			parts = append(parts, p)
+		}
+	}
+	return strings.Join(parts, "\n\n")
 }
 
 // background runs fn off the lock with a fresh context.

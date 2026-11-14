@@ -59,7 +59,11 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	emitter := agent.NewEmitter(onEvent)
 	s := &session{emitter: emitter, ready: make(chan struct{})}
 	exited := make(chan error, 1)
-	c, err := Start(Options{Command: d.Command, Dir: o.Dir, Session: o.Cursor},
+	var args []string
+	if o.SystemPrompt != "" {
+		args = []string{"--append-system-prompt", o.SystemPrompt}
+	}
+	c, err := Start(Options{Command: d.Command, Dir: o.Dir, Session: o.Cursor, Args: args},
 		s.translate,
 		func(err error) { exited <- err })
 	if err != nil {

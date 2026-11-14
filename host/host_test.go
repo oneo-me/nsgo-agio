@@ -47,6 +47,29 @@ func waitFor(t *testing.T, b agio.Backend, ok func(agio.State) bool) agio.State 
 	}
 }
 
+func TestSystemPromptsJoinTheHostsAndTheConversations(t *testing.T) {
+	d := &fakeagent.Driver{}
+	h := New(Options{Env: []string{}, Tools: []agent.Tool{agent.Claude}, Drivers: map[agent.Tool]agent.Driver{agent.Claude: d},
+		Home: t.TempDir(), SystemPrompt: "Use the app's tools."})
+	t.Cleanup(func() { h.Close() })
+	waitFor(t, h, func(s agio.State) bool { return !s.Discovering && s.Ready() })
+	for _, own := range []string{"", " Fix the bug. "} {
+		id, err := h.Create(agio.Create{Dir: t.TempDir(), SystemPrompt: own})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := h.Send(id, agio.Message{Text: "go"}); err != nil {
+			t.Fatal(err)
+		}
+		waitFor(t, h, func(s agio.State) bool { return s.Conversation(id).Cursor != "" })
+	}
+	started := d.Started()
+	if len(started) != 2 || started[0].SystemPrompt != "Use the app's tools." ||
+		started[1].SystemPrompt != "Use the app's tools.\n\nFix the bug." {
+		t.Fatalf("started = %+v", started)
+	}
+}
+
 func TestSendFoldsTheReply(t *testing.T) {
 	d := &fakeagent.Driver{}
 	h := newHost(t, d)

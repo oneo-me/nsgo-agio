@@ -20,6 +20,8 @@ import (
 // host's lock.
 type conversation struct {
 	id, title, dir string
+	// system is appended to its agent's system prompt.
+	system string
 	// model is a model key (agent.Key), empty to follow the default until
 	// the first message binds it; effort and tier are its choices.
 	model, effort, tier string
@@ -216,7 +218,7 @@ func (h *Host) start(c *conversation) {
 		return
 	}
 	c.starting = true
-	options := agent.StartOptions{Dir: c.dir, Cursor: c.cursor, Title: c.title, Settings: h.settings(c)}
+	options := agent.StartOptions{Dir: c.dir, Cursor: c.cursor, Title: c.title, SystemPrompt: c.system, Settings: h.settings(c)}
 	go func() {
 		// Drivers may report events before Start returns, even from inside
 		// it, so callbacks must not block on it. They are held until the

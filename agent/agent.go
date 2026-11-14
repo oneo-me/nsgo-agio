@@ -176,9 +176,11 @@ func (p Prompt) Message() string {
 }
 
 // StartOptions start a session in Dir, resuming Cursor when set. Title names
-// a new session where the tool supports it.
+// a new session where the tool supports it. SystemPrompt is appended to the
+// tool's own system prompt, given again whenever the session is resumed.
 type StartOptions struct {
 	Dir, Cursor, Title string
+	SystemPrompt       string
 	Settings           Settings
 }
 

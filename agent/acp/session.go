@@ -20,7 +20,11 @@ const abortTimeout = 30 * time.Second
 func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit func(error)) (agent.Session, agent.Info, error) {
 	s := &session{emitter: agent.NewEmitter(onEvent), loading: o.Cursor != ""}
 	exited := make(chan error, 1)
-	c, err := dial(d.command(o.Dir), d.name(), func(c *conn) {
+	var args []string
+	if o.SystemPrompt != "" && d.AppendSystemPrompt != "" {
+		args = []string{d.AppendSystemPrompt, o.SystemPrompt}
+	}
+	c, err := dial(d.command(o.Dir, args...), d.name(), func(c *conn) {
 		c.onUpdate, c.onRequest = s.update, s.request
 	}, func(err error) {
 		s.exited()
@@ -31,6 +35,9 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	}
 	s.conn = c
 	ctx := context.Background()
+	if d.AppendSystemPrompt != "" {
+		o.SystemPrompt = "" // given on the command line
+	}
 	if err := s.open(ctx, o, d.Modes); err != nil {
 		go c.proc.Close(3 * time.Second)
 		return nil, agent.Info{}, d.explain(err)
@@ -58,11 +65,11 @@ func (s *session) open(ctx context.Context, o agent.StartOptions, modes []string
 	var err error
 	switch {
 	case o.Cursor == "":
-		err = c.callInto(ctx, "session/new", newSession(o.Dir), &st)
+		err = c.callInto(ctx, "session/new", withSystemPrompt(newSession(o.Dir), o.SystemPrompt), &st)
 	case c.caps.canResume():
-		err = c.callInto(ctx, "session/resume", map[string]any{"sessionId": o.Cursor, "cwd": o.Dir, "mcpServers": []any{}}, &st)
+		err = c.callInto(ctx, "session/resume", withSystemPrompt(map[string]any{"sessionId": o.Cursor, "cwd": o.Dir, "mcpServers": []any{}}, o.SystemPrompt), &st)
 	case c.caps.LoadSession:
-		err = c.callInto(ctx, "session/load", map[string]any{"sessionId": o.Cursor, "cwd": o.Dir, "mcpServers": []any{}}, &st)
+		err = c.callInto(ctx, "session/load", withSystemPrompt(map[string]any{"sessionId": o.Cursor, "cwd": o.Dir, "mcpServers": []any{}}, o.SystemPrompt), &st)
 	default:
 		err = errNoSession
 	}

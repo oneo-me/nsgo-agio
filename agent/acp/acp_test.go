@@ -36,6 +36,9 @@ type fakeMessage struct {
 // receives to AGIO_FAKE_ACP. Model "a" offers reasoning levels, "b" one.
 func fakeAgent() {
 	logFile, _ := os.OpenFile(os.Getenv("AGIO_FAKE_ACP"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if len(os.Args) > 1 {
+		fmt.Fprintln(logFile, "args", strings.Join(os.Args[1:], " "))
+	}
 	out := json.NewEncoder(os.Stdout)
 	send := func(v any) { out.Encode(v) }
 	reply := func(id json.RawMessage, result any) {
@@ -210,6 +213,29 @@ func (r *recorder) wait(t *testing.T, settled int) []agent.Event {
 	}
 	t.Fatal("timed out waiting for the run to settle")
 	return nil
+}
+
+func TestSystemPromptGoesInMetaOrTheCLIsOption(t *testing.T) {
+	d, methods := fakeDriver(t)
+	s, _, err := d.Start(agent.StartOptions{Dir: t.TempDir(), SystemPrompt: "Be brief"}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	if log := strings.Join(methods(), "\n"); !strings.Contains(log, `"_meta":{"systemPrompt":{"append":"Be brief"}}`) {
+		t.Fatalf("session/new without _meta: %s", log)
+	}
+
+	d, methods = fakeDriver(t)
+	d.AppendSystemPrompt = "--append-system-prompt"
+	s, _, err = d.Start(agent.StartOptions{Dir: t.TempDir(), SystemPrompt: "Be brief"}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	if log := methods(); log[0] != "args --append-system-prompt Be brief" || strings.Contains(strings.Join(log, "\n"), "_meta") {
+		t.Fatalf("launch: %q", log)
+	}
 }
 
 func TestSessionStreamsApprovesAndCancels(t *testing.T) {

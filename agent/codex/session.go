@@ -29,6 +29,10 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	if o.Settings.Model != "" {
 		params["model"] = o.Settings.Model
 	}
+	if o.SystemPrompt != "" {
+		// Developer instructions follow Codex's own base instructions.
+		params["developerInstructions"] = o.SystemPrompt
+	}
 	method := "thread/start"
 	if o.Cursor != "" {
 		method = "thread/resume"

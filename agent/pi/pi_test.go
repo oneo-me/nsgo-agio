@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/oneo-me/nsgo-agio/agent"
 )
 
 func TestReadSessionFollowsActiveBranch(t *testing.T) {
@@ -59,6 +61,31 @@ func TestModelLevels(t *testing.T) {
 	}
 	if !Supported("1.1.0") || !Supported("2.0") || Supported("0.73.1") || Supported("") {
 		t.Fatal("version gate")
+	}
+}
+
+func TestDriverAppendsTheSystemPrompt(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("requires a Unix shell")
+	}
+	dir := t.TempDir()
+	fake := filepath.Join(dir, "pi")
+	script := `#!/bin/sh
+printf '%s\n' "$@" > "$(dirname "$0")/args.txt"
+while IFS= read -r line; do
+  id=$(printf '%s' "$line" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+  printf '{"id":"%s","type":"response","success":true,"data":{}}\n' "$id"
+done
+`
+	os.WriteFile(fake, []byte(script), 0755)
+	d := &Driver{Command: Command{Path: fake, Env: os.Environ()}}
+	s, _, err := d.Start(agent.StartOptions{Dir: dir, SystemPrompt: "Be brief"}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	if args, _ := os.ReadFile(filepath.Join(dir, "args.txt")); !strings.Contains(string(args), "--append-system-prompt\nBe brief\n") {
+		t.Fatalf("args: %q", args)
 	}
 }
 

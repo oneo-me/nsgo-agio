@@ -142,7 +142,7 @@ func (r *recorder) settled(t *testing.T, n int) []agent.Event {
 func TestSessionStreamsInterruptsAndRelaunchesForEffort(t *testing.T) {
 	d, dir := fakeDriver(t)
 	var r recorder
-	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), Settings: agent.Settings{Model: "opus", Effort: "high"}}, r.add, nil)
+	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), SystemPrompt: "Be brief", Settings: agent.Settings{Model: "opus", Effort: "high"}}, r.add, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +217,8 @@ func TestSessionStreamsInterruptsAndRelaunchesForEffort(t *testing.T) {
 	lines := strings.Split(strings.TrimSpace(string(args)), "\n")
 	if len(lines) != 2 || !strings.Contains(lines[0], "--session-id "+info.Cursor) ||
 		!strings.Contains(lines[1], "--resume "+info.Cursor) || !strings.Contains(lines[1], "--effort low") ||
-		!strings.Contains(lines[1], "--dangerously-skip-permissions") {
+		!strings.Contains(lines[1], "--dangerously-skip-permissions") ||
+		!strings.Contains(lines[0], "--append-system-prompt Be brief") || !strings.Contains(lines[1], "--append-system-prompt Be brief") {
 		t.Fatalf("launches: %q", lines)
 	}
 }
