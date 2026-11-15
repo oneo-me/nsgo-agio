@@ -82,6 +82,9 @@ type capabilities struct {
 	SessionCapabilities struct {
 		Resume json.RawMessage `json:"resume"`
 	} `json:"sessionCapabilities"`
+	MCPCapabilities struct {
+		HTTP bool `json:"http"`
+	} `json:"mcpCapabilities"`
 }
 
 // canResume reports whether the agent reopens sessions without replaying them.

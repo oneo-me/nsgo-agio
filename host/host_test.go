@@ -101,6 +101,36 @@ func TestSkillsJoinTheHostsAndTheConversations(t *testing.T) {
 	}
 }
 
+func TestMCPServersJoinTheHostsAndTheConversations(t *testing.T) {
+	d := &fakeagent.Driver{}
+	h := New(Options{Env: []string{}, Tools: []agent.Tool{agent.Claude}, Drivers: map[agent.Tool]agent.Driver{agent.Claude: d},
+		Home: t.TempDir(), MCPServers: []agent.MCPServer{{Name: "docs", Command: "docs-mcp"}, {Name: "web", URL: "https://a.example/mcp"}}})
+	t.Cleanup(func() { h.Close() })
+	waitFor(t, h, func(s agio.State) bool { return !s.Discovering && s.Ready() })
+	if _, err := h.Create(agio.Create{Dir: t.TempDir(), MCPServers: []agent.MCPServer{{Name: "bad name", Command: "x"}}}); err == nil {
+		t.Fatal("created a conversation with an invalid MCP server")
+	}
+	id, err := h.Create(agio.Create{Dir: t.TempDir(), MCPServers: []agent.MCPServer{{Name: "web", URL: "https://b.example/mcp"}, {Name: "own", Command: "own-mcp"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Send(id, agio.Message{Text: "go"}); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, h, func(s agio.State) bool { return s.Conversation(id).Cursor != "" })
+	started := d.Started()
+	if len(started) != 1 {
+		t.Fatalf("started = %+v", started)
+	}
+	var names []string
+	for _, m := range started[0].MCPServers {
+		names = append(names, m.Name+" "+m.Command+m.URL)
+	}
+	if !slices.Equal(names, []string{"docs docs-mcp", "web https://b.example/mcp", "own own-mcp"}) {
+		t.Fatalf("started = %+v", started)
+	}
+}
+
 func TestSendFoldsTheReply(t *testing.T) {
 	d := &fakeagent.Driver{}
 	h := newHost(t, d)

@@ -3,6 +3,7 @@ package pi
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -66,10 +67,22 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	for _, skill := range o.Skills {
 		args = append(args, "--skill", skill)
 	}
+	extension := ""
+	if len(o.MCPServers) > 0 {
+		dir, file, err := mcpExtension(o.MCPServers)
+		if err != nil {
+			return nil, agent.Info{}, err
+		}
+		extension, args = dir, append(args, "-e", file)
+	}
 	c, err := Start(Options{Command: d.Command, Dir: o.Dir, Session: o.Cursor, Args: args},
 		s.translate,
-		func(err error) { exited <- err })
+		func(err error) {
+			os.RemoveAll(extension)
+			exited <- err
+		})
 	if err != nil {
+		os.RemoveAll(extension)
 		return nil, agent.Info{}, err
 	}
 	s.client = c

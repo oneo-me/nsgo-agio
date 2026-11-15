@@ -73,15 +73,19 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 // permission prompts.
 func (s *session) open(ctx context.Context, o agent.StartOptions, modes []string) error {
 	c := s.conn
+	servers, err := mcpServers(o.MCPServers, c.caps)
+	params := withSystemPrompt(newSession(o.Dir, servers), o.SystemPrompt)
 	var st state
-	var err error
 	switch {
+	case err != nil:
 	case o.Cursor == "":
-		err = c.callInto(ctx, "session/new", withSystemPrompt(newSession(o.Dir), o.SystemPrompt), &st)
+		err = c.callInto(ctx, "session/new", params, &st)
 	case c.caps.canResume():
-		err = c.callInto(ctx, "session/resume", withSystemPrompt(map[string]any{"sessionId": o.Cursor, "cwd": o.Dir, "mcpServers": []any{}}, o.SystemPrompt), &st)
+		params["sessionId"] = o.Cursor
+		err = c.callInto(ctx, "session/resume", params, &st)
 	case c.caps.LoadSession:
-		err = c.callInto(ctx, "session/load", withSystemPrompt(map[string]any{"sessionId": o.Cursor, "cwd": o.Dir, "mcpServers": []any{}}, o.SystemPrompt), &st)
+		params["sessionId"] = o.Cursor
+		err = c.callInto(ctx, "session/load", params, &st)
 	default:
 		err = errNoSession
 	}

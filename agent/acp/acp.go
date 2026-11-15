@@ -10,7 +10,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os/exec"
+	"slices"
 	"strings"
 	"time"
 
@@ -107,7 +109,7 @@ func (d *Driver) Catalog(ctx context.Context, dir string) (agent.Catalog, error)
 	}
 	defer c.proc.Close(time.Second)
 	var st state
-	if err := c.callInto(ctx, "session/new", newSession(dir), &st); err != nil {
+	if err := c.callInto(ctx, "session/new", newSession(dir, nil), &st); err != nil {
 		return agent.Catalog{}, d.explain(err)
 	}
 	choices, current := st.models()
@@ -160,8 +162,37 @@ func defaultEffort(levels []string) string {
 	return ""
 }
 
-func newSession(dir string) map[string]any {
-	return map[string]any{"cwd": dir, "mcpServers": []any{}}
+func newSession(dir string, servers []any) map[string]any {
+	if servers == nil {
+		servers = []any{}
+	}
+	return map[string]any{"cwd": dir, "mcpServers": servers}
+}
+
+// mcpServers lists servers as sessions take them, failing when the agent
+// cannot reach one.
+func mcpServers(servers []agent.MCPServer, caps capabilities) ([]any, error) {
+	list := []any{}
+	for _, m := range servers {
+		if m.HTTP() {
+			if !caps.MCPCapabilities.HTTP {
+				return nil, fmt.Errorf("%w: %s", agent.ErrMCPHTTP, m.Name)
+			}
+			list = append(list, map[string]any{"type": "http", "name": m.Name, "url": m.URL, "headers": variables(m.Headers)})
+		} else {
+			list = append(list, map[string]any{"name": m.Name, "command": m.Command, "args": append([]string{}, m.Args...), "env": variables(m.Env)})
+		}
+	}
+	return list, nil
+}
+
+// variables lists values as ACP's name and value pairs, sorted by name.
+func variables(values map[string]string) []any {
+	list := []any{}
+	for _, name := range slices.Sorted(maps.Keys(values)) {
+		list = append(list, map[string]string{"name": name, "value": values[name]})
+	}
+	return list
 }
 
 // withSystemPrompt asks the agent to append system to its system prompt.

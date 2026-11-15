@@ -123,14 +123,16 @@ func TestSessionStreamsInterruptsAndReadsHistory(t *testing.T) {
 	d := fakeDriver(t)
 	var r recorder
 	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), Title: "Task", SystemPrompt: "Be brief", Skills: []string{"/skills/review"},
-		Settings: agent.Settings{Model: "gpt-6-luna", Tier: "priority"}}, r.add, nil)
+		MCPServers: []agent.MCPServer{{Name: "docs", Command: "docs-mcp", Args: []string{"--stdio"}}},
+		Settings:   agent.Settings{Model: "gpt-6-luna", Tier: "priority"}}, r.add, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer s.Close(time.Second)
 	requests, _ := os.ReadFile(filepath.Join(filepath.Dir(d.Path), "requests.txt"))
 	roots, start := strings.Index(string(requests), `"extraRoots":["/skills/review"]`), strings.Index(string(requests), `"method":"thread/start"`)
-	if !strings.Contains(string(requests), `"developerInstructions":"Be brief"`) || roots < 0 || roots > start {
+	if !strings.Contains(string(requests), `"developerInstructions":"Be brief"`) || roots < 0 || roots > start ||
+		!strings.Contains(string(requests), `"config":{"mcp_servers.docs":{"args":["--stdio"],"command":"docs-mcp"}}`) {
 		t.Fatalf("requests: %s", requests)
 	}
 	if info.Cursor != "t1" || info.Settings.Model != "gpt-6-luna" || info.Settings.Effort != "low" {

@@ -56,6 +56,9 @@ type Options struct {
 	// Skills are skill directories, each holding SKILL.md, offered to
 	// every agent beside a conversation's own.
 	Skills []string
+	// MCPServers are offered to every agent beside a conversation's own,
+	// which replace them by name.
+	MCPServers []agent.MCPServer
 	// Home is where catalogs are read and paths shortened to ~; empty is
 	// the user's home directory.
 	Home string
@@ -293,6 +296,10 @@ func (h *Host) Create(o agio.Create) (string, error) {
 				return err
 			}
 		}
+		servers, err := agent.JoinMCPServers(h.opts.MCPServers, o.MCPServers)
+		if err != nil {
+			return err
+		}
 		now := h.opts.Now()
 		created, updated := o.Created, o.Updated
 		if created.IsZero() {
@@ -301,7 +308,7 @@ func (h *Host) Create(o agio.Create) (string, error) {
 		if updated.IsZero() {
 			updated = created
 		}
-		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, system: joinPrompts(h.opts.SystemPrompt, o.SystemPrompt), skills: skills, model: o.Model, effort: o.Effort, tier: o.Tier,
+		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, system: joinPrompts(h.opts.SystemPrompt, o.SystemPrompt), skills: skills, mcp: servers, model: o.Model, effort: o.Effort, tier: o.Tier,
 			cursor: o.Cursor, bound: o.Cursor != "", created: created, updated: updated, loaded: o.Cursor == ""}
 		h.conversations = append([]*conversation{c}, h.conversations...)
 		h.loadHistory(c)

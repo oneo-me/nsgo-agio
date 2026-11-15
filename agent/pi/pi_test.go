@@ -89,6 +89,46 @@ done
 	}
 }
 
+func TestMCPServersGoInATemporaryExtension(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("requires a Unix shell")
+	}
+	dir := t.TempDir()
+	fake := filepath.Join(dir, "pi")
+	// The fake keeps a copy, as the extension is removed with the session.
+	script := `#!/bin/sh
+printf '%s\n' "$@" > "$(dirname "$0")/args.txt"
+while [ $# -gt 0 ]; do [ "$1" = -e ] && cp "$2" "$(dirname "$0")/extension.js"; shift; done
+while IFS= read -r line; do
+  id=$(printf '%s' "$line" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+  printf '{"id":"%s","type":"response","success":true,"data":{}}\n' "$id"
+done
+`
+	os.WriteFile(fake, []byte(script), 0755)
+	d := &Driver{Command: Command{Path: fake, Env: os.Environ()}}
+	servers := []agent.MCPServer{{Name: "docs", Command: "docs-mcp", Args: []string{"--stdio"}}, {Name: "web", URL: "https://example.com/mcp"}}
+	s, _, err := d.Start(agent.StartOptions{Dir: dir, MCPServers: servers}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args, _ := os.ReadFile(filepath.Join(dir, "args.txt"))
+	_, file, ok := strings.Cut(string(args), "-e\n")
+	file, _, _ = strings.Cut(file, "\n")
+	source, _ := os.ReadFile(filepath.Join(dir, "extension.js"))
+	if !ok || !strings.Contains(string(source), `{"docs":{"args":["--stdio"],"command":"docs-mcp"},"web":{"url":"https://example.com/mcp"}}`) ||
+		!strings.Contains(string(source), "pi.registerMcpServer(name, config)") {
+		t.Fatalf("args %q, extension %s", args, source)
+	}
+	s.Close(time.Second)
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(10 * time.Millisecond) {
+		if _, err := os.Stat(filepath.Dir(file)); os.IsNotExist(err) {
+			break
+		} else if time.Now().After(deadline) {
+			t.Fatalf("extension left behind: %v", err)
+		}
+	}
+}
+
 // writeBunShim writes Bun's Windows shim for a node script: name.exe and the
 // name.bunx metadata its target path is read from, encoded as Bun 1.4 does.
 // A fake RPC peer exercises framing, correlation, events and shutdown.

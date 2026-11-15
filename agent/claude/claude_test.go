@@ -144,7 +144,8 @@ func TestSessionStreamsInterruptsAndRelaunchesForEffort(t *testing.T) {
 	var r recorder
 	skill := t.TempDir()
 	s, info, err := d.Start(agent.StartOptions{Dir: t.TempDir(), SystemPrompt: "Be brief", Skills: []string{skill},
-		Settings: agent.Settings{Model: "opus", Effort: "high"}}, r.add, nil)
+		MCPServers: []agent.MCPServer{{Name: "web", URL: "https://example.com/mcp"}},
+		Settings:   agent.Settings{Model: "opus", Effort: "high"}}, r.add, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,6 +223,10 @@ func TestSessionStreamsInterruptsAndRelaunchesForEffort(t *testing.T) {
 		!strings.Contains(lines[1], "--dangerously-skip-permissions") ||
 		!strings.Contains(lines[0], "--append-system-prompt Be brief") || !strings.Contains(lines[1], "--append-system-prompt Be brief") {
 		t.Fatalf("launches: %q", lines)
+	}
+	mcp := `--mcp-config={"mcpServers":{"web":{"type":"http","url":"https://example.com/mcp"}}}`
+	if !strings.Contains(lines[0], mcp) || !strings.Contains(lines[1], mcp) {
+		t.Fatalf("launches without MCP servers: %q", lines)
 	}
 	// Both launches load the same plugin, which Close removes.
 	plugin := s.(*session).plugin

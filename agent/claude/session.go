@@ -34,6 +34,10 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 		}
 		s.plugin = dir
 	}
+	if len(o.MCPServers) > 0 {
+		config, _ := json.Marshal(map[string]any{"mcpServers": agent.MCPConfig(o.MCPServers)})
+		s.mcp = string(config)
+	}
 	if err := s.launch(); err != nil {
 		os.RemoveAll(s.plugin)
 		return nil, agent.Info{}, err
@@ -52,7 +56,9 @@ type session struct {
 	system string
 	// plugin holds the session's skills for every launch; Close removes
 	// it.
-	plugin  string
+	plugin string
+	// mcp is the --mcp-config JSON given at every launch.
+	mcp     string
 	emitter *agent.Emitter
 	onExit  func(error)
 
@@ -103,6 +109,10 @@ func (s *session) args() []string {
 	}
 	if s.plugin != "" {
 		args = append(args, "--plugin-dir", s.plugin)
+	}
+	if s.mcp != "" {
+		// Joined, as the option takes several values.
+		args = append(args, "--mcp-config="+s.mcp)
 	}
 	if s.resume {
 		return append(args, "--resume", s.id)

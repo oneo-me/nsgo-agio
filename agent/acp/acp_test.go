@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -235,6 +236,27 @@ func TestSystemPromptGoesInMetaOrTheCLIsOption(t *testing.T) {
 	s.Close(time.Second)
 	if log := methods(); log[0] != "args --append-system-prompt Be brief" || strings.Contains(strings.Join(log, "\n"), "_meta") {
 		t.Fatalf("launch: %q", log)
+	}
+}
+
+func TestMCPServersGoInTheSession(t *testing.T) {
+	d, methods := fakeDriver(t)
+	servers := []agent.MCPServer{{Name: "docs", Command: "docs-mcp", Env: map[string]string{"B": "2", "A": "1"}}}
+	s, _, err := d.Start(agent.StartOptions{Dir: t.TempDir(), MCPServers: servers}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	want := `"mcpServers":[{"args":[],"command":"docs-mcp","env":[{"name":"A","value":"1"},{"name":"B","value":"2"}],"name":"docs"}]`
+	if log := strings.Join(methods(), "\n"); !strings.Contains(log, want) {
+		t.Fatalf("session/new without servers: %s", log)
+	}
+
+	// The fake agent offers no HTTP transport.
+	d, _ = fakeDriver(t)
+	servers = []agent.MCPServer{{Name: "web", URL: "https://example.com/mcp"}}
+	if _, _, err := d.Start(agent.StartOptions{Dir: t.TempDir(), MCPServers: servers}, func(agent.Event) {}, nil); !errors.Is(err, agent.ErrMCPHTTP) {
+		t.Fatalf("err = %v", err)
 	}
 }
 

@@ -179,11 +179,13 @@ func (p Prompt) Message() string {
 // a new session where the tool supports it. SystemPrompt is appended to the
 // tool's own system prompt, given again whenever the session is resumed.
 // Skills are skill directories, each holding SKILL.md, offered beside the
-// tool's own for this session only.
+// tool's own for this session only, as are MCPServers, which drivers have
+// checked.
 type StartOptions struct {
 	Dir, Cursor, Title string
 	SystemPrompt       string
 	Skills             []string
+	MCPServers         []MCPServer
 	Settings           Settings
 }
 

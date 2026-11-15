@@ -44,6 +44,9 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 		// Developer instructions follow Codex's own base instructions.
 		params["developerInstructions"] = o.SystemPrompt
 	}
+	if len(o.MCPServers) > 0 {
+		params["config"] = mcpConfig(o.MCPServers)
+	}
 	method := "thread/start"
 	if o.Cursor != "" {
 		method = "thread/resume"
@@ -593,4 +596,29 @@ func turnEvents(t turn) []agent.Event {
 		events = append(events, agent.Event{Type: agent.Cancelled, Time: ended})
 	}
 	return events
+}
+
+// mcpConfig overrides the thread's configuration with servers in Codex's
+// mcp_servers form, beside those configured.
+func mcpConfig(servers []agent.MCPServer) map[string]any {
+	config := map[string]any{}
+	for _, m := range servers {
+		entry := map[string]any{}
+		if m.HTTP() {
+			entry["url"] = m.URL
+			if len(m.Headers) > 0 {
+				entry["http_headers"] = m.Headers
+			}
+		} else {
+			entry["command"] = m.Command
+			if len(m.Args) > 0 {
+				entry["args"] = m.Args
+			}
+			if len(m.Env) > 0 {
+				entry["env"] = m.Env
+			}
+		}
+		config["mcp_servers."+m.Name] = entry
+	}
+	return config
 }

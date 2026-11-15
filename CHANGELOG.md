@@ -5,6 +5,7 @@
 - Let apps add pages of their own after New task in the sidebar with `App.Pages`.
 - Let apps append to agents' system prompts with `host.Options.SystemPrompt` and `agio.Create.SystemPrompt`.
 - Let apps attach skills to agents with `host.Options.Skills` and `agio.Create.Skills`.
+- Let apps attach MCP servers to agents with `host.Options.MCPServers` and `agio.Create.MCPServers`.
 - Show each account's limit at the sidebar's end, and the context window at the composer's end.
 
 ## [0.1.0] - 2026-11-13
