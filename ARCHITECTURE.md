@@ -10,6 +10,7 @@ Agio is the agent core of NSGo apps, split out of Neorio: drivers that run codin
 | `agent` | Tool-neutral driver, session, model catalog and event types, and child process plumbing shared by drivers |
 | `agent/pi`, `agent/codex`, `agent/claude`, `agent/codebuddy`, `agent/acp` | One driver per CLI; `acp` runs Agent Client Protocol CLIs such as CodeBuddy Code |
 | `quota` | Account limits read the way the providers' CLIs read them, and which account a model uses |
+| `mcp` | An MCP server of an application's own tools for the agents it runs, over streamable HTTP on the loopback interface behind a token only the agents get |
 | `transcript` | Turns folded from events, and the patches that carry them |
 | `host` | A `Backend` running agents in this process: discovery, turning tools and models on and off, account limits, sessions, interruption and choices |
 | `wire` | Framed JSON peer, `Serve` for a backend and `Client`, a `Backend` mirroring one |

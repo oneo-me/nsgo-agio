@@ -6,6 +6,8 @@
 - Let apps append to agents' system prompts with `host.Options.SystemPrompt` and `agio.Create.SystemPrompt`.
 - Let apps attach skills to agents with `host.Options.Skills` and `agio.Create.Skills`.
 - Let apps attach MCP servers to agents with `host.Options.MCPServers` and `agio.Create.MCPServers`.
+- Let apps serve their own tools to agents with `mcp`, an MCP server over streamable HTTP on the loopback interface behind a token.
+- Let apps with settings of their own show the agents' with `chatview.Agents`, and hear of messages sent with `Conversation.OnSend`.
 - Show each account's limit at the sidebar's end, and the context window at the composer's end.
 
 ## [0.1.0] - 2026-11-13

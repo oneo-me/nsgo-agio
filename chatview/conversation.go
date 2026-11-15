@@ -28,7 +28,10 @@ type Conversation struct {
 	// scrolls under.
 	TopInset core.Points
 	TestID   string
-	// onSend runs as a message is sent, as New task shows its task.
+	// OnSend, when set, runs as a message is sent, before the backend
+	// hears of it, such as to save what the agent will read.
+	OnSend func()
+	// onSend runs after OnSend, as New task shows its task.
 	onSend func()
 }
 
@@ -183,6 +186,9 @@ func (v Conversation) composer(cx *core.Scope, state *chat.ConversationState, dr
 		}
 		draft.Set("")
 		state.JumpToLatest()
+		if v.OnSend != nil {
+			v.OnSend()
+		}
 		if v.onSend != nil {
 			v.onSend()
 		}

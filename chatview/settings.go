@@ -28,17 +28,11 @@ func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
 	// change, but not as models are turned on or off, which keeps their
 	// dropdown open; the page and search are held here.
 	key := func() string {
-		var b strings.Builder
-		msgs := locales.For(cx)
-		s := m.State()
-		for _, t := range s.Tools {
-			b.WriteString(t.Tool.Name() + toolStatus(msgs, t, s.Discovering) + fmt.Sprint(t.Ready(), len(t.Catalog.Models)) + "\n")
-		}
-		b.WriteString(i18n.Language(cx))
+		k := agentsKey(cx, m)
 		if a.SettingsKey != nil {
-			b.WriteString("\n" + a.SettingsKey())
+			k += "\n" + a.SettingsKey()
 		}
-		return b.String()
+		return k
 	}
 	return ui.SettingsDialog{Open: open.Get, OnOpenChange: func(o bool, _ base.Reason) { open.Set(o) },
 		Label: locales.For(cx).Settings(), TestID: "settings-dialog",
@@ -59,6 +53,34 @@ func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
 					OnClose:        func() { open.Set(false) }, CloseLabel: msgs.CloseSettings()}
 			})
 		}}
+}
+
+// agentsKey says what the agents' settings show, except which models are
+// turned on, so they are built again only when it changes.
+func agentsKey(cx *core.Scope, m *Model) string {
+	var b strings.Builder
+	msgs := locales.For(cx)
+	s := m.State()
+	for _, t := range s.Tools {
+		b.WriteString(t.Tool.Name() + toolStatus(msgs, t, s.Discovering) + fmt.Sprint(t.Ready(), len(t.Catalog.Models)) + "\n")
+	}
+	b.WriteString(i18n.Language(cx))
+	return b.String()
+}
+
+// Agents is the agents' settings for an app with a settings page of its
+// own: a heading with a button looking for the agents again, over a card
+// for each with its models and a switch turning it on or off.
+type Agents struct{ Model *Model }
+
+// Render implements core.Node.
+func (v Agents) Render(cx *core.Scope) core.Node {
+	m := v.Model
+	colors := ui.ColorsOf(cx)
+	return region(m, func() string { return agentsKey(cx, m) }, func(cx *core.Scope) core.Node {
+		g := agentSettings(m, locales.For(cx)).Groups[0]
+		return column(8, row(8, append([]core.Node{ui.Text(g.Title, 13, ui.Medium, colors.Text), ui.Spacer{}}, g.Actions...)...), g.Items[0].Content)
+	})
 }
 
 // updateSettings shows the app's version with a button checking for a
