@@ -10,7 +10,7 @@ import (
 	"github.com/nsgo-dev/nsgo/icons/lucide"
 	"github.com/nsgo-dev/nsgo/ui"
 	agio "github.com/oneo-me/nsgo-agio"
-	"github.com/oneo-me/nsgo-agio/internal/naming"
+	"github.com/oneo-me/nsgo-agio/naming"
 )
 
 // namingTimeout bounds how long a task waits for its title.

@@ -1,5 +1,6 @@
 // Package naming asks a model behind an OpenAI-compatible chat completions
-// endpoint for a new task's title.
+// endpoint for the title of a conversation from its first message, as
+// Agio titles new tasks.
 package naming
 
 import (
