@@ -39,10 +39,55 @@ type Conversation struct {
 	// the user.
 	Composing func() bool
 	Instead   func(cx *core.Scope) core.Node
+	// Entries, when set, are the app's items among the turns, such as the
+	// steps of its workflow and the decisions it asks.
+	Entries func() []Entry
+	// Ref, when set, scrolls the transcript to an entry or a turn.
+	Ref *ConversationRef
 	// onSend runs after OnSend, as New task shows its task.
 	onSend func()
 	// placeholder replaces the composer's placeholder.
 	placeholder func() string
+}
+
+// Entry is an app's item in a conversation's transcript, shown before
+// the turn Before, its index among the conversation's turns, or after the
+// turns when Before is beyond them or negative. Entries of one place keep
+// their order. Render is called once while the entry shows: what changes
+// in it reads signals.
+type Entry struct {
+	Key    string
+	Before int
+	Render func(cx *core.Scope) core.Node
+}
+
+// ConversationRef scrolls a Conversation's transcript to its items.
+type ConversationRef struct {
+	scroll *core.Ref
+	inset  core.Points
+	items  map[string]*core.Ref
+}
+
+// TurnKey is the key ScrollTo takes for the turn of an index.
+func TurnKey(index int) string { return fmt.Sprint("turn:", index) }
+
+// ScrollTo scrolls the transcript so the entry of key, or a turn's
+// TurnKey, starts at its top, reporting whether it shows.
+func (r *ConversationRef) ScrollTo(key string, animated bool) bool {
+	if r == nil || r.scroll == nil {
+		return false
+	}
+	item := r.items[key]
+	if item == nil {
+		return false
+	}
+	frame, ok := item.Frame()
+	if !ok {
+		return false
+	}
+	// The items' column starts under the transcript's top padding.
+	r.scroll.ScrollTo(core.Point{Y: max(0, frame.Origin.Y+22+r.inset-12)}, animated)
+	return true
 }
 
 // Render implements core.Node.
@@ -50,6 +95,9 @@ func (v Conversation) Render(cx *core.Scope) core.Node {
 	m := v.Model
 	conv := func() *agio.Conversation { return m.Conversation(v.ID) }
 	state := chat.NewConversationState(cx)
+	if v.Ref != nil {
+		v.Ref.scroll, v.Ref.inset, v.Ref.items = state.Scroll(), v.TopInset, map[string]*core.Ref{}
+	}
 	draft := core.NewSignal(cx, "")
 	return chat.FloatingConversation{State: state, JumpLabel: locales.For(cx).JumpLatest(), TopInset: v.TopInset, TestID: v.TestID,
 		Children: []core.Node{
@@ -78,20 +126,66 @@ func (v Conversation) bottom(cx *core.Scope, state *chat.ConversationState, draf
 	})
 }
 
-// turns shows the conversation's turns, each kept by its ID.
+// item is a turn or an entry of the transcript, in its order.
+type item struct {
+	key   string
+	turn  string // the turn's ID, "" for an entry
+	index int    // the turn's index
+}
+
+// turns shows the conversation's turns, each kept by its ID, and the
+// app's entries among them.
 func (v Conversation) turns(cx *core.Scope, state *chat.ConversationState) core.Node {
 	m := v.Model
-	ids := core.NewMemoFunc(cx, live(m, func() []string {
-		var ids []string
-		for i, t := range m.Conversation(v.ID).Turns {
+	entries := map[string]Entry{}
+	items := core.NewMemoFunc(cx, live(m, func() []item {
+		var all []Entry
+		if v.Entries != nil {
+			all = v.Entries()
+		}
+		turns := m.Conversation(v.ID).Turns
+		var out []item
+		add := func(e Entry) {
+			entries[e.Key] = e
+			out = append(out, item{key: "entry:" + e.Key})
+		}
+		for i, t := range turns {
+			for _, e := range all {
+				if e.Before == i {
+					add(e)
+				}
+			}
 			if v.Shows == nil || v.Shows(i) {
-				ids = append(ids, t.ID)
+				out = append(out, item{key: "turn:" + t.ID, turn: t.ID, index: i})
 			}
 		}
-		return ids
+		for _, e := range all {
+			if e.Before < 0 || e.Before >= len(turns) {
+				add(e)
+			}
+		}
+		return out
 	}), slices.Equal).Get
-	return core.Each(ids, func(id string) string { return id }, func(cx *core.Scope, id func() string, _ func() int) core.Node {
-		return v.turn(cx, state, core.Untracked(cx, id))
+	return core.Each(items, func(it item) string { return it.key }, func(cx *core.Scope, it func() item, _ func() int) core.Node {
+		first := core.Untracked(cx, it)
+		ref := &core.Ref{}
+		var node core.Node
+		key := strings.TrimPrefix(first.key, "entry:")
+		if first.turn != "" {
+			node = v.turn(cx, state, first.turn)
+			key = TurnKey(first.index)
+		} else if e, ok := entries[key]; ok && e.Render != nil {
+			node = e.Render(cx)
+		}
+		if v.Ref != nil {
+			v.Ref.items[key] = ref
+			cx.Cleanup(func() {
+				if v.Ref.items[key] == ref {
+					delete(v.Ref.items, key)
+				}
+			})
+		}
+		return core.View{Ref: ref, Children: []core.Node{node}}
 	})
 }
 

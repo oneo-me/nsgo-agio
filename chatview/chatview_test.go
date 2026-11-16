@@ -339,3 +339,37 @@ func TestSettingsCheckForUpdatesOnlyWhenAsked(t *testing.T) {
 		}
 	}
 }
+
+func TestConversationShowsTheAppsEntriesAmongTheTurns(t *testing.T) {
+	h := host.New(host.Options{Env: []string{}, Tools: []agent.Tool{agent.Claude},
+		Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}}, Home: t.TempDir()})
+	t.Cleanup(func() { h.Close() })
+	id, err := h.Create(agio.Create{Dir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := &ConversationRef{}
+	app := nsgotest.Start(t, func(cx *core.Scope) core.Node {
+		text := func(s string) func(*core.Scope) core.Node {
+			return func(cx *core.Scope) core.Node { return core.Text{Content: s, TestID: s} }
+		}
+		return Conversation{Model: Bind(cx, h), ID: id, Ref: ref, Entries: func() []Entry {
+			return []Entry{{Key: "first", Before: 0, Render: text("step one")}, {Key: "last", Before: -1, Render: text("decide")}}
+		}}
+	}, nsgotest.Size(900, 640))
+	app.WaitUntil(5*time.Second, func() bool { return h.State().Ready() })
+	app.WaitFor("id:decide", 5*time.Second)
+	if err := h.Send(id, agio.Message{Text: "hello"}); err != nil {
+		t.Fatal(err)
+	}
+	app.WaitUntil(5*time.Second, func() bool { return hasText(app, "echo: hello") })
+	// The entry before the first turn comes first, the one at the end last.
+	texts := strings.Join(app.Texts(), "\n")
+	one, reply, decide := strings.Index(texts, "step one"), strings.Index(texts, "echo: hello"), strings.Index(texts, "decide")
+	if one < 0 || one > reply || reply > decide {
+		t.Fatalf("order: %q", app.Texts())
+	}
+	if !ref.ScrollTo("first", false) || !ref.ScrollTo(TurnKey(0), false) || ref.ScrollTo("none", false) {
+		t.Fatal("ScrollTo")
+	}
+}
