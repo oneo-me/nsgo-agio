@@ -242,7 +242,7 @@ func (a App) Render(cx *core.Scope) core.Node {
 							Selected: func() bool { return selected.Get() == "" && page.Get() == "" }, OnPress: newTask}},
 						a.pageButtons(page)...)},
 					sidebar,
-					a.quotas(cx),
+					quotas(cx, m),
 				}}},
 				SidebarFooter: a.toolbar(cx, msgs, openSettings),
 				Header: []core.Node{core.Text{ContentFunc: title, MaxLines: 1,
@@ -263,7 +263,8 @@ func (a App) Render(cx *core.Scope) core.Node {
 		})
 		return node
 	})
-	return core.Group([]core.Node{shell, a.settings(cx, settingsOpen)})
+	return core.Group([]core.Node{shell, SettingsDialog{Model: m, Open: settingsOpen, Updates: a.Updates, Settings: a.Settings, Key: a.SettingsKey,
+		SectionActions: a.SettingsSectionActions, Category: a.SettingsCategory}})
 }
 
 // page is the app's page of id, nil for none.
@@ -382,6 +383,31 @@ func (a App) shortcutHint(key string) string {
 		return "Alt+" + key
 	}
 	return "Ctrl+" + key
+}
+
+// Footer is the end of App's sidebar, for an app with a window of its own:
+// Settings, whose tooltip names its shortcut, then, with
+// OnAppearanceChange, a menu choosing the appearance, which it reports so
+// the app keeps it.
+type Footer struct {
+	OpenSettings       func()
+	OnAppearanceChange func(core.Appearance)
+}
+
+// Render implements core.Node.
+func (f Footer) Render(cx *core.Scope) core.Node {
+	return core.Group(App{OnAppearanceChange: f.OnAppearanceChange}.toolbar(cx, locales.For(cx), f.OpenSettings))
+}
+
+// AppMenu is App's macOS menu bar for an app with a window of its own: the
+// app's menu named name, with Check for Updates… when updates is set, a
+// File menu starting a task, and the platform's Edit and Window menus.
+func AppMenu(cx *core.Scope, name string, updates bool, newTask, openSettings func()) []desktop.MenuItem {
+	var checkUpdates func()
+	if updates {
+		checkUpdates = func() { updater.Check(cx) }
+	}
+	return appMenu(name, locales.For(cx), menus.For(cx), newTask, openSettings, checkUpdates)
 }
 
 // appMenu is the menu bar in the language shown, of chatview's words and

@@ -31,8 +31,18 @@ type Conversation struct {
 	// OnSend, when set, runs as a message is sent, before the backend
 	// hears of it, such as to save what the agent will read.
 	OnSend func()
+	// Shows, when set, says which turns show, by their index among the
+	// conversation's, such as those of one step of an app's workflow.
+	Shows func(index int) bool
+	// Composing, when set, says whether the composer shows; while it does
+	// not, Instead shows in its place, such as a decision the app asks of
+	// the user.
+	Composing func() bool
+	Instead   func(cx *core.Scope) core.Node
 	// onSend runs after OnSend, as New task shows its task.
 	onSend func()
+	// placeholder replaces the composer's placeholder.
+	placeholder func() string
 }
 
 // Render implements core.Node.
@@ -48,7 +58,24 @@ func (v Conversation) Render(cx *core.Scope) core.Node {
 			}},
 			v.turns(cx, state),
 		},
-		Composer: []core.Node{column(6, v.banner(cx), v.composer(cx, state, draft))}}
+		Composer: []core.Node{v.bottom(cx, state, draft)}}
+}
+
+// bottom is the composer under its banner, or what shows instead.
+func (v Conversation) bottom(cx *core.Scope, state *chat.ConversationState, draft *core.Signal[string]) core.Node {
+	if v.Composing == nil {
+		return column(6, v.banner(cx), v.composer(cx, state, draft))
+	}
+	composing := core.NewMemo(cx, v.Composing)
+	return core.Dynamic(func(cx *core.Scope) core.Node {
+		if composing.Get() {
+			return column(6, v.banner(cx), v.composer(cx, state, draft))
+		}
+		if v.Instead == nil {
+			return core.Group(nil)
+		}
+		return v.Instead(cx)
+	})
 }
 
 // turns shows the conversation's turns, each kept by its ID.
@@ -56,8 +83,10 @@ func (v Conversation) turns(cx *core.Scope, state *chat.ConversationState) core.
 	m := v.Model
 	ids := core.NewMemoFunc(cx, live(m, func() []string {
 		var ids []string
-		for _, t := range m.Conversation(v.ID).Turns {
-			ids = append(ids, t.ID)
+		for i, t := range m.Conversation(v.ID).Turns {
+			if v.Shows == nil || v.Shows(i) {
+				ids = append(ids, t.ID)
+			}
 		}
 		return ids
 	}), slices.Equal).Get
@@ -201,6 +230,9 @@ func (v Conversation) composer(cx *core.Scope, state *chat.ConversationState, dr
 	}
 	return chat.Composer{Label: msgs.MessageInput(), SendLabel: msgs.Send(), StopLabel: msgs.Stop(), Glass: true, State: state, TestID: "composer",
 		PlaceholderFunc: live(m, func() string {
+			if v.placeholder != nil {
+				return v.placeholder()
+			}
 			s := m.State()
 			c := conv()
 			switch {

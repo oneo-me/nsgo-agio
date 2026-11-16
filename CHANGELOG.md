@@ -6,7 +6,8 @@
 - Let apps append to agents' system prompts with `host.Options.SystemPrompt` and `agio.Create.SystemPrompt`.
 - Let apps attach skills to agents with `host.Options.Skills` and `agio.Create.Skills`.
 - Let apps attach MCP servers to agents with `host.Options.MCPServers` and `agio.Create.MCPServers`.
-- Let apps serve their own tools to agents with `mcp`, an MCP server over streamable HTTP on the loopback interface behind a token.
+- Let apps serve their own tools to agents with `mcp`, an MCP server over streamable HTTP on the loopback interface behind a token, and tell their agents apart with `Server.AgentFor` and `mcp.Caller`.
+- Let apps with a window of their own compose chatview's parts: `Quotas`, `SettingsDialog`, `Footer`, `AppMenu` and `Composer`, and a `Conversation` showing some of its turns or something in place of its composer.
 - Let apps with settings of their own show the agents' with `chatview.Agents`, and hear of messages sent with `Conversation.OnSend`.
 - Let apps title conversations with an OpenAI-compatible model at a reasoning effort with `naming`, and set the effort of Agio's naming model in its settings.
 - Show each account's limit at the sidebar's end, and the context window at the composer's end.

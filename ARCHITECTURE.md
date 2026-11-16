@@ -10,12 +10,12 @@ Agio is the agent core of NSGo apps, split out of Neorio: drivers that run codin
 | `agent` | Tool-neutral driver, session, model catalog and event types, and child process plumbing shared by drivers |
 | `agent/pi`, `agent/codex`, `agent/claude`, `agent/codebuddy`, `agent/acp` | One driver per CLI; `acp` runs Agent Client Protocol CLIs such as CodeBuddy Code |
 | `quota` | Account limits read the way the providers' CLIs read them, and which account a model uses |
-| `mcp` | An MCP server of an application's own tools for the agents it runs, over streamable HTTP on the loopback interface behind a token only the agents get |
+| `mcp` | An MCP server of an application's own tools for the agents it runs, over streamable HTTP on the loopback interface behind tokens only the agents get, one per caller when the application tells its agents apart |
 | `naming` | A conversation's title from its first message, asked of an OpenAI-compatible model, for Agio's tasks and other apps' conversations |
 | `transcript` | Turns folded from events, and the patches that carry them |
 | `host` | A `Backend` running agents in this process: discovery, turning tools and models on and off, account limits, sessions, interruption and choices |
 | `wire` | Framed JSON peer, `Serve` for a backend and `Client`, a `Backend` mirroring one |
-| `chatview` | NSGo views of any `Backend`, built from `ui/chat`: conversations shown as tasks, New task, agent settings, limits, update checks and the macOS menu bar, with their catalogs in `locales` |
+| `chatview` | NSGo views of any `Backend`, built from `ui/chat`: conversations shown as tasks, New task, agent settings, limits, update checks and the macOS menu bar, with their catalogs in `locales`; an app with a window of its own composes their parts, a conversation showing some of its turns or something in place of its composer |
 | `shellenv`, `internal/childproc` | The login shell's environment, and process groups started and stopped as a whole |
 | `internal/launchers` | The file manager, terminals, development tools and Git clients installed, which open a folder |
 | `cmd/agio` | Agio, the single-process app: its settings and their pages, the window, projects and tasks it resumes, naming new tasks, alerts, keeping awake, launchers and usage statistics; built with `agiodemo`, it shows scripted tasks for the website's screenshots |

@@ -44,6 +44,25 @@ func (a App) newTaskPane(cx *core.Scope, draft func() string, open func(id strin
 	}}
 }
 
+// Composer is the composer of a conversation not started yet, with its
+// model, reasoning level and service tier choices and what keeps it from
+// working above it, for an app's own New task: OnSend runs as its first
+// message is sent, before the backend hears of it, such as to show the
+// conversation. Key it by ID.
+type Composer struct {
+	Model  *Model
+	ID     string
+	OnSend func()
+	// Placeholder, when set, replaces the composer's own.
+	Placeholder func() string
+}
+
+// Render implements core.Node.
+func (c Composer) Render(cx *core.Scope) core.Node {
+	v := Conversation{Model: c.Model, ID: c.ID, OnSend: c.OnSend, placeholder: c.Placeholder}
+	return column(6, v.banner(cx), v.composer(cx, chat.NewConversationState(cx), core.NewSignal(cx, "")))
+}
+
 // hero greets New task: the app's icon and a question naming the project
 // the task works in, which the name, in the accent color, chooses.
 func (a App) hero(cx *core.Scope, draft func() string) core.Node {

@@ -229,12 +229,17 @@ func quotaResetsLater(a, b quota.Window) bool {
 	return a.ResetsAt.After(b.ResetsAt)
 }
 
-// quotas end the sidebar with each account signed in on two lines: its
-// mark, name and what is left of its limit, then a bar of it, opening all
-// of its limits. A balance has no bar, nor an account whose limits could
-// not be read, which says why instead.
-func (a App) quotas(cx *core.Scope) core.Node {
-	m := a.Model
+// Quotas list each account signed in on two lines: its mark, name and
+// what is left of its limit, then a bar of it, opening all of its limits.
+// A balance has no bar, nor an account whose limits could not be read,
+// which says why instead. App ends its sidebar with them; an app with a
+// window of its own places them itself.
+type Quotas struct{ Model *Model }
+
+// Render implements core.Node.
+func (q Quotas) Render(cx *core.Scope) core.Node { return quotas(cx, q.Model) }
+
+func quotas(cx *core.Scope, m *Model) core.Node {
 	// The panels' titles and notes are fixed, so they rebuild the lines.
 	key := func() string {
 		msgs := locales.For(cx)

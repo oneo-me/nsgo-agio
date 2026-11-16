@@ -16,11 +16,24 @@ import (
 	"github.com/oneo-me/nsgo-agio/chatview/locales"
 )
 
-// settings is App's settings dialog: the backend's agents and their
-// models and its updates when it has them, among the app's own categories.
-func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
-	m := a.Model
-	category, query := a.SettingsCategory, core.NewSignal(cx, "")
+// SettingsDialog is App's settings dialog, for an app with a window of its
+// own: the backend's agents and their models and, with Updates, its
+// updates, among the app's own categories, as App's fields of the same
+// names place them; Open holds whether it shows.
+type SettingsDialog struct {
+	Model          *Model
+	Open           *core.Signal[bool]
+	Updates        bool
+	Settings       func(own []ui.SettingsCategory) []ui.SettingsCategory
+	Key            func() string
+	SectionActions func(cx *core.Scope, section string) core.Node
+	Category       *core.Signal[string]
+}
+
+// Render implements core.Node.
+func (a SettingsDialog) Render(cx *core.Scope) core.Node {
+	m, open := a.Model, a.Open
+	category, query := a.Category, core.NewSignal(cx, "")
 	if category == nil {
 		category = core.NewSignal(cx, "")
 	}
@@ -29,8 +42,8 @@ func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
 	// dropdown open; the page and search are held here.
 	key := func() string {
 		k := agentsKey(cx, m)
-		if a.SettingsKey != nil {
-			k += "\n" + a.SettingsKey()
+		if a.Key != nil {
+			k += "\n" + a.Key()
 		}
 		return k
 	}
@@ -49,7 +62,7 @@ func (a App) settings(cx *core.Scope, open *core.Signal[bool]) core.Node {
 				return ui.Settings{Categories: categories, Category: category, Query: query, Narrow: narrow, TestID: "settings",
 					Title: msgs.Settings(), SearchLabel: msgs.SearchSettings(), SearchPlaceholder: msgs.SearchSettings(),
 					ResultsTitle: msgs.SettingsResults(), EmptyText: msgs.NoMatchingSettings(),
-					SectionActions: a.SettingsSectionActions,
+					SectionActions: a.SectionActions,
 					OnClose:        func() { open.Set(false) }, CloseLabel: msgs.CloseSettings()}
 			})
 		}}
