@@ -2,8 +2,11 @@
 // a Model Context Protocol server over streamable HTTP on the loopback
 // interface. Requests need a bearer token the server makes, which only the
 // agent.MCPServer it returns carries, so other local programs and web
-// pages cannot call the tools. It answers each request with one JSON
-// message and opens no event streams, as tools that answer once need none.
+// pages cannot call the tools. An application telling its agents apart,
+// such as one per task, gives each its own token with AgentFor, and its
+// tools read whose call it is with Caller. It answers each request with
+// one JSON message and opens no event streams, as tools that answer once
+// need none.
 package mcp
 
 import (
@@ -19,6 +22,7 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/oneo-me/nsgo-agio/agent"
 )
@@ -51,6 +55,9 @@ type Server struct {
 	token string
 	ln    net.Listener
 	srv   *http.Server
+	// callers are the tokens AgentFor made, by token.
+	mu      sync.Mutex
+	callers map[string]string
 }
 
 // Listen starts a server on a free loopback port.
@@ -64,7 +71,7 @@ func Listen(o Options) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Server{opts: o, token: hex.EncodeToString(key), ln: ln}
+	s := &Server{opts: o, token: hex.EncodeToString(key), ln: ln, callers: map[string]string{}}
 	s.srv = &http.Server{Handler: s}
 	go s.srv.Serve(ln)
 	return s, nil
@@ -77,6 +84,71 @@ func (s *Server) Agent() agent.MCPServer {
 		Headers: map[string]string{"Authorization": "Bearer " + s.token}}
 }
 
+// AgentFor is how the agent of caller, a name the application chooses,
+// reaches the server with a token of its own, so Caller tells the tools
+// whose call it is. Asking again for a caller gives its token again.
+func (s *Server) AgentFor(caller string) agent.MCPServer {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	token := ""
+	for t, c := range s.callers {
+		if c == caller {
+			token = t
+			break
+		}
+	}
+	if token == "" {
+		key := make([]byte, 32)
+		rand.Read(key)
+		token = hex.EncodeToString(key)
+		s.callers[token] = caller
+	}
+	m := s.Agent()
+	m.Headers["Authorization"] = "Bearer " + token
+	return m
+}
+
+// Forget refuses the token AgentFor made for caller from now on.
+func (s *Server) Forget(caller string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for t, c := range s.callers {
+		if c == caller {
+			delete(s.callers, t)
+		}
+	}
+}
+
+// callerKey keys the caller in a call's context.
+type callerKey struct{}
+
+// Caller is the caller whose token AgentFor made the call came with, ""
+// for the token Agent gives.
+func Caller(ctx context.Context) string {
+	c, _ := ctx.Value(callerKey{}).(string)
+	return c
+}
+
+// caller is the caller of a request's Authorization header, and whether
+// it holds one of the server's tokens.
+func (s *Server) caller(auth string) (string, bool) {
+	token, ok := strings.CutPrefix(auth, "Bearer ")
+	if !ok {
+		return "", false
+	}
+	if subtle.ConstantTimeCompare([]byte(token), []byte(s.token)) == 1 {
+		return "", true
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for t, c := range s.callers {
+		if subtle.ConstantTimeCompare([]byte(token), []byte(t)) == 1 {
+			return c, true
+		}
+	}
+	return "", false
+}
+
 // Close stops the server.
 func (s *Server) Close() error { return s.srv.Close() }
 
@@ -85,8 +157,8 @@ var versions = []string{"2025-06-18", "2025-03-26", "2024-11-05"}
 
 // ServeHTTP implements http.Handler.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	auth := []byte(r.Header.Get("Authorization"))
-	if subtle.ConstantTimeCompare(auth, []byte("Bearer "+s.token)) != 1 {
+	caller, ok := s.caller(r.Header.Get("Authorization"))
+	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -133,8 +205,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, &response{JSONRPC: "2.0", ID: json.RawMessage("null"), Error: &rpcError{Code: -32700, Message: "parse error: " + err.Error()}})
 		return
 	}
+	ctx := context.WithValue(r.Context(), callerKey{}, caller)
 	for _, m := range messages {
-		if reply := s.handle(r.Context(), m); reply != nil {
+		if reply := s.handle(ctx, m); reply != nil {
 			replies = append(replies, reply)
 		}
 	}

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/oneo-me/nsgo-agio/agent"
 )
 
 func listen(t *testing.T) *Server {
@@ -86,5 +88,32 @@ func TestRefusesRequestsWithoutTheToken(t *testing.T) {
 	res.Body.Close()
 	if res.StatusCode != http.StatusForbidden {
 		t.Fatalf("a page's request got %d", res.StatusCode)
+	}
+}
+
+func TestTellsCallersApart(t *testing.T) {
+	s, err := Listen(Options{Name: "tasks", Tools: []Tool{{Name: "who", InputSchema: map[string]any{"type": "object"}}},
+		Call: func(ctx context.Context, _ string, _ json.RawMessage) (string, bool) {
+			return "caller " + Caller(ctx), false
+		}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	a, b := s.AgentFor("a"), s.AgentFor("b")
+	if a.Headers["Authorization"] == b.Headers["Authorization"] || s.AgentFor("a").Headers["Authorization"] != a.Headers["Authorization"] {
+		t.Fatal("callers do not keep tokens of their own")
+	}
+	for m, want := range map[*agent.MCPServer]string{&a: "caller a", &b: "caller b"} {
+		if text, _, err := CallTool(context.Background(), *m, "who", nil); err != nil || text != want {
+			t.Fatalf("call = %q %v, want %q", text, err, want)
+		}
+	}
+	if text, _, _ := CallTool(context.Background(), s.Agent(), "who", nil); text != "caller " {
+		t.Fatalf("the server's own token called as %q", text)
+	}
+	s.Forget("a")
+	if _, _, err := CallTool(context.Background(), a, "who", nil); err == nil {
+		t.Fatal("a forgotten caller still called")
 	}
 }
