@@ -160,6 +160,14 @@ const (
 	textNamingModelChoice
 	textNamingModelDescription
 	textNamingModelNone
+	textNamingEffort
+	textNamingEffortDescription
+	textNamingEffortDefault
+	textNamingEffortOff
+	textNamingEffortLow
+	textNamingEffortMedium
+	textNamingEffortHigh
+	textNamingEffortMax
 	textTitleLanguage
 	textTitleLanguageDescription
 	textTitleLanguageInterface
@@ -258,6 +266,14 @@ var keyOfText = [numTexts]string{
 	"namingModelChoice",
 	"namingModelDescription",
 	"namingModelNone",
+	"namingEffort",
+	"namingEffortDescription",
+	"namingEffortDefault",
+	"namingEffortOff",
+	"namingEffortLow",
+	"namingEffortMedium",
+	"namingEffortHigh",
+	"namingEffortMax",
 	"titleLanguage",
 	"titleLanguageDescription",
 	"titleLanguageInterface",
@@ -354,6 +370,14 @@ var textsEn = i18n.NewTexts(""+
 	"Choose task naming model"+
 	"Titles each task from its first message."+
 	"Use first message"+
+	"Reasoning effort"+
+	"How long the naming model thinks before titling; less is faster."+
+	"Model default"+
+	"Off"+
+	"Low"+
+	"Medium"+
+	"High"+
+	"Max"+
 	"Title language"+
 	"Titles the naming model gives use this language."+
 	"Same as interface",
@@ -447,6 +471,14 @@ var textsEn = i18n.NewTexts(""+
 		24,
 		40,
 		17,
+		16,
+		64,
+		13,
+		3,
+		3,
+		6,
+		4,
+		3,
 		14,
 		48,
 		17,
@@ -543,6 +575,14 @@ var textsZhHans = i18n.NewTexts(""+
 	"选择任务命名模型"+
 	"根据每条任务的首条消息生成标题。"+
 	"使用首条消息"+
+	"推理强度"+
+	"命名模型生成标题前的思考程度，越低越快。"+
+	"模型默认"+
+	"关闭"+
+	"低"+
+	"中"+
+	"高"+
+	"最高"+
 	"标题语言"+
 	"命名模型生成的标题使用此语言。"+
 	"跟随界面语言",
@@ -636,6 +676,14 @@ var textsZhHans = i18n.NewTexts(""+
 		24,
 		48,
 		18,
+		12,
+		60,
+		12,
+		6,
+		3,
+		3,
+		3,
+		6,
 		12,
 		45,
 		18,
@@ -1493,6 +1541,62 @@ func NamingModelNone(cx *core.Scope) string { return For(cx).NamingModelNone() }
 
 // NamingModelNone is the package's NamingModelNone in the language of msgs.
 func (msgs Messages) NamingModelNone() string { return msgs.text(textNamingModelNone) }
+
+// NamingEffort says "Reasoning effort"
+// in the language the app shows under cx.
+func NamingEffort(cx *core.Scope) string { return For(cx).NamingEffort() }
+
+// NamingEffort is the package's NamingEffort in the language of msgs.
+func (msgs Messages) NamingEffort() string { return msgs.text(textNamingEffort) }
+
+// NamingEffortDescription says "How long the naming model thinks before titling; less is faster."
+// in the language the app shows under cx.
+func NamingEffortDescription(cx *core.Scope) string { return For(cx).NamingEffortDescription() }
+
+// NamingEffortDescription is the package's NamingEffortDescription in the language of msgs.
+func (msgs Messages) NamingEffortDescription() string { return msgs.text(textNamingEffortDescription) }
+
+// NamingEffortDefault says "Model default"
+// in the language the app shows under cx.
+func NamingEffortDefault(cx *core.Scope) string { return For(cx).NamingEffortDefault() }
+
+// NamingEffortDefault is the package's NamingEffortDefault in the language of msgs.
+func (msgs Messages) NamingEffortDefault() string { return msgs.text(textNamingEffortDefault) }
+
+// NamingEffortOff says "Off"
+// in the language the app shows under cx.
+func NamingEffortOff(cx *core.Scope) string { return For(cx).NamingEffortOff() }
+
+// NamingEffortOff is the package's NamingEffortOff in the language of msgs.
+func (msgs Messages) NamingEffortOff() string { return msgs.text(textNamingEffortOff) }
+
+// NamingEffortLow says "Low"
+// in the language the app shows under cx.
+func NamingEffortLow(cx *core.Scope) string { return For(cx).NamingEffortLow() }
+
+// NamingEffortLow is the package's NamingEffortLow in the language of msgs.
+func (msgs Messages) NamingEffortLow() string { return msgs.text(textNamingEffortLow) }
+
+// NamingEffortMedium says "Medium"
+// in the language the app shows under cx.
+func NamingEffortMedium(cx *core.Scope) string { return For(cx).NamingEffortMedium() }
+
+// NamingEffortMedium is the package's NamingEffortMedium in the language of msgs.
+func (msgs Messages) NamingEffortMedium() string { return msgs.text(textNamingEffortMedium) }
+
+// NamingEffortHigh says "High"
+// in the language the app shows under cx.
+func NamingEffortHigh(cx *core.Scope) string { return For(cx).NamingEffortHigh() }
+
+// NamingEffortHigh is the package's NamingEffortHigh in the language of msgs.
+func (msgs Messages) NamingEffortHigh() string { return msgs.text(textNamingEffortHigh) }
+
+// NamingEffortMax says "Max"
+// in the language the app shows under cx.
+func NamingEffortMax(cx *core.Scope) string { return For(cx).NamingEffortMax() }
+
+// NamingEffortMax is the package's NamingEffortMax in the language of msgs.
+func (msgs Messages) NamingEffortMax() string { return msgs.text(textNamingEffortMax) }
 
 // NamingFailed says "Naming failed: {reason}"
 // in the language the app shows under cx.

@@ -54,9 +54,11 @@ type settings struct {
 	GitTool   string          `yaml:"git_tool,omitempty"`
 	Providers []modelProvider `yaml:"providers,omitempty"`
 	// NamingModel is the providers' model titling new tasks, none to keep
-	// their first message; TitleLanguage "en" or "zh-Hans" is the titles'
+	// their first message, NamingEffort its reasoning effort, empty for the
+	// model's default; TitleLanguage "en" or "zh-Hans" is the titles'
 	// language, empty for the interface's.
 	NamingModel   modelReference `yaml:"naming_model,omitempty"`
+	NamingEffort  string         `yaml:"naming_effort,omitempty"`
 	TitleLanguage string         `yaml:"title_language,omitempty"`
 	// InstallID is the install's in the usage statistics; StatsOff is set
 	// once the settings turned them off.

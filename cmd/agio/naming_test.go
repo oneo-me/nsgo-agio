@@ -52,11 +52,14 @@ func TestNewTasksAreNamed(t *testing.T) {
 	var prompts []string
 	fail := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var body struct{ Messages []struct{ Content string } }
+		var body struct {
+			ReasoningEffort string `json:"reasoning_effort"`
+			Messages        []struct{ Content string }
+		}
 		json.NewDecoder(r.Body).Decode(&body)
 		mu.Lock()
 		defer mu.Unlock()
-		prompts = append(prompts, body.Messages[1].Content)
+		prompts = append(prompts, body.ReasoningEffort+" "+body.Messages[1].Content)
 		if fail {
 			http.Error(w, `{"error": {"message": "invalid key"}}`, http.StatusUnauthorized)
 			return
@@ -72,7 +75,7 @@ func TestNewTasksAreNamed(t *testing.T) {
 	// Without a naming model, a task keeps its first message.
 	b.add("plain", "fix the login redirect")
 	n.look(b.State())
-	st.update(func(s *settings) { s.NamingModel = modelReference{Provider: "p", Model: "m"} })
+	st.update(func(s *settings) { s.NamingModel, s.NamingEffort = modelReference{Provider: "p", Model: "m"}, "low" })
 	b.add("named", "登录后跳转错误，请修复")
 	n.look(b.State())
 	n.look(b.State())
@@ -81,7 +84,7 @@ func TestNewTasksAreNamed(t *testing.T) {
 		t.Fatalf("renamed tasks that were not new: %+v %+v", s.Conversation("resumed"), s.Conversation("plain"))
 	}
 	mu.Lock()
-	if len(prompts) != 1 || prompts[0] != "登录后跳转错误，请修复" {
+	if len(prompts) != 1 || prompts[0] != "low 登录后跳转错误，请修复" {
 		t.Fatalf("asked to name %q", prompts)
 	}
 	fail = true

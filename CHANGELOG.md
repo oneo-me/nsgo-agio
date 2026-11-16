@@ -8,7 +8,7 @@
 - Let apps attach MCP servers to agents with `host.Options.MCPServers` and `agio.Create.MCPServers`.
 - Let apps serve their own tools to agents with `mcp`, an MCP server over streamable HTTP on the loopback interface behind a token.
 - Let apps with settings of their own show the agents' with `chatview.Agents`, and hear of messages sent with `Conversation.OnSend`.
-- Let apps title conversations with an OpenAI-compatible model with `naming`.
+- Let apps title conversations with an OpenAI-compatible model at a reasoning effort with `naming`, and set the effort of Agio's naming model in its settings.
 - Show each account's limit at the sidebar's end, and the context window at the composer's end.
 
 ## [0.1.0] - 2026-11-13

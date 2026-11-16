@@ -32,10 +32,17 @@ Examples of titles:
 - "Please investigate and fix the login redirect that sends users to the wrong page" -> "Fix login redirect"
 - "Add retries when the API returns HTTP 429 without retrying other errors" -> "Retry HTTP 429 responses"`
 
+// Efforts are the reasoning efforts offered for naming, from off to the
+// most OpenAI's chat completions take, which other servers support in part.
+var Efforts = []string{"none", "low", "medium", "high", "xhigh"}
+
 // Provider is an OpenAI-compatible endpoint and the model used for naming.
 // An empty APIKey sends no authorization, for local servers.
 type Provider struct {
 	BaseURL, APIKey, Model string
+	// Effort is the model's reasoning effort, one of Efforts, empty to
+	// send none and leave the model's default.
+	Effort string
 	// TitleLanguage is zh-Hans or en, the default.
 	TitleLanguage string
 	// Client defaults to http.DefaultClient; callers bound requests with
@@ -71,13 +78,17 @@ func (p Provider) Suggest(ctx context.Context, prompt string) (string, error) {
 	if p.TitleLanguage == "zh-Hans" {
 		language = "Simplified Chinese"
 	}
-	body, err := json.Marshal(map[string]any{
+	request := map[string]any{
 		"model": strings.TrimSpace(p.Model),
 		"messages": []map[string]string{
 			{"role": "system", "content": instructions + "\nRequired title language: " + language + "."},
 			{"role": "user", "content": prompt},
 		},
-	})
+	}
+	if effort := strings.TrimSpace(p.Effort); effort != "" {
+		request["reasoning_effort"] = effort
+	}
+	body, err := json.Marshal(request)
 	if err != nil {
 		return "", err
 	}

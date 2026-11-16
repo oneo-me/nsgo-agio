@@ -56,7 +56,7 @@ func (n *namer) provider() naming.Provider {
 	} else {
 		language = "en"
 	}
-	p := naming.Provider{TitleLanguage: language}
+	p := naming.Provider{Effort: s.NamingEffort, TitleLanguage: language}
 	if provider, model, ok := s.providerModel(s.NamingModel); ok {
 		p.BaseURL, p.APIKey, p.Model = provider.BaseURL, provider.APIKey, model.Model
 	}
@@ -125,8 +125,9 @@ func (n *namer) onChange(fn func()) {
 	n.changed = fn
 }
 
-// namingSettings is the Naming page: the titles' language and the model
-// naming tasks, which reports why naming last failed.
+// namingSettings is the Naming page: the titles' language, the model
+// naming tasks, which reports why naming last failed, and its reasoning
+// effort.
 func (a *app) namingSettings() ui.SettingsCategory {
 	m := a.msgs()
 	description := m.NamingModelDescription()
@@ -149,6 +150,10 @@ func (a *app) namingSettings() ui.SettingsCategory {
 				ID: "model", Title: m.NamingModel(), Description: description,
 				Keywords: []string{"naming", "title", "model", "命名", "标题", "模型"},
 				Control:  core.Dynamic(func(*core.Scope) core.Node { return a.namingModelSetting() }),
+			}, {
+				ID: "effort", Title: m.NamingEffort(), Description: m.NamingEffortDescription(),
+				Keywords: []string{"naming", "reasoning", "effort", "thinking", "命名", "推理", "思考", "强度"},
+				Control:  a.namingEffortSetting(),
 			}},
 		}},
 	}
@@ -171,4 +176,19 @@ func (a *app) namingModelSetting() core.Node {
 	return ui.Select[modelReference]{Options: options, Label: m.NamingModelChoice(), Style: core.Style{Width: core.Pt(192), MaxWidth: core.Pct(100)},
 		Value:    func() modelReference { return a.get().NamingModel },
 		OnChange: func(ref modelReference) { a.change(func(s *settings) { s.NamingModel = ref }) }}
+}
+
+// namingEffortSetting chooses the naming model's reasoning effort, or
+// clears it to send none, as models without reasoning reject one.
+func (a *app) namingEffortSetting() core.Node {
+	m := a.msgs()
+	names := []string{m.NamingEffortOff(), m.NamingEffortLow(), m.NamingEffortMedium(), m.NamingEffortHigh(), m.NamingEffortMax()}
+	options := make([]ui.Option[string], len(naming.Efforts))
+	for i, effort := range naming.Efforts {
+		options[i] = ui.Option[string]{Value: effort, Label: names[i]}
+	}
+	set := func(effort string) { a.change(func(s *settings) { s.NamingEffort = effort }) }
+	return ui.Select[string]{Options: options, Label: m.NamingEffort(), Placeholder: m.NamingEffortDefault(),
+		Style: core.Style{Width: core.Pt(160), MaxWidth: core.Pct(100)},
+		Value: func() string { return a.get().NamingEffort }, OnChange: set, OnClear: func() { set("") }}
 }

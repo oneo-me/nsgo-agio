@@ -11,8 +11,9 @@ import (
 
 func TestSuggest(t *testing.T) {
 	var got struct {
-		Model    string
-		Messages []struct{ Role, Content string }
+		Model           string
+		ReasoningEffort *string `json:"reasoning_effort"`
+		Messages        []struct{ Role, Content string }
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/chat/completions" || r.Header.Get("Authorization") != "Bearer secret" {
@@ -23,7 +24,7 @@ func TestSuggest(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]any{"choices": []any{map[string]any{"message": map[string]any{"content": reply}}}})
 	}))
 	defer server.Close()
-	p := Provider{BaseURL: server.URL + "/v1/", APIKey: " secret ", Model: " small ", TitleLanguage: "zh-Hans"}
+	p := Provider{BaseURL: server.URL + "/v1/", APIKey: " secret ", Model: " small ", Effort: "low", TitleLanguage: "zh-Hans"}
 	title, err := p.Suggest(context.Background(), "登录后跳转错误，请修复")
 	if err != nil {
 		t.Fatal(err)
@@ -31,7 +32,7 @@ func TestSuggest(t *testing.T) {
 	if title != "修复登录跳转" {
 		t.Fatalf("title %q", title)
 	}
-	if got.Model != "small" || len(got.Messages) != 2 ||
+	if got.Model != "small" || got.ReasoningEffort == nil || *got.ReasoningEffort != "low" || len(got.Messages) != 2 ||
 		got.Messages[0].Role != "system" || got.Messages[0].Content != instructions+"\nRequired title language: Simplified Chinese." ||
 		got.Messages[1].Role != "user" || got.Messages[1].Content != "登录后跳转错误，请修复" {
 		t.Fatalf("%+v", got)
@@ -42,6 +43,11 @@ func TestSuggestErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "" {
 			t.Error("authorization sent without a key")
+		}
+		var req map[string]any
+		json.NewDecoder(r.Body).Decode(&req)
+		if _, ok := req["reasoning_effort"]; ok {
+			t.Error("reasoning effort sent without one")
 		}
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"error": {"message": "invalid key"}}`))
