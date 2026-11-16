@@ -216,6 +216,11 @@ func (h *Host) start(c *conversation) {
 		h.failRun(c, tool.Name()+" is turned off. Turn it on to continue this conversation.")
 		return
 	}
+	if d == nil && h.lookingFor(tool) {
+		// The tool is still being looked for, as just after launch, when
+		// conversations resume: it starts once the tool is found.
+		return
+	}
 	if d == nil {
 		h.failRun(c, tool.Name()+" is not available. Install it, then look for agents again.")
 		return

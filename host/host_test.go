@@ -342,3 +342,43 @@ func TestQuotasAreReadAndRefreshed(t *testing.T) {
 	h.RefreshQuota(quota.Claude)
 	waitFor(t, h, func(s agio.State) bool { return len(s.Quotas) == 1 && s.Quotas[0].Usage.Windows[0].Percent == 20 })
 }
+
+// slowDriver is found only once found is closed.
+type slowDriver struct {
+	*fakeagent.Driver
+	found chan struct{}
+}
+
+func (d slowDriver) Catalog(ctx context.Context, home string) (agent.Catalog, error) {
+	<-d.found
+	return d.Driver.Catalog(ctx, home)
+}
+
+func TestConversationsSentToWhileTheToolIsLookedForStartOnceFound(t *testing.T) {
+	d := slowDriver{Driver: &fakeagent.Driver{}, found: make(chan struct{})}
+	h := New(Options{Env: []string{}, Tools: []agent.Tool{agent.Claude}, Drivers: map[agent.Tool]agent.Driver{agent.Claude: d}, Home: t.TempDir()})
+	t.Cleanup(func() { h.Close() })
+	// A conversation resumed at launch, before its tool is found.
+	id, err := h.Create(agio.Create{Dir: t.TempDir(), Model: agent.Key(agent.Claude, "opus"), Cursor: "saved"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Send(id, agio.Message{Text: "go on"}); err != nil {
+		t.Fatal(err)
+	}
+	if c := h.State().Conversation(id); c == nil || strings.Contains(c.Err+lastErr(c), "not available") {
+		t.Fatalf("failed before the tool was found: %+v", c)
+	}
+	close(d.found)
+	waitFor(t, h, func(agio.State) bool { return len(d.Started()) == 1 })
+	if c := h.State().Conversation(id); strings.Contains(lastErr(c), "not available") {
+		t.Fatalf("conversation failed: %s", lastErr(c))
+	}
+}
+
+func lastErr(c *agio.Conversation) string {
+	if c == nil || len(c.Turns) == 0 {
+		return ""
+	}
+	return c.Turns[len(c.Turns)-1].Err
+}

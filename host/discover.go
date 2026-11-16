@@ -115,9 +115,13 @@ func (h *Host) discover(tools []agent.Tool) {
 				h.post(func() {
 					h.tools[tool] = info
 					h.discovering--
-					// Saved conversations of a tool become readable once it is located.
+					// Saved conversations of a tool become readable once it is located,
+					// and those sent to while it was looked for start.
 					for _, c := range h.conversations {
 						h.loadHistory(c)
+						if t, _ := agent.ParseKey(c.model); t == tool && len(c.waiting) > 0 {
+							h.start(c)
+						}
 					}
 				})
 			}()
@@ -192,6 +196,11 @@ func homeRelative(path, home string) string {
 		return filepath.Join("~", rel)
 	}
 	return path
+}
+
+// lookingFor reports whether an enabled tool is still being looked for.
+func (h *Host) lookingFor(tool agent.Tool) bool {
+	return h.discovering > 0 && h.tools[tool] == nil && !h.disabled[tool] && slices.Contains(h.opts.Tools, tool)
 }
 
 // usable returns what was found of an enabled tool that can run, or nil.

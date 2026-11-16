@@ -11,6 +11,7 @@
 - Let apps with settings of their own show the agents' with `chatview.Agents`, and hear of messages sent with `Conversation.OnSend`.
 - Let apps title conversations with an OpenAI-compatible model at a reasoning effort with `naming`, and set the effort of Agio's naming model in its settings.
 - Show each account's limit at the sidebar's end, and the context window at the composer's end.
+- Fix conversations resumed right after launch failing as their agent being unavailable while it is still looked for.
 
 ## [0.1.0] - 2026-11-13
 
