@@ -16,6 +16,8 @@ import (
 type Driver struct {
 	// Saved is what History returns.
 	Saved []agent.Event
+	// HoldAbort, when set, delays Abort until it is closed.
+	HoldAbort <-chan struct{}
 
 	mu      sync.Mutex
 	started []agent.StartOptions
@@ -81,7 +83,20 @@ func (s *session) Prompt(_ context.Context, p agent.Prompt) error {
 	return nil
 }
 
-func (s *session) Abort(context.Context) error {
+func (s *session) Abort(ctx context.Context) error {
+	s.mu.Lock()
+	hold, busy := s.d.HoldAbort, s.busy
+	s.mu.Unlock()
+	if !busy {
+		return nil
+	}
+	if hold != nil {
+		select {
+		case <-hold:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.busy {

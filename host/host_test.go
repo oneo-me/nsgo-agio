@@ -190,9 +190,50 @@ func TestStopCancelsTheRun(t *testing.T) {
 		return len(c.Turns) == 1 && len(c.Turns[0].Segments) == 1
 	})
 	h.Stop(id)
-	s := waitFor(t, h, func(s agio.State) bool { return !s.Conversation(id).Running })
-	if st := s.Conversation(id).Turns[0].Status; st != transcript.Cancelled {
-		t.Fatalf("status = %v", st)
+	s := h.State()
+	c := s.Conversation(id)
+	if c.Running || c.Turns[0].Status != transcript.Cancelled {
+		t.Fatalf("after Stop: running=%v status=%v", c.Running, c.Turns[0].Status)
+	}
+}
+
+func TestStopEndsTheRunBeforeTheAgentSettles(t *testing.T) {
+	hold := make(chan struct{})
+	h := newHost(t, &fakeagent.Driver{HoldAbort: hold})
+	id, _ := h.Create(agio.Create{Dir: t.TempDir()})
+	h.Send(id, agio.Message{Text: "wait"})
+	waitFor(t, h, func(s agio.State) bool {
+		c := s.Conversation(id)
+		return len(c.Turns) == 1 && len(c.Turns[0].Segments) == 1
+	})
+	h.Stop(id)
+	c := h.State().Conversation(id)
+	if c.Running || c.Turns[0].Status != transcript.Cancelled {
+		t.Fatalf("after Stop, before Abort: running=%v status=%v", c.Running, c.Turns[0].Status)
+	}
+	close(hold)
+	waitFor(t, h, func(s agio.State) bool { return !s.Conversation(id).Running })
+}
+
+func TestSendAfterStopWaitsForAbort(t *testing.T) {
+	hold := make(chan struct{})
+	h := newHost(t, &fakeagent.Driver{HoldAbort: hold})
+	id, _ := h.Create(agio.Create{Dir: t.TempDir()})
+	h.Send(id, agio.Message{Text: "wait"})
+	waitFor(t, h, func(s agio.State) bool {
+		c := s.Conversation(id)
+		return len(c.Turns) == 1 && len(c.Turns[0].Segments) == 1
+	})
+	h.Stop(id)
+	h.Send(id, agio.Message{Text: "next"})
+	close(hold)
+	s := waitFor(t, h, func(s agio.State) bool {
+		c := s.Conversation(id)
+		return len(c.Turns) == 2 && c.Turns[1].Status == transcript.Completed
+	})
+	turns := s.Conversation(id).Turns
+	if turns[0].Status != transcript.Cancelled || turns[1].Final().Text != "echo: next" {
+		t.Fatalf("turns = %+v, %+v", turns[0], turns[1])
 	}
 }
 

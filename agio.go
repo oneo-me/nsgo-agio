@@ -31,7 +31,8 @@ type Backend interface {
 	// A message to a running conversation interrupts the run instead of
 	// queueing.
 	Send(id string, m Message) error
-	// Stop aborts the conversation's current run.
+	// Stop aborts the conversation's current run. State shows it ended
+	// before the agent settles.
 	Stop(id string) error
 	// Choose changes the conversation's model, reasoning level or service
 	// tier, live when its agent runs, or its directory. A conversation

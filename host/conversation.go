@@ -44,8 +44,10 @@ type conversation struct {
 	removed  bool
 	// waiting holds prompts accepted before the agent was ready.
 	waiting []func()
-	// interrupting counts aborts awaiting their replacement prompt.
-	interrupting int
+	// aborting is set while Abort runs. queued is the prompt to send
+	// afterwards, nil when the abort is a stop.
+	aborting bool
+	queued   *queuedPrompt
 
 	// wantSettings are the settings the live agent should have,
 	// sentSettings those it was given; configuring is set while they are
@@ -172,7 +174,7 @@ func (h *Host) Send(id string, m agio.Message) error {
 		h.toFront(c)
 		t := transcript.New(newID(), text, m.Files, now)
 		c.turns = append(c.turns, t)
-		if c.running && c.session != nil {
+		if c.session != nil && (c.running || c.aborting) {
 			// A new message always interrupts the run instead of queueing.
 			h.interrupt(c, t, text, m.Files)
 			return nil
@@ -293,30 +295,61 @@ func (h *Host) start(c *conversation) {
 	}()
 }
 
+// queuedPrompt is sent after an in-flight abort.
+type queuedPrompt struct {
+	turn  *transcript.Turn
+	text  string
+	files []string
+}
+
 // interrupt aborts the running agent, then sends the next prompt. Events of
 // the aborted run settle the previous turn before the new one becomes
 // current.
 func (h *Host) interrupt(c *conversation, next *transcript.Turn, text string, files []string) {
+	now := h.opts.Now()
 	if t := c.current; t != nil {
-		t.Finish(transcript.Cancelled, h.opts.Now())
+		t.Finish(transcript.Cancelled, now)
 	}
 	c.current = nil
-	c.interrupting++
+	c.queued = &queuedPrompt{turn: next, text: text, files: files}
+	c.running = true
+	h.beginAbort(c)
+}
+
+// beginAbort starts Abort unless one is already in flight. aborted then
+// sends queued, or leaves the conversation stopped.
+func (h *Host) beginAbort(c *conversation) {
+	if c.aborting || c.session == nil {
+		return
+	}
+	c.aborting = true
 	s := c.session
 	background(func(ctx context.Context) {
 		err := s.Abort(ctx)
-		h.post(func() {
-			c.interrupting--
-			if err != nil {
-				c.current = next
-				h.failRun(c, err.Error())
-				return
-			}
-			next.Replacing = true
-			c.current, c.running = next, true
-			h.prompt(c, text, files)
-		})
+		h.post(func() { h.aborted(c, err) })
 	})
+}
+
+func (h *Host) aborted(c *conversation, err error) {
+	c.aborting = false
+	q := c.queued
+	c.queued = nil
+	if c.removed {
+		return
+	}
+	if err != nil {
+		if q != nil {
+			c.current = q.turn
+		}
+		h.failRun(c, err.Error())
+		return
+	}
+	if q == nil {
+		return
+	}
+	q.turn.Replacing = true
+	c.current, c.running = q.turn, true
+	h.prompt(c, q.text, q.files)
 }
 
 // prompt sends text, images and attached paths; images go inline only to
@@ -343,26 +376,30 @@ func (h *Host) prompt(c *conversation, text string, files []string) {
 	})
 }
 
-// Stop implements agio.Backend.
+// Stop implements agio.Backend. The run ends in State at once; Abort
+// continues in the background until the agent settles.
 func (h *Host) Stop(id string) error {
 	return h.do(func() error {
 		c := h.find(id)
 		if c == nil {
 			return errNoConversation
 		}
-		switch {
-		case c.session != nil && c.running:
-			s := c.session
-			background(func(ctx context.Context) { s.Abort(ctx) })
-		case c.running:
-			// The agent is still starting: its prompt never reached it.
-			c.waiting = nil
-			c.running = false
-			if t := c.current; t != nil {
-				t.Finish(transcript.Cancelled, h.opts.Now())
-				c.current = nil
-			}
+		if !c.running && c.queued == nil && !c.aborting {
+			return nil
 		}
+		now := h.opts.Now()
+		if q := c.queued; q != nil {
+			q.turn.Finish(transcript.Cancelled, now)
+			c.queued = nil
+		}
+		if t := c.current; t != nil {
+			t.Finish(transcript.Cancelled, now)
+			c.current = nil
+		}
+		c.waiting = nil
+		c.running = false
+		c.updated = now
+		h.beginAbort(c)
 		return nil
 	})
 }
@@ -402,6 +439,15 @@ func (h *Host) agentExited(c *conversation, s agent.Session, err error) {
 func (h *Host) applyEvent(c *conversation, s agent.Session, e agent.Event) {
 	if c.session != nil && c.session != s {
 		return
+	}
+	if c.aborting {
+		switch e.Type {
+		case agent.Usage, agent.Title:
+		default:
+			// Late events of the aborted run, including Settled and a
+			// nested tool call ending, must not revive it.
+			return
+		}
 	}
 	now := h.opts.Now()
 	t := c.current
@@ -443,10 +489,6 @@ func (h *Host) applyEvent(c *conversation, s agent.Session, e agent.Event) {
 			c.title = e.Text
 		}
 	case agent.Settled:
-		if c.interrupting > 0 {
-			// The aborted run settled; the replacement prompt follows.
-			return
-		}
 		c.running = false
 		if t != nil {
 			status := transcript.Completed

@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- End a run in the UI as soon as it is stopped, rather than waiting for the agent to settle.
 - Let apps add pages of their own after New task in the sidebar with `App.Pages`.
 - Let apps append to agents' system prompts with `host.Options.SystemPrompt` and `agio.Create.SystemPrompt`.
 - Let apps attach skills to agents with `host.Options.Skills` and `agio.Create.Skills`.

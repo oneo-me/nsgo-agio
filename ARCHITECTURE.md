@@ -38,7 +38,7 @@ Agio is the agent core of NSGo apps, split out of Neorio: drivers that run codin
 
 **Discovery.** A host reads the login environment once, then locates each enabled CLI and reads its model catalog in parallel; each tool is usable once its own check ends. A tool turned off is not looked for, and one turned on is looked for unless it was found before.
 
-**A message.** `Send` binds the conversation's model, appends a running turn and starts the agent when needed. Drivers may report events before `Start` returns, so the host holds them until the session is known, then applies every callback in order on one goroutine. Choices made later are applied to the live agent one at a time, latest last.
+**A message.** `Send` binds the conversation's model, appends a running turn and starts the agent when needed. Drivers may report events before `Start` returns, so the host holds them until the session is known, then applies every callback in order on one goroutine. `Stop` ends the current turn at once and aborts in the background, so the UI does not wait for the agent to settle. Choices made later are applied to the live agent one at a time, latest last.
 
 **Account limits.** A host given `ReadQuota` reads each signed-in account in the background with the login environment, at most every five minutes, or fifteen for Claude, whose endpoint rate-limits most; a window resetting sooner brings the read forward, and a rate limit backs off. Credentials are only read, never refreshed. A failed read keeps the previous limits. The sidebar ends with each account's shortest window limiting all its models, or the exhausted one blocking longest, or a balance, each opening all of that account's limits.
 
