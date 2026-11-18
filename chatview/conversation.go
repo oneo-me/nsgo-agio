@@ -17,6 +17,10 @@ import (
 	"github.com/oneo-me/nsgo-agio/transcript"
 )
 
+// ContentWidth is the reading width of a conversation and New task's
+// composer.
+const ContentWidth core.Points = 720
+
 // Conversation shows one conversation of Model: its turns scroll behind a
 // floating composer with the model, reasoning level and service tier
 // choices. Give its parent a bounded height, and key it by ID, as its
@@ -99,7 +103,7 @@ func (v Conversation) Render(cx *core.Scope) core.Node {
 		v.Ref.scroll, v.Ref.inset, v.Ref.items = state.Scroll(), v.TopInset, map[string]*core.Ref{}
 	}
 	draft := core.NewSignal(cx, "")
-	return chat.FloatingConversation{State: state, JumpLabel: locales.For(cx).JumpLatest(), TopInset: v.TopInset, TestID: v.TestID,
+	return chat.FloatingConversation{State: state, JumpLabel: locales.For(cx).JumpLatest(), TopInset: v.TopInset, TestID: v.TestID, ContentWidth: ContentWidth,
 		Children: []core.Node{
 			core.Show{When: live(m, func() bool { return conv().Loading }), Then: func(*core.Scope) core.Node {
 				return core.View{Style: core.Style{AlignSelf: core.AlignCenter}, Children: []core.Node{ui.Spinner{Size: 20, Label: locales.For(cx).LoadingHistory()}}}

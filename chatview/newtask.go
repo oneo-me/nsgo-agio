@@ -38,7 +38,7 @@ func (a App) newTaskPane(cx *core.Scope, draft func() string, open func(id strin
 			StyleFunc: func() core.Style { return core.Style{MinHeight: core.Pt(height.Get())} },
 			Children: []core.Node{
 				half(a.hero(cx, draft)),
-				core.View{Style: core.Style{Width: core.Pct(100), MaxWidth: core.Pt(chat.ContentWidth), MinWidth: core.Pt(0), FlexShrink: 0}, Children: []core.Node{composer}},
+				core.View{Style: core.Style{Width: core.Pct(100), MaxWidth: core.Pt(ContentWidth), MinWidth: core.Pt(0), FlexShrink: 0}, Children: []core.Node{composer}},
 				half(),
 			}},
 	}}
