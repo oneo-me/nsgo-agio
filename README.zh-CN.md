@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  NSGo 应用的智能体核心：运行编程智能体（pi、Codex、Claude Code、CodeBuddy Code），并在手机与桌面上展示它们的工作，可在单个进程中运行，也可拆成服务端与客户端。
+  NSGo 应用的智能体核心：运行编程智能体（pi、Codex、Claude Code、Cursor、OpenCode、Grok Build、Antigravity、Kiro、Muse Code、fx、CodeBuddy Code），并在手机与桌面上展示它们的工作，可在单个进程中运行，也可拆成服务端与客户端。
 </p>
 
 <p align="center">

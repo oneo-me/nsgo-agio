@@ -11,8 +11,8 @@ import (
 	"github.com/oneo-me/nsgo-agio/quota"
 )
 
-// Marks are SVGs drawn in their own brand colors; pi's and xAI's
-// monochrome marks use currentColor, which follows the text.
+// Marks are SVGs drawn in their own brand colors; the monochrome marks of
+// pi, xAI, Cursor and OpenCode use currentColor, which follows the text.
 var (
 	//go:embed icons/pi.svg
 	piSVG []byte
@@ -24,12 +24,24 @@ var (
 	codeBuddySVG []byte
 	//go:embed icons/xai.svg
 	xaiSVG []byte
+	//go:embed icons/cursor.svg
+	cursorSVG []byte
+	//go:embed icons/opencode.svg
+	openCodeSVG []byte
+	//go:embed icons/antigravity.svg
+	antigravitySVG []byte
+	//go:embed icons/kiro.svg
+	kiroSVG []byte
 
-	piIcon        = lazySVG(piSVG)
-	codexIcon     = lazySVG(codexSVG)
-	claudeIcon    = lazySVG(claudeSVG)
-	codeBuddyIcon = lazySVG(codeBuddySVG)
-	xaiIcon       = lazySVG(xaiSVG)
+	piIcon          = lazySVG(piSVG)
+	codexIcon       = lazySVG(codexSVG)
+	claudeIcon      = lazySVG(claudeSVG)
+	codeBuddyIcon   = lazySVG(codeBuddySVG)
+	xaiIcon         = lazySVG(xaiSVG)
+	cursorIcon      = lazySVG(cursorSVG)
+	openCodeIcon    = lazySVG(openCodeSVG)
+	antigravityIcon = lazySVG(antigravitySVG)
+	kiroIcon        = lazySVG(kiroSVG)
 )
 
 // toolIcon is a tool's mark, or a generic one for tools without one.
@@ -41,6 +53,16 @@ func toolIcon(tool agent.Tool) func() *core.SVG {
 		return codexIcon
 	case agent.Claude:
 		return claudeIcon
+	case agent.Cursor:
+		return cursorIcon
+	case agent.OpenCode:
+		return openCodeIcon
+	case agent.Grok:
+		return xaiIcon
+	case agent.Antigravity:
+		return antigravityIcon
+	case agent.Kiro:
+		return kiroIcon
 	case agent.CodeBuddy:
 		return codeBuddyIcon
 	}

@@ -17,7 +17,7 @@ const en = {
   meta: {
     title: 'Agio — coding agents, inside your app',
     description:
-      'Agio is the agent core of NSGo apps: it runs pi, Codex, Claude Code and CodeBuddy Code and shows their work on phones and desktops. Agio, the app, is that core on its own, for macOS, Windows and Linux.',
+      'Agio is the agent core of NSGo apps: it runs pi, Codex, Claude Code, Cursor, OpenCode, Grok Build, Antigravity, Kiro, Muse Code, fx and CodeBuddy Code and shows their work on phones and desktops. Agio, the app, is that core on its own, for macOS, Windows and Linux.',
     ogAlt: 'Agio — coding agents, inside your app',
   },
 
@@ -53,7 +53,7 @@ const en = {
   hero: {
     badge: { tag: 'New', text: 'Agio for macOS, Windows and Linux' },
     title: 'Coding agents.\nInside your app.',
-    lede: 'Agio is the agent core of NSGo apps: it runs pi, Codex, Claude Code and CodeBuddy Code, and shows their work on phones and desktops. Agio, the app, is that core on its own — to try, to test, or simply to use.',
+    lede: 'Agio is the agent core of NSGo apps: it runs pi, Codex, Claude Code, Cursor, OpenCode, Grok Build, Antigravity, Kiro, Muse Code, fx and CodeBuddy Code, and shows their work on phones and desktops. Agio, the app, is that core on its own — to try, to test, or simply to use.',
     primary: 'Download Agio',
     secondary: 'View on GitHub',
     fine: 'Free and open source · MIT · Updates itself',
@@ -64,7 +64,7 @@ const en = {
 
   agents: {
     title: 'Works with the agents you already use',
-    names: ['pi', 'Codex', 'Claude Code', 'CodeBuddy Code'],
+    names: ['pi', 'Codex', 'Claude Code', 'Cursor', 'OpenCode', 'Grok Build', 'Antigravity', 'Kiro', 'Muse Code', 'fx', 'CodeBuddy Code'],
     note: 'and any Agent Client Protocol CLI',
   },
 
@@ -298,7 +298,7 @@ const zh: typeof en = {
   meta: {
     title: 'Agio — 把编程智能体放进你的应用',
     description:
-      'Agio 是 NSGo 应用的智能体核心：运行 pi、Codex、Claude Code 和 CodeBuddy Code，并在手机与桌面上展示它们的工作。Agio 应用就是这个核心本身，支持 macOS、Windows 和 Linux。',
+      'Agio 是 NSGo 应用的智能体核心：运行 pi、Codex、Claude Code、Cursor、OpenCode、Grok Build、Antigravity、Kiro、Muse Code、fx 和 CodeBuddy Code，并在手机与桌面上展示它们的工作。Agio 应用就是这个核心本身，支持 macOS、Windows 和 Linux。',
     ogAlt: 'Agio — 把编程智能体放进你的应用',
   },
 
@@ -334,7 +334,7 @@ const zh: typeof en = {
   hero: {
     badge: { tag: '新', text: 'Agio 支持 macOS、Windows 和 Linux' },
     title: '编程智能体\n放进你的应用',
-    lede: 'Agio 是 NSGo 应用的智能体核心：运行 pi、Codex、Claude Code 和 CodeBuddy Code，并在手机与桌面上展示它们的工作。Agio 应用就是这个核心本身——拿来试用、测试，或者直接当工具用。',
+    lede: 'Agio 是 NSGo 应用的智能体核心：运行 pi、Codex、Claude Code、Cursor、OpenCode、Grok Build、Antigravity、Kiro、Muse Code、fx 和 CodeBuddy Code，并在手机与桌面上展示它们的工作。Agio 应用就是这个核心本身——拿来试用、测试，或者直接当工具用。',
     primary: '下载 Agio',
     secondary: '在 GitHub 查看',
     fine: '免费开源 · MIT · 自动更新',
@@ -345,7 +345,7 @@ const zh: typeof en = {
 
   agents: {
     title: '接上你已经在用的智能体',
-    names: ['pi', 'Codex', 'Claude Code', 'CodeBuddy Code'],
+    names: ['pi', 'Codex', 'Claude Code', 'Cursor', 'OpenCode', 'Grok Build', 'Antigravity', 'Kiro', 'Muse Code', 'fx', 'CodeBuddy Code'],
     note: '以及任何 Agent Client Protocol CLI',
   },
 

@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  The agent core of NSGo apps: run coding agents (pi, Codex, Claude Code, CodeBuddy Code) and show their work on phones and desktops, in one process or as a server and its clients.
+  The agent core of NSGo apps: run coding agents (pi, Codex, Claude Code, Cursor, OpenCode, Grok Build, Antigravity, Kiro, Muse Code, fx, CodeBuddy Code) and show their work on phones and desktops, in one process or as a server and its clients.
 </p>
 
 <p align="center">

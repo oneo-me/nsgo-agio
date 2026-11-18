@@ -391,3 +391,11 @@ func TestConversationShowsTheAppsEntriesAmongTheTurns(t *testing.T) {
 		t.Fatal("ScrollTo")
 	}
 }
+
+func TestEveryToolsMarkParses(t *testing.T) {
+	for _, tool := range agent.Tools {
+		if toolIcon(tool)() == nil {
+			t.Fatal(tool)
+		}
+	}
+}

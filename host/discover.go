@@ -8,6 +8,7 @@ import (
 
 	agio "github.com/oneo-me/nsgo-agio"
 	"github.com/oneo-me/nsgo-agio/agent"
+	"github.com/oneo-me/nsgo-agio/agent/acpcli"
 	"github.com/oneo-me/nsgo-agio/agent/claude"
 	"github.com/oneo-me/nsgo-agio/agent/codebuddy"
 	"github.com/oneo-me/nsgo-agio/agent/codex"
@@ -176,8 +177,13 @@ func (h *Host) discoverTool(tool agent.Tool, env []string) *toolInfo {
 			info.driver, info.path = d, d.Script()
 			info.version, _ = d.Version(ctx)
 		default:
-			info.err = errors.New("unknown tool " + string(tool))
-			return info
+			d, err := acpcli.Locate(tool, env)
+			if err != nil {
+				info.err = err
+				return info
+			}
+			info.driver, info.path = d, d.Script()
+			info.version, _ = d.Version(ctx)
 		}
 	}
 	info.path = homeRelative(info.path, h.opts.Home)

@@ -48,7 +48,7 @@ func fakeAgent() {
 	notify := func(u map[string]any) {
 		send(map[string]any{"jsonrpc": "2.0", "method": "session/update", "params": map[string]any{"sessionId": "s1", "update": u}})
 	}
-	values := map[string]string{"mode": "default", "model": "a", "thought": "enabled"}
+	values := map[string]string{"mode": "default", "model": "a", "thought": "enabled", "autopilot": "off"}
 	options := func() []map[string]any {
 		levels := []map[string]any{{"value": "disabled"}, {"value": "low"}, {"value": "high"}, {"value": "enabled"}}
 		if values["model"] == "b" {
@@ -60,6 +60,7 @@ func fakeAgent() {
 			{"id": "model", "category": "model", "type": "select", "currentValue": values["model"],
 				"options": []map[string]any{{"group": "g", "name": "Group", "options": []map[string]any{{"value": "a", "name": "Model A"}, {"value": "b", "name": "Model B", "description": "Fast"}}}}},
 			{"id": "thought", "category": "thought_level", "type": "select", "currentValue": values["thought"], "options": levels},
+			{"id": "autopilot", "type": "select", "currentValue": values["autopilot"], "options": []map[string]any{{"value": "off"}, {"value": "on"}}},
 		}
 	}
 	in := bufio.NewScanner(os.Stdin)
@@ -81,7 +82,10 @@ func fakeAgent() {
 		json.Unmarshal(m.Params, &p)
 		switch m.Method {
 		case "initialize":
-			reply(m.ID, map[string]any{"protocolVersion": 1, "agentCapabilities": map[string]any{"loadSession": true, "promptCapabilities": map[string]any{"image": true}}})
+			reply(m.ID, map[string]any{"protocolVersion": 1, "agentCapabilities": map[string]any{"loadSession": true, "promptCapabilities": map[string]any{"image": true}},
+				"authMethods": []map[string]any{{"id": "login", "name": "Log in"}}})
+		case "authenticate":
+			reply(m.ID, map[string]any{})
 		case "session/new":
 			reply(m.ID, map[string]any{"sessionId": "s1", "configOptions": options()})
 		case "session/set_config_option":
@@ -239,6 +243,41 @@ func TestSystemPromptGoesInMetaOrTheCLIsOption(t *testing.T) {
 	}
 }
 
+func TestSpecMetaAuthenticationAndOptions(t *testing.T) {
+	d, methods := fakeDriver(t)
+	d.AuthMethod, d.SystemPromptMeta = "login", "own"
+	d.SessionMeta = map[string]any{"own": map[string]any{"keep": true}}
+	d.Options = map[string]string{"autopilot": "on", "missing": "x"}
+	s, _, err := d.Start(agent.StartOptions{Dir: t.TempDir(), SystemPrompt: "Be brief"}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	log := strings.Join(methods(), "\n")
+	for _, want := range []string{
+		`authenticate {"methodId":"login"}`,
+		`"_meta":{"own":{"keep":true,"systemPrompt":{"append":"Be brief"}}}`,
+		`"configId":"autopilot","sessionId":"s1","value":"on"`,
+	} {
+		if !strings.Contains(log, want) {
+			t.Fatalf("missing %s in %s", want, log)
+		}
+	}
+	if strings.Contains(log, "missing") {
+		t.Fatalf("set an option the agent lacks: %s", log)
+	}
+
+	// A method the agent does not offer is not asked for.
+	d, methods = fakeDriver(t)
+	d.AuthMethod = "other"
+	if _, err := d.Catalog(context.Background(), t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	if log := strings.Join(methods(), "\n"); strings.Contains(log, "authenticate") {
+		t.Fatalf("authenticated: %s", log)
+	}
+}
+
 func TestMCPServersGoInTheSession(t *testing.T) {
 	d, methods := fakeDriver(t)
 	servers := []agent.MCPServer{{Name: "docs", Command: "docs-mcp", Env: map[string]string{"B": "2", "A": "1"}}}
@@ -320,7 +359,7 @@ func TestSessionStreamsApprovesAndCancels(t *testing.T) {
 		"started     0/0",
 		"thinking_delta thinking-1   Plan 0/0",
 		"tool_start t1 read /w/a.go  0/0",
-		"tool_end t1   always 0/0",
+		"tool_end t1   once 0/0",
 		"text_delta text-2   Do 0/0",
 		"text_delta text-2   ne 0/0",
 		"usage     120/200000",

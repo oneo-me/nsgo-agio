@@ -38,6 +38,18 @@ type Spec struct {
 	// session, such as --plugin-dir; sessions give their skills to it as
 	// agent.PluginDir lays them out. Without one, agents get no skills.
 	PluginDir string
+	// SystemPromptMeta, when set, nests the _meta.systemPrompt.append
+	// request under its own key, as Antigravity reads it.
+	SystemPromptMeta string
+	// SessionMeta is the _meta every session request carries, such as fx
+	// asking to keep the user's own MCP servers.
+	SessionMeta map[string]any
+	// AuthMethod is the method authenticated with before any session when
+	// the agent offers it, reusing the sign-in the CLI keeps.
+	AuthMethod string
+	// Options are configuration option values sessions select when the
+	// agent offers them, such as Kiro's autopilot.
+	Options map[string]string
 }
 
 // Driver runs an ACP agent CLI as an agent.Driver.
@@ -67,6 +79,20 @@ func (d *Driver) command(dir string, args ...string) *exec.Cmd {
 	return cmd
 }
 
+// dial starts the CLI in dir and authenticates with the Spec's method when
+// the agent offers it.
+func (d *Driver) dial(dir string, args []string, setup func(*conn), onExit func(error)) (*conn, error) {
+	c, err := dial(d.command(dir, args...), d.name(), setup, onExit)
+	if err != nil || d.AuthMethod == "" || !slices.Contains(c.authMethods, d.AuthMethod) {
+		return c, err
+	}
+	if err := c.callInto(context.Background(), "authenticate", map[string]any{"methodId": d.AuthMethod}, nil); err != nil {
+		go c.proc.Close(3 * time.Second)
+		return nil, d.explain(fmt.Errorf("%w: %w", errSignIn, err))
+	}
+	return c, nil
+}
+
 // Version runs the CLI with --version and returns the first version-like
 // field of its output.
 func (d *Driver) Version(ctx context.Context) (string, error) {
@@ -87,9 +113,12 @@ func (d *Driver) Version(ctx context.Context) (string, error) {
 	return "", fmt.Errorf("unrecognized %s version %q", d.name(), out)
 }
 
+// errSignIn reports a failed authenticate request.
+var errSignIn = errors.New("sign-in failed")
+
 // explain asks for a sign-in the agent needs, which Agio cannot offer.
 func (d *Driver) explain(err error) error {
-	if authRequired(err) {
+	if authRequired(err) || errors.Is(err, errSignIn) {
 		return fmt.Errorf("sign in to %s in a terminal first: %w", d.name(), err)
 	}
 	return err
@@ -103,13 +132,13 @@ const maxProbedModels = 32
 // model in turn, then restores the one selected before. The session is
 // never prompted.
 func (d *Driver) Catalog(ctx context.Context, dir string) (agent.Catalog, error) {
-	c, err := dial(d.command(dir), d.name(), nil, nil)
+	c, err := d.dial(dir, nil, nil, nil)
 	if err != nil {
 		return agent.Catalog{}, err
 	}
 	defer c.proc.Close(time.Second)
 	var st state
-	if err := c.callInto(ctx, "session/new", newSession(dir, nil), &st); err != nil {
+	if err := c.callInto(ctx, "session/new", d.withMeta(newSession(dir, nil), ""), &st); err != nil {
 		return agent.Catalog{}, d.explain(err)
 	}
 	choices, current := st.models()
@@ -195,10 +224,27 @@ func variables(values map[string]string) []any {
 	return list
 }
 
-// withSystemPrompt asks the agent to append system to its system prompt.
-func withSystemPrompt(params map[string]any, system string) map[string]any {
+// withMeta adds the Spec's session _meta and asks the agent to append
+// system to its system prompt.
+func (d *Driver) withMeta(params map[string]any, system string) map[string]any {
+	meta := maps.Clone(d.SessionMeta)
 	if system != "" {
-		params["_meta"] = map[string]any{"systemPrompt": map[string]any{"append": system}}
+		if meta == nil {
+			meta = map[string]any{}
+		}
+		target := meta
+		if key := d.SystemPromptMeta; key != "" {
+			own, _ := meta[key].(map[string]any)
+			target = maps.Clone(own)
+			if target == nil {
+				target = map[string]any{}
+			}
+			meta[key] = target
+		}
+		target["systemPrompt"] = map[string]any{"append": system}
+	}
+	if len(meta) > 0 {
+		params["_meta"] = meta
 	}
 	return params
 }
@@ -378,6 +424,18 @@ func (st *state) selectMode(ctx context.Context, c *conn, modes []string) error 
 				if err == nil {
 					st.Modes.CurrentModeID = mode
 				}
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// selectOptions selects the values of options the agent offers.
+func (st *state) selectOptions(ctx context.Context, c *conn, values map[string]string) error {
+	for _, id := range slices.Sorted(maps.Keys(values)) {
+		if o := st.optionByID(id); o != nil && o.current() != values[id] && o.has(values[id]) {
+			if err := st.set(ctx, c, id, values[id]); err != nil {
 				return err
 			}
 		}

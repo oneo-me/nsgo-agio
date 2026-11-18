@@ -34,7 +34,7 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 		// Joined, as such options may take several values.
 		plugin, args = dir, append(args, d.PluginDir+"="+dir)
 	}
-	c, err := dial(d.command(o.Dir, args...), d.name(), func(c *conn) {
+	c, err := d.dial(o.Dir, args, func(c *conn) {
 		c.onUpdate, c.onRequest = s.update, s.request
 	}, func(err error) {
 		s.exited()
@@ -50,7 +50,7 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	if d.AppendSystemPrompt != "" {
 		o.SystemPrompt = "" // given on the command line
 	}
-	if err := s.open(ctx, o, d.Modes); err != nil {
+	if err := s.open(ctx, d, o); err != nil {
 		go c.proc.Close(3 * time.Second)
 		return nil, agent.Info{}, d.explain(err)
 	}
@@ -70,11 +70,11 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 }
 
 // open creates or reopens the session, then selects a mode that skips
-// permission prompts.
-func (s *session) open(ctx context.Context, o agent.StartOptions, modes []string) error {
+// permission prompts and the Spec's options.
+func (s *session) open(ctx context.Context, d *Driver, o agent.StartOptions) error {
 	c := s.conn
 	servers, err := mcpServers(o.MCPServers, c.caps)
-	params := withSystemPrompt(newSession(o.Dir, servers), o.SystemPrompt)
+	params := d.withMeta(newSession(o.Dir, servers), o.SystemPrompt)
 	var st state
 	switch {
 	case err != nil:
@@ -101,7 +101,10 @@ func (s *session) open(ctx context.Context, o agent.StartOptions, modes []string
 	if st.SessionID == "" {
 		return errors.New("the agent opened no session")
 	}
-	if err := st.selectMode(ctx, c, modes); err != nil {
+	if err := st.selectMode(ctx, c, d.Modes); err != nil {
+		return err
+	}
+	if err := st.selectOptions(ctx, c, d.Options); err != nil {
 		return err
 	}
 	s.id, s.state = st.SessionID, st
@@ -236,7 +239,8 @@ func (s *session) Configure(ctx context.Context, settings agent.Settings) error 
 
 func (s *session) Close(grace time.Duration) { s.conn.proc.Close(grace) }
 
-// request answers the agent's requests. Permission requests are approved;
+// request answers the agent's requests. Permission requests are approved
+// once, as approving always can save a rule in the user's configuration;
 // the client offers no file system or terminal methods.
 func (s *session) request(method string, params json.RawMessage) (any, *rpcError) {
 	if method != "session/request_permission" {
@@ -250,7 +254,7 @@ func (s *session) request(method string, params json.RawMessage) (any, *rpcError
 	}
 	json.Unmarshal(params, &p)
 	chosen := ""
-	for _, kind := range []string{"allow_always", "allow_once", "allow"} {
+	for _, kind := range []string{"allow_once", "allow", "allow_always"} {
 		for _, o := range p.Options {
 			if chosen == "" && o.Kind == kind {
 				chosen = o.OptionID
@@ -493,7 +497,7 @@ func (d *Driver) History(cursor, dir string) ([]agent.Event, error) {
 		st     stream
 		events []agent.Event
 	)
-	c, err := dial(d.command(dir), d.name(), func(c *conn) {
+	c, err := d.dial(dir, nil, func(c *conn) {
 		c.onUpdate = func(params json.RawMessage) {
 			var n notification
 			if json.Unmarshal(params, &n) != nil {
@@ -511,7 +515,7 @@ func (d *Driver) History(cursor, dir string) ([]agent.Event, error) {
 	if !c.caps.LoadSession {
 		return nil, errNoSession
 	}
-	if err := c.callInto(context.Background(), "session/load", map[string]any{"sessionId": cursor, "cwd": dir, "mcpServers": []any{}}, nil); err != nil {
+	if err := c.callInto(context.Background(), "session/load", d.withMeta(map[string]any{"sessionId": cursor, "cwd": dir, "mcpServers": []any{}}, ""), nil); err != nil {
 		return nil, err
 	}
 	mu.Lock()

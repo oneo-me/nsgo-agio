@@ -26,6 +26,8 @@ type conn struct {
 	pending map[int64]chan result
 	closed  bool
 	caps    capabilities
+	// authMethods are the IDs of the sign-in methods the agent offers.
+	authMethods []string
 	// onUpdate receives session/update notifications and onRequest the
 	// agent's requests, both on the reader goroutine.
 	onUpdate  func(json.RawMessage)
@@ -119,6 +121,9 @@ func dial(cmd *exec.Cmd, name string, setup func(*conn), onExit func(error)) (*c
 	var init struct {
 		ProtocolVersion   int          `json:"protocolVersion"`
 		AgentCapabilities capabilities `json:"agentCapabilities"`
+		AuthMethods       []struct {
+			ID string `json:"id"`
+		} `json:"authMethods"`
 	}
 	err = c.callInto(context.Background(), "initialize", map[string]any{
 		"protocolVersion": protocolVersion,
@@ -136,6 +141,9 @@ func dial(cmd *exec.Cmd, name string, setup func(*conn), onExit func(error)) (*c
 		return nil, err
 	}
 	c.caps = init.AgentCapabilities
+	for _, m := range init.AuthMethods {
+		c.authMethods = append(c.authMethods, m.ID)
+	}
 	return c, nil
 }
 

@@ -8,7 +8,8 @@ Agio is the agent core of NSGo apps, split out of Neorio: drivers that run codin
 | --- | --- |
 | `.` (`agio`) | `Backend`, the contract between what runs conversations and what shows them, and its state types |
 | `agent` | Tool-neutral driver, session, model catalog and event types, and child process plumbing shared by drivers |
-| `agent/pi`, `agent/codex`, `agent/claude`, `agent/codebuddy`, `agent/acp` | One driver per CLI; `acp` runs Agent Client Protocol CLIs such as CodeBuddy Code |
+| `agent/pi`, `agent/codex`, `agent/claude`, `agent/acp` | One driver per CLI; `acp` runs the CLIs speaking the Agent Client Protocol |
+| `agent/codebuddy`, `agent/acpcli` | How each ACP CLI is found and started: CodeBuddy Code, and in `acpcli` Cursor, OpenCode, Grok Build, Antigravity, Kiro, Muse Code and fx, which reuse the sign-in their CLI keeps |
 | `quota` | Account limits read the way the providers' CLIs read them, and which account a model uses |
 | `mcp` | An MCP server of an application's own tools for the agents it runs, over streamable HTTP on the loopback interface behind tokens only the agents get, one per caller when the application tells its agents apart |
 | `naming` | A conversation's title from its first message, asked of an OpenAI-compatible model, for Agio's tasks and other apps' conversations |
@@ -30,7 +31,7 @@ Agio is the agent core of NSGo apps, split out of Neorio: drivers that run codin
 - A conversation keeps the directory of its first message, as sessions cannot move between folders. Choosing another tool's model between runs ends the agent and keeps its session in `Earlier`; the next agent's first message opens with the earlier turns' requests and replies, which reading its history drops again. A new message interrupts a running one instead of queueing.
 - Agents run with full access in their directory and are never asked for approval; a host signals only the process groups it started.
 - Agio persists nothing. An application that keeps conversations stores their `Cursor`, `Earlier`, `Dir`, `Model` and times and resumes them with `Create`, with the `SystemPrompt`, `Skills` and `MCPServers` it gave, which agents do not keep, and passes the folders it remembers to `chatview.App`.
-- Skills are directories holding `SKILL.md`, offered for one session in each CLI's own way: pi's `--skill`, Codex's extra skill roots, and a temporary plugin for Claude Code and CodeBuddy Code, so their names carry the client's prefix.
+- Skills are directories holding `SKILL.md`, offered for one session in each CLI's own way: pi's `--skill`, Codex's extra skill roots, and a temporary plugin for Claude Code and CodeBuddy Code, so their names carry the client's prefix; the other ACP CLIs get none.
 - System prompts, skills and MCP servers last one session and never change the user's configuration files. MCP servers, over stdio or streamable HTTP, join each CLI's own: Claude Code's `--mcp-config`, Codex's thread configuration, ACP's `mcpServers` and a temporary pi extension, which yields to a server of the same name in pi's `mcp.json`.
 - An application that keeps the agents and models turned off passes them to `host.Options`. Limits are read again after a restart.
 

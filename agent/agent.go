@@ -1,7 +1,7 @@
 // Package agent defines the tool-neutral surface for running coding agents:
-// catalogs of models, sessions in a directory and the events they report. Each supported CLI (pi, Codex, Claude Code and CodeBuddy Code)
-// implements Driver in its own package, those speaking the Agent Client
-// Protocol through package acp. Nothing here depends on UI code; callers deliver events to
+// catalogs of models, sessions in a directory and the events they report.
+// pi, Codex and Claude Code implement Driver in their own packages; the CLIs
+// speaking the Agent Client Protocol run through package acp. Nothing here depends on UI code; callers deliver events to
 // their own thread.
 package agent
 
@@ -31,30 +31,30 @@ var Client = ClientInfo{Name: "agio", Title: "Agio", Version: "1"}
 type Tool string
 
 const (
-	Pi        Tool = "pi"
-	Codex     Tool = "codex"
-	Claude    Tool = "claude"
-	CodeBuddy Tool = "codebuddy"
+	Pi          Tool = "pi"
+	Codex       Tool = "codex"
+	Claude      Tool = "claude"
+	Cursor      Tool = "cursor"
+	OpenCode    Tool = "opencode"
+	Grok        Tool = "grok"
+	Antigravity Tool = "antigravity"
+	Kiro        Tool = "kiro"
+	Muse        Tool = "muse"
+	Fx          Tool = "fx"
+	CodeBuddy   Tool = "codebuddy"
 )
 
 // Tools lists the supported CLIs in presentation order.
-var Tools = []Tool{Pi, Codex, Claude, CodeBuddy}
+var Tools = []Tool{Pi, Codex, Claude, Cursor, OpenCode, Grok, Antigravity, Kiro, Muse, Fx, CodeBuddy}
 
-// retired names tools no longer supported. Their tasks' keys still parse to
-// them, so those tasks report the tool unavailable instead of running pi.
-var retired = map[Tool]string{"opencode": "OpenCode"}
+var names = map[Tool]string{
+	Codex: "Codex", Claude: "Claude Code", Cursor: "Cursor", OpenCode: "OpenCode", Grok: "Grok Build",
+	Antigravity: "Antigravity", Kiro: "Kiro", Muse: "Muse Code", Fx: "fx", CodeBuddy: "CodeBuddy Code",
+}
 
 // Name is the product name shown in the interface.
 func (t Tool) Name() string {
-	switch t {
-	case Codex:
-		return "Codex"
-	case Claude:
-		return "Claude Code"
-	case CodeBuddy:
-		return "CodeBuddy Code"
-	}
-	if name, ok := retired[t]; ok {
+	if name, ok := names[t]; ok {
 		return name
 	}
 	return "pi"
@@ -104,9 +104,6 @@ func ParseKey(key string) (Tool, string) {
 			if prefix == string(t) {
 				return t, id
 			}
-		}
-		if _, ok := retired[Tool(prefix)]; ok {
-			return Tool(prefix), id
 		}
 	}
 	return Pi, key

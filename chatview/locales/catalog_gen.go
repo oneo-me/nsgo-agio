@@ -313,7 +313,7 @@ var textsEn = i18n.NewTexts(""+
 	"Ask the agent to do something…"+
 	"Interrupt and redirect…"+
 	"Looking for coding agents…"+
-	"No coding agent found. Install pi, Codex, Claude Code or CodeBuddy Code, then look again."+
+	"No coding agent found. Install a supported one, such as Claude Code, Codex or Cursor, then look again."+
 	"Look again"+
 	"Starting the agent…"+
 	"Loading the conversation…"+
@@ -401,7 +401,7 @@ var textsEn = i18n.NewTexts(""+
 		32,
 		25,
 		28,
-		89,
+		102,
 		10,
 		21,
 		27,
@@ -492,7 +492,7 @@ var textsZhHans = i18n.NewTexts(""+
 	"让智能体做点什么…"+
 	"中断并重新引导…"+
 	"正在查找编程智能体…"+
-	"没有找到编程智能体。请安装 pi、Codex、Claude Code 或 CodeBuddy Code 后重新查找。"+
+	"没有找到编程智能体。请安装受支持的智能体，如 Claude Code、Codex 或 Cursor，然后重新查找。"+
 	"重新查找"+
 	"正在启动智能体…"+
 	"正在加载对话…"+
@@ -580,7 +580,7 @@ var textsZhHans = i18n.NewTexts(""+
 		27,
 		24,
 		30,
-		102,
+		121,
 		12,
 		24,
 		21,
@@ -888,7 +888,7 @@ func LookingForAgents(cx *core.Scope) string { return For(cx).LookingForAgents()
 // LookingForAgents is the package's LookingForAgents in the language of msgs.
 func (msgs Messages) LookingForAgents() string { return msgs.text(textLookingForAgents) }
 
-// NoAgents says "No coding agent found. Install pi, Codex, Claude Code or CodeBuddy Code, then look again."
+// NoAgents says "No coding agent found. Install a supported one, such as Claude Code, Codex or Cursor, then look again."
 // in the language the app shows under cx.
 func NoAgents(cx *core.Scope) string { return For(cx).NoAgents() }
 
