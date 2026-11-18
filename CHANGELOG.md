@@ -12,6 +12,7 @@
 - Let apps with a window of their own compose chatview's parts: `Quotas`, `SettingsDialog`, `Footer`, `AppMenu` and `Composer`, and a `Conversation` showing some of its turns or something in place of its composer.
 - Let apps with settings of their own show the agents' with `chatview.Agents`, and hear of messages sent with `Conversation.OnSend`.
 - Let apps title conversations with an OpenAI-compatible model at a reasoning effort with `naming`, and set the effort of Agio's naming model in its settings.
+- Let a started conversation switch to another agent between runs, which carries on from the turns so far, and resume every agent's history with `Earlier` (#1).
 - Show each account's limit at the sidebar's end, and the context window at the composer's end.
 - Fix conversations resumed right after launch failing as their agent being unavailable while it is still looked for.
 

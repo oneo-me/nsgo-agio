@@ -388,7 +388,7 @@ func (v Conversation) choices(cx *core.Scope) core.Node {
 		for _, mo := range offered(s, c.Model) {
 			models = append(models, mo.Key())
 		}
-		return fmt.Sprint(c.Model, c.Bound, known, info.Efforts, tiers, models)
+		return fmt.Sprint(c.Model, locked(c), known, info.Efforts, tiers, models)
 	}
 	return region(m, key, func(cx *core.Scope) core.Node {
 		s := m.State()
@@ -492,7 +492,12 @@ func (v Conversation) modelsKey() string {
 	for _, mo := range offered(v.Model.State(), c.Model) {
 		b.WriteString(mo.Key() + " ")
 	}
-	return fmt.Sprint(c.Bound, b.String())
+	return fmt.Sprint(locked(c), b.String())
+}
+
+// locked reports whether the conversation keeps its agent for now.
+func locked(c *agio.Conversation) bool {
+	return c.Bound && (c.Running || c.Starting || c.Loading)
 }
 
 // modelRows lists the offered models matching the search under their
@@ -503,12 +508,12 @@ func (v Conversation) modelRows(cx *core.Scope, query, selected string, choose f
 	colors := ui.ColorsOf(cx)
 	s := m.State()
 	c := m.Conversation(v.ID)
-	locked, _ := agent.ParseKey(c.Model)
+	tool, _ := agent.ParseKey(c.Model)
 	var rows []core.Node
 	group, count := "", 0
 	for _, mo := range offered(s, c.Model) {
-		if c.Bound && mo.Tool != locked {
-			continue // a conversation keeps its agent
+		if locked(c) && mo.Tool != tool {
+			continue // a conversation switches its agent only between runs
 		}
 		if query != "" && !matchesModel(mo, query) {
 			continue

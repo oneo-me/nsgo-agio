@@ -36,7 +36,9 @@ type Backend interface {
 	Stop(id string) error
 	// Choose changes the conversation's model, reasoning level or service
 	// tier, live when its agent runs, or its directory. A conversation
-	// keeps the tool and directory of its first message.
+	// keeps the directory of its first message; a model of another tool
+	// switches its agent between runs, and the new agent is handed the
+	// turns so far with its first message.
 	Choose(id string, c Choice) error
 	// Remove closes the conversation's agent and forgets it.
 	Remove(id string) error
@@ -183,11 +185,13 @@ type Conversation struct {
 	Model  string `json:"model,omitempty"`
 	Effort string `json:"effort,omitempty"`
 	Tier   string `json:"tier,omitempty"`
-	// Cursor resumes the agent's own session after a restart, once it
-	// started one.
-	Cursor string `json:"cursor,omitempty"`
-	// Bound is set once the conversation's tool is fixed by its first
-	// message.
+	// Cursor resumes the current agent's own session after a restart,
+	// once it started one, and Earlier are the sessions of the agents it
+	// switched from, oldest first, whose turns come before Cursor's.
+	Cursor  string    `json:"cursor,omitempty"`
+	Earlier []Session `json:"earlier,omitempty"`
+	// Bound is set once the conversation's directory is fixed by its
+	// first message.
 	Bound bool `json:"bound,omitempty"`
 	// Starting is set while its agent starts, Running while it works and
 	// Loading while its saved history is read.
@@ -204,10 +208,17 @@ type Conversation struct {
 	Turns []*transcript.Turn `json:"-"`
 }
 
+// Session is an agent's own saved session.
+type Session struct {
+	Tool   agent.Tool `json:"tool"`
+	Cursor string     `json:"cursor"`
+}
+
 // Create describes a new conversation. Its agent works in Dir, or where
 // the backend chooses when it is empty; Cursor resumes a session the agent
-// saved, whose history it reads, and then Model must name the session's
-// tool, and Created and Updated, when set, keep when it was. Empty choices
+// saved, after the Earlier sessions of agents the conversation switched
+// from, whose histories are read in order, and then Model must name the
+// current tool, and Created and Updated, when set, keep when it was. Empty choices
 // follow the tools' defaults. SystemPrompt is appended to the agent's system
 // prompt, after the backend's own. Skills, absolute paths of skill
 // directories each holding SKILL.md on the backend's machine, are offered
@@ -224,6 +235,7 @@ type Create struct {
 	Effort       string            `json:"effort,omitempty"`
 	Tier         string            `json:"tier,omitempty"`
 	Cursor       string            `json:"cursor,omitempty"`
+	Earlier      []Session         `json:"earlier,omitempty"`
 	Created      time.Time         `json:"created,omitzero"`
 	Updated      time.Time         `json:"updated,omitzero"`
 }

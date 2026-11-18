@@ -12,8 +12,11 @@ import (
 	"github.com/oneo-me/nsgo-agio/agent"
 )
 
-// Driver is a fake Claude Code with the models opus and haiku.
+// Driver is a fake Claude Code with the models opus and haiku, or the
+// fake of another tool.
 type Driver struct {
+	// As is the tool faked, Claude Code when empty.
+	As agent.Tool
 	// Saved is what History returns.
 	Saved []agent.Event
 	// HoldAbort, when set, delays Abort until it is closed.
@@ -22,6 +25,14 @@ type Driver struct {
 	mu      sync.Mutex
 	started []agent.StartOptions
 	config  []agent.Settings
+	prompts []string
+}
+
+// Prompted lists the text of each prompt sent.
+func (d *Driver) Prompted() []string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return append([]string(nil), d.prompts...)
 }
 
 // Started lists the options of each session started.
@@ -38,12 +49,17 @@ func (d *Driver) Configured() []agent.Settings {
 	return append([]agent.Settings(nil), d.config...)
 }
 
-func (d *Driver) Tool() agent.Tool { return agent.Claude }
+func (d *Driver) Tool() agent.Tool {
+	if d.As == "" {
+		return agent.Claude
+	}
+	return d.As
+}
 
 func (d *Driver) Catalog(context.Context, string) (agent.Catalog, error) {
 	return agent.Catalog{Model: "opus", Effort: "high", Models: []agent.Model{
-		{Tool: agent.Claude, ID: "opus", Name: "Opus", Efforts: []string{"low", "high"}, ContextWindow: 1000},
-		{Tool: agent.Claude, ID: "haiku", Name: "Haiku"},
+		{Tool: d.Tool(), ID: "opus", Name: "Opus", Efforts: []string{"low", "high"}, ContextWindow: 1000},
+		{Tool: d.Tool(), ID: "haiku", Name: "Haiku"},
 	}}, nil
 }
 
@@ -51,7 +67,7 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 	d.mu.Lock()
 	d.started = append(d.started, o)
 	d.mu.Unlock()
-	return &session{d: d, emit: onEvent, exit: onExit}, agent.Info{Cursor: "session-1", Settings: o.Settings}, nil
+	return &session{d: d, emit: onEvent, exit: onExit}, agent.Info{Cursor: string(d.Tool()) + "-session", Settings: o.Settings}, nil
 }
 
 func (d *Driver) History(cursor, dir string) ([]agent.Event, error) { return d.Saved, nil }
@@ -69,6 +85,9 @@ func (s *session) Prompt(_ context.Context, p agent.Prompt) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.run++
+	s.d.mu.Lock()
+	s.d.prompts = append(s.d.prompts, p.Text)
+	s.d.mu.Unlock()
 	seg := "t" + strconv.Itoa(s.run)
 	s.emit(agent.Event{Type: agent.Started})
 	if p.Text == "wait" {

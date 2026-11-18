@@ -154,7 +154,7 @@ func TestSendFoldsTheReply(t *testing.T) {
 	if final := c.Turns[0].Final(); final == nil || final.Text != "echo: hello\nworld" {
 		t.Fatalf("turn = %+v", c.Turns[0])
 	}
-	if c.Title != "hello" || c.Cursor != "session-1" || !c.Bound || c.Running || c.ContextTokens != 42 {
+	if c.Title != "hello" || c.Cursor != "claude-session" || !c.Bound || c.Running || c.ContextTokens != 42 {
 		t.Fatalf("conversation = %+v", c)
 	}
 	if started := d.Started(); len(started) != 1 || started[0].Dir != dir || started[0].Settings != (agent.Settings{Model: "opus", Effort: "high"}) {
