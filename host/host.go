@@ -287,7 +287,8 @@ func (h *Host) Create(o agio.Create) (string, error) {
 		if info, err := os.Stat(o.Dir); err != nil || !info.IsDir() {
 			return errors.New("not a directory: " + o.Dir)
 		}
-		if o.Cursor != "" && o.Model == "" {
+		resumed := o.Cursor != "" || len(o.Earlier) > 0
+		if resumed && o.Model == "" {
 			return errors.New("resuming a session needs its model")
 		}
 		skills := joinSkills(h.opts.Skills, o.Skills)
@@ -309,7 +310,8 @@ func (h *Host) Create(o agio.Create) (string, error) {
 			updated = created
 		}
 		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, system: joinPrompts(h.opts.SystemPrompt, o.SystemPrompt), skills: skills, mcp: servers, model: o.Model, effort: o.Effort, tier: o.Tier,
-			cursor: o.Cursor, bound: o.Cursor != "", created: created, updated: updated, loaded: o.Cursor == ""}
+			cursor: o.Cursor, earlier: slices.Clone(o.Earlier), bound: resumed, created: created, updated: updated, loaded: !resumed,
+			handoff: o.Cursor == "" && len(o.Earlier) > 0}
 		h.conversations = append([]*conversation{c}, h.conversations...)
 		h.loadHistory(c)
 		id = c.id

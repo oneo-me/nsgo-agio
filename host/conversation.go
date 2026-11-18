@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -29,9 +30,13 @@ type conversation struct {
 	// the first message binds it; effort and tier are its choices.
 	model, effort, tier string
 	cursor              string
-	bound               bool
-	created, updated    time.Time
-	err                 string
+	// earlier are the sessions of agents it switched from; handoff is set
+	// until the current agent's first prompt carries the turns so far.
+	earlier          []agio.Session
+	handoff          bool
+	bound            bool
+	created, updated time.Time
+	err              string
 
 	turns   []*transcript.Turn
 	current *transcript.Turn
@@ -66,7 +71,7 @@ func (h *Host) snapshot(c *conversation) *agio.Conversation {
 		window = m.ContextWindow
 	}
 	return &agio.Conversation{ID: c.id, Title: c.title, Dir: c.dir, Model: model, Effort: effort, Tier: tier,
-		Cursor: c.cursor, Bound: c.bound, Starting: c.starting, Running: c.running, Loading: c.loading, Err: c.err,
+		Cursor: c.cursor, Earlier: slices.Clone(c.earlier), Bound: c.bound, Starting: c.starting, Running: c.running, Loading: c.loading, Err: c.err,
 		ContextTokens: c.contextTokens, ContextWindow: window, Created: c.created, Updated: c.updated,
 		Turns: transcript.Clone(c.turns)}
 }
@@ -116,33 +121,69 @@ func (h *Host) settings(c *conversation) agent.Settings {
 }
 
 // loadHistory reads a resumed conversation's saved turns off the lock once
-// its tool can read them.
+// its tools can read them: every earlier agent's, then the current one's.
+// An earlier tool that cannot be found is passed over, so its turns are
+// missing but the rest still read.
 func (h *Host) loadHistory(c *conversation) {
-	if c.loaded || c.loading || c.cursor == "" {
+	if c.loaded || c.loading {
 		return
 	}
-	tool, _ := agent.ParseKey(c.model)
-	d := h.historyDriver(tool)
-	if d == nil {
-		return // retried when the tool is discovered
+	type source struct {
+		d      agent.Driver
+		cursor string
+	}
+	var sources []source
+	sessions := slices.Clone(c.earlier)
+	if c.cursor != "" {
+		tool, _ := agent.ParseKey(c.model)
+		sessions = append(sessions, agio.Session{Tool: tool, Cursor: c.cursor})
+	}
+	for i, s := range sessions {
+		d := h.historyDriver(s.Tool)
+		current := c.cursor != "" && i == len(sessions)-1
+		if d == nil && (current || h.lookingFor(s.Tool)) {
+			return // retried when the tool is discovered
+		}
+		if d != nil && s.Cursor != "" {
+			sources = append(sources, source{d, s.Cursor})
+		}
 	}
 	c.loading = true
-	cursor, dir := c.cursor, c.dir
+	dir := c.dir
 	go func() {
-		events, err := d.History(cursor, dir)
-		h.post(func() {
-			c.loading, c.loaded = false, true
+		var turns []*transcript.Turn
+		var tokens int64
+		var failure error
+		for _, s := range sources {
+			events, err := s.d.History(s.cursor, dir)
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				c.err = err.Error()
-				return
+				failure = err
+				continue
 			}
-			// Live turns started before loading finished stay after history.
-			c.turns = append(transcript.FromHistory(events), c.turns...)
+			turns = append(turns, transcript.FromHistory(events)...)
+			tokens = 0
 			for i := len(events) - 1; i >= 0; i-- {
 				if e := events[i]; e.Type == agent.Usage && e.Tokens > 0 {
-					c.contextTokens = e.Tokens
+					tokens = e.Tokens
 					break
 				}
+			}
+		}
+		for _, t := range turns {
+			t.Prompt = stripHandoff(t.Prompt)
+		}
+		h.post(func() {
+			c.loading, c.loaded = false, true
+			if failure != nil {
+				c.err = failure.Error()
+			}
+			// Live turns started before loading finished stay after history.
+			c.turns = append(turns, c.turns...)
+			if tokens > 0 && c.cursor != "" {
+				c.contextTokens = tokens
+			}
+			if len(c.waiting) > 0 {
+				h.start(c) // a handoff waited for the turns
 			}
 		})
 	}()
@@ -226,6 +267,9 @@ func (h *Host) start(c *conversation) {
 	if d == nil {
 		h.failRun(c, tool.Name()+" is not available. Install it, then look for agents again.")
 		return
+	}
+	if c.handoff && !c.loaded {
+		return // the new agent is handed the turns once they are read
 	}
 	c.starting = true
 	options := agent.StartOptions{Dir: c.dir, Cursor: c.cursor, Title: c.title, SystemPrompt: c.system, Skills: c.skills, MCPServers: c.mcp, Settings: h.settings(c)}
@@ -326,7 +370,12 @@ func (h *Host) beginAbort(c *conversation) {
 	s := c.session
 	background(func(ctx context.Context) {
 		err := s.Abort(ctx)
-		h.post(func() { h.aborted(c, err) })
+		h.post(func() {
+			if !c.aborting || c.session != nil && c.session != s {
+				return // the conversation switched from s
+			}
+			h.aborted(c, err)
+		})
 	})
 }
 
@@ -361,6 +410,14 @@ func (h *Host) prompt(c *conversation, text string, files []string) {
 		return
 	}
 	model, _ := h.model(c.model)
+	if c.handoff {
+		c.handoff = false
+		earlier := c.turns
+		if i := slices.Index(c.turns, c.current); i >= 0 {
+			earlier = c.turns[:i]
+		}
+		text = handoff(earlier, text)
+	}
 	background(func(ctx context.Context) {
 		p := agent.Prompt{Text: text}
 		for _, path := range files {
@@ -437,8 +494,8 @@ func (h *Host) agentExited(c *conversation, s agent.Session, err error) {
 
 // applyEvent folds one agent event into the conversation.
 func (h *Host) applyEvent(c *conversation, s agent.Session, e agent.Event) {
-	if c.session != nil && c.session != s {
-		return
+	if s != nil && c.session != s {
+		return // a session closed, such as the agent's switched from
 	}
 	if c.aborting {
 		switch e.Type {
@@ -537,7 +594,9 @@ func (h *Host) Choose(id string, ch agio.Choice) error {
 			}
 			tool, _ := agent.ParseKey(c.model)
 			if next, _ := agent.ParseKey(key); c.bound && next != tool {
-				return errors.New("a conversation keeps the agent of its first message")
+				if err := h.switchAgent(c, tool); err != nil {
+					return err
+				}
 			}
 			c.model = key
 			c.contextWindow = 0
@@ -553,6 +612,25 @@ func (h *Host) Choose(id string, ch agio.Choice) error {
 		h.configure(c)
 		return nil
 	})
+}
+
+// switchAgent ends the conversation's agent of tool between runs, so the
+// next message starts the new tool's agent, handed the turns so far.
+func (h *Host) switchAgent(c *conversation, tool agent.Tool) error {
+	if c.running || c.starting || c.queued != nil || len(c.waiting) > 0 {
+		return errors.New("a conversation switches its agent only between runs")
+	}
+	// A stopped run still aborting ends with its agent.
+	c.aborting = false
+	if c.cursor != "" {
+		c.earlier = append(c.earlier, agio.Session{Tool: tool, Cursor: c.cursor})
+	}
+	if s := c.session; s != nil {
+		go s.Close(closeGrace)
+	}
+	c.cursor, c.session, c.sentSettings, c.contextTokens = "", nil, agent.Settings{}, 0
+	c.handoff = len(c.turns) > 0 || len(c.earlier) > 0
+	return nil
 }
 
 // configure applies the conversation's settings to its live agent. One

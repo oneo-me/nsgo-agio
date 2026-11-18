@@ -42,14 +42,16 @@ type windowState struct {
 
 // savedTask is what resumes a task: its agent's session and choices.
 type savedTask struct {
-	Title   string    `yaml:"title,omitempty"`
-	Dir     string    `yaml:"dir"`
-	Model   string    `yaml:"model"`
-	Effort  string    `yaml:"effort,omitempty"`
-	Tier    string    `yaml:"tier,omitempty"`
-	Cursor  string    `yaml:"cursor"`
-	Created time.Time `yaml:"created,omitempty"`
-	Updated time.Time `yaml:"updated,omitempty"`
+	Title  string `yaml:"title,omitempty"`
+	Dir    string `yaml:"dir"`
+	Model  string `yaml:"model"`
+	Effort string `yaml:"effort,omitempty"`
+	Tier   string `yaml:"tier,omitempty"`
+	Cursor string `yaml:"cursor"`
+	// Earlier are the sessions of the agents the task switched from.
+	Earlier []agio.Session `yaml:"earlier,omitempty"`
+	Created time.Time      `yaml:"created,omitempty"`
+	Updated time.Time      `yaml:"updated,omitempty"`
 }
 
 // normalize drops what a damaged file or a folder gone since holds.
@@ -89,7 +91,7 @@ func restoreTasks(h agio.Backend, tasks []savedTask) []savedTask {
 	var kept []savedTask
 	for _, t := range slices.Backward(tasks) {
 		_, err := h.Create(agio.Create{Dir: t.Dir, Title: t.Title, Model: t.Model, Effort: t.Effort, Tier: t.Tier,
-			Cursor: t.Cursor, Created: t.Created, Updated: t.Updated})
+			Cursor: t.Cursor, Earlier: t.Earlier, Created: t.Created, Updated: t.Updated})
 		if err != nil {
 			log.Printf("resume %q: %v", t.Title, err)
 			kept = append([]savedTask{t}, kept...)
@@ -104,9 +106,9 @@ func restoreTasks(h agio.Backend, tasks []savedTask) []savedTask {
 func noteTasks(s *state, b agio.State, kept []savedTask) {
 	s.Tasks = nil
 	for _, c := range b.Conversations {
-		if c.Cursor != "" && c.Model != "" {
+		if (c.Cursor != "" || len(c.Earlier) > 0) && c.Model != "" {
 			s.Tasks = append(s.Tasks, savedTask{Title: c.Title, Dir: c.Dir, Model: c.Model, Effort: c.Effort, Tier: c.Tier,
-				Cursor: c.Cursor, Created: c.Created, Updated: c.Updated})
+				Cursor: c.Cursor, Earlier: c.Earlier, Created: c.Created, Updated: c.Updated})
 		}
 	}
 	s.Tasks = append(s.Tasks, kept...)

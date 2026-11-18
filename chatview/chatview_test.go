@@ -115,6 +115,24 @@ func TestAppChoosesTheModel(t *testing.T) {
 	app.WaitFor("role:button Haiku", 5*time.Second)
 }
 
+func TestAStartedTaskSwitchesToAnotherAgent(t *testing.T) {
+	h := host.New(host.Options{Env: []string{}, Tools: []agent.Tool{agent.Claude, agent.Codex},
+		Drivers: map[agent.Tool]agent.Driver{agent.Claude: &fakeagent.Driver{}, agent.Codex: &fakeagent.Driver{As: agent.Codex}}, Home: t.TempDir()})
+	t.Cleanup(func() { h.Close() })
+	dir := t.TempDir()
+	app := nsgotest.Start(t, func(cx *core.Scope) core.Node { return App{Model: Bind(cx, h), Dir: dir} }, nsgotest.Size(900, 640))
+	app.WaitFor("role:button Opus", 5*time.Second)
+	app.Type("id:composer", "hello")
+	app.Press("id:composer >> role:button Send")
+	app.WaitUntil(5*time.Second, func() bool { return hasText(app, "echo: hello") && !h.State().Conversations[0].Running })
+	app.Press("role:button Opus")
+	app.Press("id:model-codex:haiku")
+	app.WaitUntil(5*time.Second, func() bool {
+		c := h.State().Conversations[0]
+		return c.Model == "codex:haiku" && len(c.Earlier) == 1 && len(c.Turns) == 1
+	})
+}
+
 func TestSettingsTurnAgentsOffAndOn(t *testing.T) {
 	app, h := startApp(t)
 	app.WaitUntil(5*time.Second, func() bool { return h.State().Ready() })
