@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-19
+
 - Add Cursor, OpenCode, Grok Build, Antigravity, Kiro, Muse Code and fx through their ACP servers.
 - End a run in the UI as soon as it is stopped, rather than waiting for the agent to settle.
 - Let apps add pages of their own after New task in the sidebar with `App.Pages`.

@@ -38,7 +38,7 @@ Agio 用你自己的登录状态运行登录 shell 的 `PATH` 中的智能体 CL
 ## 安装库
 
 ```sh
-go get github.com/oneo-me/nsgo-agio@v0.1.0
+go get github.com/oneo-me/nsgo-agio@v0.2.0
 ```
 
 需要 Go 1.27，以及登录 shell 的 `PATH` 中你想使用的智能体 CLI；它们使用你自己的登录状态运行。
