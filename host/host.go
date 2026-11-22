@@ -59,6 +59,10 @@ type Options struct {
 	// MCPServers are offered to every agent beside a conversation's own,
 	// which replace them by name.
 	MCPServers []agent.MCPServer
+	// NoMemory turns off the memory agents keep across sessions where
+	// their CLI can: Claude Code's and CodeBuddy Code's auto memory and
+	// Codex's memories. Drivers given in Drivers are left as they are.
+	NoMemory bool
 	// Home is where catalogs are read and paths shortened to ~; empty is
 	// the user's home directory.
 	Home string

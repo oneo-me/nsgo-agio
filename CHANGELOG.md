@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Let apps turn off the memory Claude Code, CodeBuddy Code and Codex keep across sessions with `host.Options.NoMemory`.
+
 ## [0.2.0] - 2026-11-19
 
 - Add Cursor, OpenCode, Grok Build, Antigravity, Kiro, Muse Code and fx through their ACP servers.

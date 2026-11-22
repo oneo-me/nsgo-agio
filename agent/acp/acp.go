@@ -47,6 +47,10 @@ type Spec struct {
 	// AuthMethod is the method authenticated with before any session when
 	// the agent offers it, reusing the sign-in the CLI keeps.
 	AuthMethod string
+	// NoMemoryEnv is added to the environment of a driver turning off the
+	// memory the CLI keeps across sessions, such as CodeBuddy Code's auto
+	// memory.
+	NoMemoryEnv []string
 	// Options are configuration option values sessions select when the
 	// agent offers them, such as Kiro's autopilot.
 	Options map[string]string
@@ -59,6 +63,8 @@ type Driver struct {
 	Path     string
 	PathArgs []string
 	Env      []string
+	// NoMemory adds Spec.NoMemoryEnv to the CLI's environment.
+	NoMemory bool
 }
 
 // Script is the CLI's own executable or script, as shown to the user.
@@ -76,6 +82,9 @@ func (d *Driver) name() string { return d.Spec.Tool.Name() }
 func (d *Driver) command(dir string, args ...string) *exec.Cmd {
 	cmd := exec.Command(d.Path, append(append(append([]string{}, d.PathArgs...), d.Args...), args...)...)
 	cmd.Dir, cmd.Env = dir, d.Env
+	if d.NoMemory {
+		cmd.Env = append(cmd.Environ(), d.NoMemoryEnv...)
+	}
 	return cmd
 }
 

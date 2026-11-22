@@ -47,6 +47,8 @@ func Locate(env []string) (*Driver, error) {
 type Driver struct {
 	Path string
 	Env  []string
+	// NoMemory turns off Claude Code's auto memory.
+	NoMemory bool
 }
 
 func (d *Driver) Tool() agent.Tool { return agent.Claude }
@@ -54,6 +56,9 @@ func (d *Driver) Tool() agent.Tool { return agent.Claude }
 func (d *Driver) command(dir string, args ...string) *exec.Cmd {
 	cmd := exec.Command(d.Path, args...)
 	cmd.Dir, cmd.Env = dir, d.Env
+	if d.NoMemory {
+		cmd.Env = append(cmd.Environ(), "CLAUDE_CODE_DISABLE_AUTO_MEMORY=1")
+	}
 	return cmd
 }
 
@@ -91,7 +96,7 @@ func (d *Driver) Catalog(ctx context.Context, dir string) (agent.Catalog, error)
 	cmd := d.command(dir, "--output-format", "stream-json", "--verbose", "--input-format", "stream-json",
 		"--no-session-persistence", "--setting-sources", "user",
 		"--mcp-config", `{"mcpServers":{}}`, "--strict-mcp-config")
-	cmd.Env = append(append([]string{}, d.Env...), "ENABLE_CLAUDEAI_MCP_SERVERS=false")
+	cmd.Env = append(cmd.Environ(), "ENABLE_CLAUDEAI_MCP_SERVERS=false")
 	responses := make(chan json.RawMessage, 1)
 	proc, err := agent.StartProcess(cmd, func(line []byte) {
 		var m struct {

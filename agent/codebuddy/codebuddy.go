@@ -21,6 +21,7 @@ var Spec = acp.Spec{
 	Modes:              []string{"fullAccess", "bypassPermissions"},
 	AppendSystemPrompt: "--append-system-prompt",
 	PluginDir:          "--plugin-dir",
+	NoMemoryEnv:        []string{"CODEBUDDY_DISABLE_AUTO_MEMORY=1", "CODEBUDDY_MEMORY_EXTRACTION_DISABLED=1"},
 }
 
 // Locate finds codebuddy, or its short name cbc, as agent.LocateScript

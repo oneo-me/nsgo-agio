@@ -18,9 +18,11 @@ import (
 // "Slow" message starts a run that only an interrupt settles. "Background"
 // leaves a background task that resumes the conversation when it ends, and
 // "Linger" one that only stop_task ends. Arguments are appended to args.txt
-// and stopped tasks to stopped.txt beside the script.
+// and stopped tasks to stopped.txt beside the script, and whether auto
+// memory is turned off to memory.txt.
 const fakeClaude = `#!/bin/sh
 echo "$*" >> "$(dirname "$0")/args.txt"
+echo "${CLAUDE_CODE_DISABLE_AUTO_MEMORY:-on}" >> "$(dirname "$0")/memory.txt"
 while IFS= read -r line; do
   case "$line" in
     *'"subtype":"initialize"'*)
@@ -237,6 +239,22 @@ func TestSessionStreamsInterruptsAndRelaunchesForEffort(t *testing.T) {
 	s.Close(time.Second)
 	if _, err := os.Stat(plugin); !os.IsNotExist(err) {
 		t.Fatalf("plugin left behind: %v", err)
+	}
+}
+
+func TestNoMemoryTurnsOffAutoMemory(t *testing.T) {
+	d, dir := fakeDriver(t)
+	d.NoMemory = true
+	if _, err := d.Catalog(context.Background(), t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	s, _, err := d.Start(agent.StartOptions{Dir: t.TempDir()}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	if data, _ := os.ReadFile(filepath.Join(dir, "memory.txt")); string(data) != "1\n1\n" {
+		t.Fatalf("CLAUDE_CODE_DISABLE_AUTO_MEMORY per launch: %q", data)
 	}
 }
 

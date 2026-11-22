@@ -220,6 +220,17 @@ func (r *recorder) wait(t *testing.T, settled int) []agent.Event {
 	return nil
 }
 
+func TestNoMemoryAddsTheSpecsEnvironment(t *testing.T) {
+	d := &Driver{Spec: Spec{NoMemoryEnv: []string{"FAKE_DISABLE_MEMORY=1"}}, Path: "fake", Env: []string{"A=1"}}
+	if env := d.command("").Env; !slices.Equal(env, []string{"A=1"}) {
+		t.Fatalf("env: %q", env)
+	}
+	d.NoMemory = true
+	if env := d.command("").Env; !slices.Contains(env, "A=1") || !slices.Contains(env, "FAKE_DISABLE_MEMORY=1") {
+		t.Fatalf("env without memory: %q", env)
+	}
+}
+
 func TestSystemPromptGoesInMetaOrTheCLIsOption(t *testing.T) {
 	d, methods := fakeDriver(t)
 	s, _, err := d.Start(agent.StartOptions{Dir: t.TempDir(), SystemPrompt: "Be brief"}, func(agent.Event) {}, nil)

@@ -33,6 +33,7 @@ Agio is the agent core of NSGo apps, split out of Neorio: drivers that run codin
 - Agio persists nothing. An application that keeps conversations stores their `Cursor`, `Earlier`, `Dir`, `Model` and times and resumes them with `Create`, with the `SystemPrompt`, `Skills` and `MCPServers` it gave, which agents do not keep, and passes the folders it remembers to `chatview.App`.
 - Skills are directories holding `SKILL.md`, offered for one session in each CLI's own way: pi's `--skill`, Codex's extra skill roots, and a temporary plugin for Claude Code and CodeBuddy Code, so their names carry the client's prefix; the other ACP CLIs get none.
 - System prompts, skills and MCP servers last one session and never change the user's configuration files. MCP servers, over stdio or streamable HTTP, join each CLI's own: Claude Code's `--mcp-config`, Codex's thread configuration, ACP's `mcpServers` and a temporary pi extension, which yields to a server of the same name in pi's `mcp.json`.
+- `host.Options.NoMemory` turns off the memory a CLI keeps across sessions, for an application keeping its own: Claude Code's and CodeBuddy Code's auto memory through their environment, and Codex's memories through its app server's configuration. The other CLIs are left as they are.
 - An application that keeps the agents and models turned off passes them to `host.Options`. Limits are read again after a restart.
 
 ## Core flows

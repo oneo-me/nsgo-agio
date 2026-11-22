@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -67,6 +68,17 @@ func fakeDriver(t *testing.T) *Driver {
 		t.Fatal(err)
 	}
 	return &Driver{Path: path, Env: os.Environ()}
+}
+
+func TestNoMemoryTurnsOffMemoriesForTheAppServer(t *testing.T) {
+	d := &Driver{Path: "codex"}
+	if args := d.command("").Args[1:]; !slices.Equal(args, []string{"app-server", "--stdio"}) {
+		t.Fatalf("args: %q", args)
+	}
+	d.NoMemory = true
+	if args := d.command("").Args[1:]; !slices.Equal(args, []string{"-c", "features.memories=false", "app-server", "--stdio"}) {
+		t.Fatalf("args without memories: %q", args)
+	}
 }
 
 func TestCatalogReadsModelsAndTiers(t *testing.T) {

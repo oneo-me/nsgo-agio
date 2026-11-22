@@ -37,12 +37,21 @@ func Locate(env []string) (*Driver, error) {
 type Driver struct {
 	Path string
 	Env  []string
+	// NoMemory turns off Codex's memories, which a user's configuration
+	// may turn on.
+	NoMemory bool
 }
 
 func (d *Driver) Tool() agent.Tool { return agent.Codex }
 
 func (d *Driver) command(dir string) *exec.Cmd {
-	cmd := exec.Command(d.Path, "app-server", "--stdio")
+	args := []string{"app-server", "--stdio"}
+	if d.NoMemory {
+		// The app server extracts memories as it starts, so the whole
+		// process runs without them.
+		args = append([]string{"-c", "features.memories=false"}, args...)
+	}
+	cmd := exec.Command(d.Path, args...)
 	cmd.Dir, cmd.Env = dir, d.Env
 	return cmd
 }

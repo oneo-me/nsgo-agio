@@ -158,6 +158,7 @@ func (h *Host) discoverTool(tool agent.Tool, env []string) *toolInfo {
 				return info
 			}
 			// The version is only shown, so failing to read it is not an error.
+			d.NoMemory = h.opts.NoMemory
 			info.driver, info.path = d, d.Path
 			info.version, _ = d.Version(ctx)
 		case agent.Claude:
@@ -166,6 +167,7 @@ func (h *Host) discoverTool(tool agent.Tool, env []string) *toolInfo {
 				info.err = err
 				return info
 			}
+			d.NoMemory = h.opts.NoMemory
 			info.driver, info.path = d, d.Path
 			info.version, _ = d.Version(ctx)
 		case agent.CodeBuddy:
@@ -174,6 +176,7 @@ func (h *Host) discoverTool(tool agent.Tool, env []string) *toolInfo {
 				info.err = err
 				return info
 			}
+			d.NoMemory = h.opts.NoMemory
 			info.driver, info.path = d, d.Script()
 			info.version, _ = d.Version(ctx)
 		default:
@@ -182,6 +185,7 @@ func (h *Host) discoverTool(tool agent.Tool, env []string) *toolInfo {
 				info.err = err
 				return info
 			}
+			d.NoMemory = h.opts.NoMemory
 			info.driver, info.path = d, d.Script()
 			info.version, _ = d.Version(ctx)
 		}
