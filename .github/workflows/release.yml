@@ -71,7 +71,7 @@ jobs:
           # read. The release stays a draft until all are there, as
           # releases/latest/download must never miss an appcast.
           order() {
-            for pattern in 'install.sh' 'install.ps1' '*.dmg' '*-setup.exe' '*.AppImage' '*.deb' '*.pkg.tar.gz' \
+            for pattern in 'install.sh' 'install.ps1' '*.dmg' '*-setup.exe' '*.AppImage' '*.AppImage.zsync' '*.deb' '*.pkg.tar.gz' \
               'appcast-*.xml' '*.sha256'; do
               find . -maxdepth 1 -type f -name "$pattern" | sort
             done
