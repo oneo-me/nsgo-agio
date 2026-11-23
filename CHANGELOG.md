@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-24
+
 - Let apps set environment variables for an agent and the commands it runs with `agio.Create.Env`.
 - Let apps turn off the memory Claude Code, CodeBuddy Code and Codex keep across sessions with `host.Options.NoMemory`.
 

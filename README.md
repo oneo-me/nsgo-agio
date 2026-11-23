@@ -38,7 +38,7 @@ Agio runs the agent CLIs on the login shell's `PATH` with your own sign-ins. It 
 ## Install the library
 
 ```sh
-go get github.com/oneo-me/nsgo-agio@v0.2.0
+go get github.com/oneo-me/nsgo-agio@v0.3.0
 ```
 
 It needs Go 1.27 and the agent CLIs you want on the login shell's `PATH`; it runs them with your own sign-ins.
