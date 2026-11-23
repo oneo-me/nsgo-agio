@@ -32,6 +32,8 @@ type Options struct {
 	Session string
 	// Args are extra CLI arguments, such as --no-session.
 	Args []string
+	// Env is set over Command.Env.
+	Env map[string]string
 }
 
 // Client is one pi RPC process. Events and exit are reported from a single
@@ -61,7 +63,7 @@ func Start(o Options, onEvent func(Event), onExit func(error)) (*Client, error) 
 		args = append(args, "--session", o.Session)
 	}
 	cmd := o.Command.Exec(context.Background(), append(args, o.Args...)...)
-	cmd.Dir = o.Dir
+	cmd.Dir, cmd.Env = o.Dir, agent.MergeEnv(cmd.Env, o.Env)
 	c := &Client{cmd: cmd, pending: map[string]chan response{}, done: make(chan struct{})}
 	cmd.Stderr = &c.stderr
 	stdin, err := cmd.StdinPipe()

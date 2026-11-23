@@ -22,7 +22,7 @@ const abortTimeout = 30 * time.Second
 // accepts a caller-chosen session ID, so the cursor exists before the first
 // prompt.
 func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit func(error)) (agent.Session, agent.Info, error) {
-	s := &session{driver: d, dir: o.Dir, id: o.Cursor, system: o.SystemPrompt, resume: o.Cursor != "", settings: o.Settings,
+	s := &session{driver: d, dir: o.Dir, id: o.Cursor, system: o.SystemPrompt, env: o.Env, resume: o.Cursor != "", settings: o.Settings,
 		emitter: agent.NewEmitter(onEvent), onExit: onExit}
 	if s.id == "" {
 		s.id = newSessionID()
@@ -58,7 +58,9 @@ type session struct {
 	// it.
 	plugin string
 	// mcp is the --mcp-config JSON given at every launch.
-	mcp     string
+	mcp string
+	// env is set over the driver's environment at every launch.
+	env     map[string]string
 	emitter *agent.Emitter
 	onExit  func(error)
 
@@ -129,7 +131,9 @@ func (s *session) launch() error {
 	s.mu.Unlock()
 	var proc *agent.Process
 	ready := make(chan struct{})
-	proc, err := agent.StartProcess(s.driver.command(s.dir, args...), func(line []byte) {
+	cmd := s.driver.command(s.dir, args...)
+	cmd.Env = agent.MergeEnv(cmd.Environ(), s.env)
+	proc, err := agent.StartProcess(cmd, func(line []byte) {
 		<-ready
 		s.handle(proc, line)
 	}, func(err error) {

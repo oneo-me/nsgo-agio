@@ -26,6 +26,8 @@ type conversation struct {
 	// skills and mcp servers are offered to its agent.
 	skills []string
 	mcp    []agent.MCPServer
+	// env is set over its agent's environment.
+	env map[string]string
 	// model is a model key (agent.Key), empty to follow the default until
 	// the first message binds it; effort and tier are its choices.
 	model, effort, tier string
@@ -272,7 +274,7 @@ func (h *Host) start(c *conversation) {
 		return // the new agent is handed the turns once they are read
 	}
 	c.starting = true
-	options := agent.StartOptions{Dir: c.dir, Cursor: c.cursor, Title: c.title, SystemPrompt: c.system, Skills: c.skills, MCPServers: c.mcp, Settings: h.settings(c)}
+	options := agent.StartOptions{Dir: c.dir, Cursor: c.cursor, Title: c.title, SystemPrompt: c.system, Skills: c.skills, MCPServers: c.mcp, Env: c.env, Settings: h.settings(c)}
 	go func() {
 		// Drivers may report events before Start returns, even from inside
 		// it, so callbacks must not block on it. They are held until the

@@ -89,6 +89,32 @@ done
 	}
 }
 
+func TestEnvReachesPiAndItsCommands(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("requires a Unix shell")
+	}
+	dir := t.TempDir()
+	fake := filepath.Join(dir, "pi")
+	script := `#!/bin/sh
+sh -c 'echo "$AGIO_TEST_TASK $PATH"' > "$(dirname "$0")/env.txt"
+while IFS= read -r line; do
+  id=$(printf '%s' "$line" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+  printf '{"id":"%s","type":"response","success":true,"data":{}}\n' "$id"
+done
+`
+	os.WriteFile(fake, []byte(script), 0755)
+	d := &Driver{Command: Command{Path: fake, Env: os.Environ()}}
+	env := map[string]string{"AGIO_TEST_TASK": "t1", "PATH": "$PATH:/opt/test/bin"}
+	s, _, err := d.Start(agent.StartOptions{Dir: dir, Env: env}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	if data, _ := os.ReadFile(filepath.Join(dir, "env.txt")); string(data) != "t1 "+os.Getenv("PATH")+":/opt/test/bin\n" {
+		t.Fatalf("env: %q", data)
+	}
+}
+
 func TestMCPServersGoInATemporaryExtension(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("requires a Unix shell")

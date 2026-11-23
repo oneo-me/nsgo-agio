@@ -17,9 +17,11 @@ import (
 
 // fakeCodex answers the app-server requests Agio sends, appending them to
 // requests.txt beside the script. A "Slow" prompt starts a turn that only an
-// interrupt completes.
+// interrupt completes. What a command it runs sees of the session's
+// environment goes to env.txt.
 const fakeCodex = `#!/bin/sh
 [ "$1" = "app-server" ] || exit 2
+sh -c 'echo "$AGIO_TEST_TASK $PATH"' >> "$(dirname "$0")/env.txt"
 while IFS= read -r line; do
   printf '%s\n' "$line" >> "$(dirname "$0")/requests.txt"
   id=$(printf '%s' "$line" | sed -n 's/^{"id":\([0-9]*\),.*/\1/p')
@@ -78,6 +80,24 @@ func TestNoMemoryTurnsOffMemoriesForTheAppServer(t *testing.T) {
 	d.NoMemory = true
 	if args := d.command("").Args[1:]; !slices.Equal(args, []string{"-c", "features.memories=false", "app-server", "--stdio"}) {
 		t.Fatalf("args without memories: %q", args)
+	}
+}
+
+func TestEnvReachesTheAppServerAndItsCommands(t *testing.T) {
+	d := fakeDriver(t)
+	env := map[string]string{"AGIO_TEST_TASK": "t1", "PATH": "/opt/test/bin:$PATH"}
+	s, _, err := d.Start(agent.StartOptions{Dir: t.TempDir(), Env: env}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	dir := filepath.Dir(d.Path)
+	if data, _ := os.ReadFile(filepath.Join(dir, "env.txt")); string(data) != "t1 /opt/test/bin:"+os.Getenv("PATH")+"\n" {
+		t.Fatalf("env: %q", data)
+	}
+	requests, _ := os.ReadFile(filepath.Join(dir, "requests.txt"))
+	if !strings.Contains(string(requests), `"config":{"shell_environment_policy.set.AGIO_TEST_TASK":"t1"}`) {
+		t.Fatalf("thread/start without the shell environment: %s", requests)
 	}
 }
 

@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -39,6 +41,10 @@ func fakeAgent() {
 	logFile, _ := os.OpenFile(os.Getenv("AGIO_FAKE_ACP"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if len(os.Args) > 1 {
 		fmt.Fprintln(logFile, "args", strings.Join(os.Args[1:], " "))
+	}
+	if os.Getenv("AGIO_TEST_TASK") != "" {
+		out, _ := exec.Command("sh", "-c", `echo "$AGIO_TEST_TASK $PATH"`).Output()
+		fmt.Fprint(logFile, "env ", string(out))
 	}
 	out := json.NewEncoder(os.Stdout)
 	send := func(v any) { out.Encode(v) }
@@ -228,6 +234,22 @@ func TestNoMemoryAddsTheSpecsEnvironment(t *testing.T) {
 	d.NoMemory = true
 	if env := d.command("").Env; !slices.Contains(env, "A=1") || !slices.Contains(env, "FAKE_DISABLE_MEMORY=1") {
 		t.Fatalf("env without memory: %q", env)
+	}
+}
+
+func TestEnvReachesTheAgentsCommands(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("requires a Unix shell")
+	}
+	d, methods := fakeDriver(t)
+	env := map[string]string{"AGIO_TEST_TASK": "t1", "PATH": "/opt/test/bin:$PATH"}
+	s, _, err := d.Start(agent.StartOptions{Dir: t.TempDir(), Env: env}, func(agent.Event) {}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(time.Second)
+	if log := methods(); log[0] != "env t1 /opt/test/bin:"+os.Getenv("PATH") {
+		t.Fatalf("env: %q", log)
 	}
 }
 

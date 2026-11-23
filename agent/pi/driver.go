@@ -75,7 +75,7 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 		}
 		extension, args = dir, append(args, "-e", file)
 	}
-	c, err := Start(Options{Command: d.Command, Dir: o.Dir, Session: o.Cursor, Args: args},
+	c, err := Start(Options{Command: d.Command, Dir: o.Dir, Session: o.Cursor, Args: args, Env: o.Env},
 		s.translate,
 		func(err error) {
 			os.RemoveAll(extension)

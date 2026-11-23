@@ -177,12 +177,14 @@ func (p Prompt) Message() string {
 // tool's own system prompt, given again whenever the session is resumed.
 // Skills are skill directories, each holding SKILL.md, offered beside the
 // tool's own for this session only, as are MCPServers, which drivers have
-// checked.
+// checked. Env, checked by CheckEnv, is set over the driver's environment
+// for the agent and the commands it runs.
 type StartOptions struct {
 	Dir, Cursor, Title string
 	SystemPrompt       string
 	Skills             []string
 	MCPServers         []MCPServer
+	Env                map[string]string
 	Settings           Settings
 }
 

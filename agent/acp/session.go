@@ -34,7 +34,7 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 		// Joined, as such options may take several values.
 		plugin, args = dir, append(args, d.PluginDir+"="+dir)
 	}
-	c, err := d.dial(o.Dir, args, func(c *conn) {
+	c, err := d.dial(o.Dir, args, o.Env, func(c *conn) {
 		c.onUpdate, c.onRequest = s.update, s.request
 	}, func(err error) {
 		s.exited()
@@ -497,7 +497,7 @@ func (d *Driver) History(cursor, dir string) ([]agent.Event, error) {
 		st     stream
 		events []agent.Event
 	)
-	c, err := d.dial(dir, nil, func(c *conn) {
+	c, err := d.dial(dir, nil, nil, func(c *conn) {
 		c.onUpdate = func(params json.RawMessage) {
 			var n notification
 			if json.Unmarshal(params, &n) != nil {

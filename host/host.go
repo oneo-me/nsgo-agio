@@ -10,6 +10,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -305,6 +306,9 @@ func (h *Host) Create(o agio.Create) (string, error) {
 		if err != nil {
 			return err
 		}
+		if err := agent.CheckEnv(o.Env); err != nil {
+			return err
+		}
 		now := h.opts.Now()
 		created, updated := o.Created, o.Updated
 		if created.IsZero() {
@@ -313,7 +317,7 @@ func (h *Host) Create(o agio.Create) (string, error) {
 		if updated.IsZero() {
 			updated = created
 		}
-		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, system: joinPrompts(h.opts.SystemPrompt, o.SystemPrompt), skills: skills, mcp: servers, model: o.Model, effort: o.Effort, tier: o.Tier,
+		c := &conversation{id: newID(), title: o.Title, dir: o.Dir, system: joinPrompts(h.opts.SystemPrompt, o.SystemPrompt), skills: skills, mcp: servers, env: maps.Clone(o.Env), model: o.Model, effort: o.Effort, tier: o.Tier,
 			cursor: o.Cursor, earlier: slices.Clone(o.Earlier), bound: resumed, created: created, updated: updated, loaded: !resumed,
 			handoff: o.Cursor == "" && len(o.Earlier) > 0}
 		h.conversations = append([]*conversation{c}, h.conversations...)

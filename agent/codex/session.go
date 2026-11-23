@@ -20,7 +20,9 @@ const maxOutput = 16 << 10
 func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit func(error)) (agent.Session, agent.Info, error) {
 	s := &session{emitter: agent.NewEmitter(onEvent), settings: o.Settings, outputs: map[string]string{}, ready: make(chan struct{})}
 	exited := make(chan error, 1)
-	c, err := start(d.command(o.Dir), s.handle, func(err error) { exited <- err })
+	cmd := d.command(o.Dir)
+	cmd.Env = agent.MergeEnv(cmd.Environ(), o.Env)
+	c, err := start(cmd, s.handle, func(err error) { exited <- err })
 	if err != nil {
 		return nil, agent.Info{}, err
 	}
@@ -44,8 +46,8 @@ func (d *Driver) Start(o agent.StartOptions, onEvent func(agent.Event), onExit f
 		// Developer instructions follow Codex's own base instructions.
 		params["developerInstructions"] = o.SystemPrompt
 	}
-	if len(o.MCPServers) > 0 {
-		params["config"] = mcpConfig(o.MCPServers)
+	if config := threadConfig(o); len(config) > 0 {
+		params["config"] = config
 	}
 	method := "thread/start"
 	if o.Cursor != "" {
@@ -600,8 +602,22 @@ func turnEvents(t turn) []agent.Event {
 
 // mcpConfig overrides the thread's configuration with servers in Codex's
 // mcp_servers form, beside those configured.
-func mcpConfig(servers []agent.MCPServer) map[string]any {
+// threadConfig overrides Codex's configuration for one thread.
+func threadConfig(o agent.StartOptions) map[string]any {
 	config := map[string]any{}
+	addMCPConfig(config, o.MCPServers)
+	for key, value := range o.Env {
+		// Codex's shell environment policy may filter what the app server
+		// inherits, such as names holding TOKEN, but sets these last. PATH
+		// is left inherited, as Codex adds its own directories to it.
+		if !strings.EqualFold(key, "PATH") {
+			config["shell_environment_policy.set."+key] = value
+		}
+	}
+	return config
+}
+
+func addMCPConfig(config map[string]any, servers []agent.MCPServer) {
 	for _, m := range servers {
 		entry := map[string]any{}
 		if m.HTTP() {
@@ -620,5 +636,4 @@ func mcpConfig(servers []agent.MCPServer) map[string]any {
 		}
 		config["mcp_servers."+m.Name] = entry
 	}
-	return config
 }

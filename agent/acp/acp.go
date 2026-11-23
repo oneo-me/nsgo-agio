@@ -90,8 +90,10 @@ func (d *Driver) command(dir string, args ...string) *exec.Cmd {
 
 // dial starts the CLI in dir and authenticates with the Spec's method when
 // the agent offers it.
-func (d *Driver) dial(dir string, args []string, setup func(*conn), onExit func(error)) (*conn, error) {
-	c, err := dial(d.command(dir, args...), d.name(), setup, onExit)
+func (d *Driver) dial(dir string, args []string, env map[string]string, setup func(*conn), onExit func(error)) (*conn, error) {
+	cmd := d.command(dir, args...)
+	cmd.Env = agent.MergeEnv(cmd.Environ(), env)
+	c, err := dial(cmd, d.name(), setup, onExit)
 	if err != nil || d.AuthMethod == "" || !slices.Contains(c.authMethods, d.AuthMethod) {
 		return c, err
 	}
@@ -141,7 +143,7 @@ const maxProbedModels = 32
 // model in turn, then restores the one selected before. The session is
 // never prompted.
 func (d *Driver) Catalog(ctx context.Context, dir string) (agent.Catalog, error) {
-	c, err := d.dial(dir, nil, nil, nil)
+	c, err := d.dial(dir, nil, nil, nil, nil)
 	if err != nil {
 		return agent.Catalog{}, err
 	}

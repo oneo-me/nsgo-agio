@@ -223,14 +223,16 @@ type Session struct {
 // prompt, after the backend's own. Skills, absolute paths of skill
 // directories each holding SKILL.md on the backend's machine, are offered
 // beside the backend's, as are MCPServers, replacing the backend's servers
-// of the same name. Resuming needs all three again, as agents do not keep
-// them.
+// of the same name. Env is set over the agent's environment for it and the
+// commands it runs; its PATH holds agent.InheritedPath where the agent's own
+// PATH goes. Resuming needs all four again, as agents do not keep them.
 type Create struct {
 	Dir          string            `json:"dir"`
 	Title        string            `json:"title,omitempty"`
 	SystemPrompt string            `json:"systemPrompt,omitempty"`
 	Skills       []string          `json:"skills,omitempty"`
 	MCPServers   []agent.MCPServer `json:"mcpServers,omitempty"`
+	Env          map[string]string `json:"env,omitempty"`
 	Model        string            `json:"model,omitempty"`
 	Effort       string            `json:"effort,omitempty"`
 	Tier         string            `json:"tier,omitempty"`

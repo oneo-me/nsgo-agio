@@ -2,6 +2,7 @@ package host
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -127,6 +128,26 @@ func TestMCPServersJoinTheHostsAndTheConversations(t *testing.T) {
 		names = append(names, m.Name+" "+m.Command+m.URL)
 	}
 	if !slices.Equal(names, []string{"docs docs-mcp", "web https://b.example/mcp", "own own-mcp"}) {
+		t.Fatalf("started = %+v", started)
+	}
+}
+
+func TestEnvReachesTheResumedAgent(t *testing.T) {
+	d := &fakeagent.Driver{}
+	h := newHost(t, d)
+	if _, err := h.Create(agio.Create{Dir: t.TempDir(), Env: map[string]string{"PATH": "/opt/test/bin"}}); err == nil {
+		t.Fatal("created a conversation replacing PATH")
+	}
+	env := map[string]string{"AGIO_TEST_TASK": "t1", "PATH": "/opt/test/bin:$PATH"}
+	id, err := h.Create(agio.Create{Dir: t.TempDir(), Cursor: "saved", Model: "claude:opus", Env: env})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Send(id, agio.Message{Text: "go"}); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, h, func(s agio.State) bool { return len(d.Started()) == 1 })
+	if started := d.Started(); started[0].Cursor != "saved" || !maps.Equal(started[0].Env, env) {
 		t.Fatalf("started = %+v", started)
 	}
 }
