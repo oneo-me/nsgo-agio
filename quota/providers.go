@@ -1,7 +1,9 @@
 package quota
 
 import (
+	"cmp"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"os"
@@ -13,14 +15,18 @@ import (
 )
 
 const (
-	anthropicOrigin = "https://api.anthropic.com"
-	chatGPTOrigin   = "https://chatgpt.com"
-	grokOrigin      = "https://cli-chat-proxy.grok.com"
-	deepSeekOrigin  = "https://api.deepseek.com"
+	anthropicOrigin  = "https://api.anthropic.com"
+	chatGPTOrigin    = "https://chatgpt.com"
+	grokOrigin       = "https://cli-chat-proxy.grok.com"
+	deepSeekOrigin   = "https://api.deepseek.com"
+	codeAssistOrigin = "https://daily-cloudcode-pa.googleapis.com"
+	aicodeOrigin     = "https://aicode.googleapis.com"
 	// The usage endpoint rejects requests without this beta header.
 	oauthBeta = "oauth-2025-04-20"
 	// Claude Code stores its OAuth credential under this keychain service.
 	claudeKeychainService = "Claude Code-credentials"
+	// agy keeps its Google login with go-keyring under this service.
+	antigravityKeychainService = "gemini"
 )
 
 // claude reads the subscription's session and weekly windows.
@@ -409,4 +415,123 @@ func (s Source) deepSeekKey() string {
 		}
 	}
 	return strings.TrimSpace(s.env("DEEPSEEK_API_KEY"))
+}
+
+// antigravity reads the weekly and five-hour limits each group of models
+// shares, as agy's /usage shows them. Accounts routed to AICode read them
+// there; the others from Code Assist, which knows only some groups. Both
+// answer only clients naming themselves Antigravity.
+func (s Source) antigravity(ctx context.Context) (Usage, error) {
+	t, err := s.pick(s.antigravityTokens())
+	if err != nil {
+		return Usage{}, err
+	}
+	headers := map[string]string{"Authorization": "Bearer " + t.access, "User-Agent": "antigravity"}
+	var aicode struct {
+		Summary struct {
+			Response antigravitySummary `json:"response"`
+		} `json:"summary"`
+	}
+	summary := &aicode.Summary.Response
+	if err := s.get(ctx, s.url(Antigravity, aicodeOrigin, "/v1alpha/remote:getUserQuotaSummary"), headers, &aicode); err != nil || len(summary.Groups) == 0 {
+		*summary = antigravitySummary{}
+		if err := s.post(ctx, s.url(Antigravity, codeAssistOrigin, "/v1internal:retrieveUserQuotaSummary"), headers, `{}`, summary); err != nil {
+			return Usage{}, err
+		}
+	}
+	u := summary.usage()
+	if len(u.Windows) == 0 {
+		return Usage{}, errors.New("no limits reported")
+	}
+	var assist struct {
+		Current struct {
+			Name string `json:"name"`
+		} `json:"currentTier"`
+		Paid struct {
+			Name string `json:"name"`
+		} `json:"paidTier"`
+	}
+	if s.post(ctx, s.url(Antigravity, codeAssistOrigin, "/v1internal:loadCodeAssist"), headers,
+		`{"metadata":{"ideType":"ANTIGRAVITY","platform":"PLATFORM_UNSPECIFIED","pluginType":"GEMINI"}}`, &assist) == nil {
+		u.Plan = cmp.Or(strings.TrimSpace(assist.Paid.Name), strings.TrimSpace(assist.Current.Name))
+	}
+	return u, nil
+}
+
+// antigravityTokens lists agy's login, which go-keyring stores as base64
+// JSON on macOS.
+func (s Source) antigravityTokens() []token {
+	if s.Keychain == nil {
+		return nil
+	}
+	payload, err := s.Keychain(antigravityKeychainService)
+	if err != nil {
+		return nil
+	}
+	payload = strings.TrimSpace(payload)
+	if rest, ok := strings.CutPrefix(payload, "go-keyring-base64:"); ok {
+		data, err := base64.StdEncoding.DecodeString(rest)
+		if err != nil {
+			return nil
+		}
+		payload = string(data)
+	}
+	var v struct {
+		Token *struct {
+			Access string `json:"access_token"`
+			Expiry string `json:"expiry"`
+		} `json:"token"`
+	}
+	if json.Unmarshal([]byte(payload), &v) != nil || v.Token == nil {
+		return nil
+	}
+	return []token{{access: v.Token.Access, expires: parseTime(v.Token.Expiry)}}
+}
+
+type antigravitySummary struct {
+	Groups []struct {
+		Name    string `json:"displayName"`
+		Buckets []struct {
+			Window    string   `json:"window"`
+			Remaining *float64 `json:"remainingFraction"`
+			ResetTime string   `json:"resetTime"`
+		} `json:"buckets"`
+	} `json:"groups"`
+}
+
+// usage has a window for each group's bucket, scoped by the group's name
+// without its trailing "models".
+func (b antigravitySummary) usage() Usage {
+	var u Usage
+	for _, g := range b.Groups {
+		scope := strings.TrimSpace(g.Name)
+		if len(scope) > len(" models") && strings.EqualFold(scope[len(scope)-len(" models"):], " models") {
+			scope = scope[:len(scope)-len(" models")]
+		}
+		for _, bucket := range g.Buckets {
+			// Protobuf's JSON omits a remaining fraction of zero.
+			remaining := 0.0
+			if bucket.Remaining != nil {
+				remaining = *bucket.Remaining
+			}
+			u.Windows = append(u.Windows, Window{Minutes: antigravityMinutes(bucket.Window), Scope: scope,
+				Percent: clamp((1 - remaining) * 100), ResetsAt: parseTime(bucket.ResetTime)})
+		}
+	}
+	return u
+}
+
+// antigravityMinutes reads a bucket's window, such as "5h" or "weekly";
+// 0 when unknown.
+func antigravityMinutes(window string) int {
+	switch window = strings.ToLower(strings.TrimSpace(window)); window {
+	case "weekly":
+		return week
+	case "daily":
+		return 24 * 60
+	}
+	if d, err := time.ParseDuration(window); err == nil && d > 0 {
+		return int(d / time.Minute)
+	}
+	return 0
 }

@@ -314,7 +314,7 @@ func quotaLine(cx *core.Scope, m *Model, msgs locales.Messages, p quota.Provider
 			return s
 		},
 		Trigger:    column(6, children...),
-		PopupStyle: core.Style{Width: core.Pt(320), MaxWidth: core.Pct(100), Padding: core.All(14), Gap: 14},
+		PopupStyle: core.Style{Width: core.Pt(340), MaxWidth: core.Pct(100), Padding: core.All(14), Gap: 14},
 		PopupStyleFunc: func() core.Style {
 			return ui.FinOf(cx).Menu().Over(core.Style{CornerRadius: ui.RadiusCard, BorderWidth: 1, Color: colors.Text()})
 		},

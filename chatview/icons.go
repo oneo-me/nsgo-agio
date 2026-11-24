@@ -101,6 +101,8 @@ func quotaIcon(p quota.Provider) func() *core.SVG {
 		return codexIcon
 	case quota.PiXAI:
 		return xaiIcon
+	case quota.Antigravity:
+		return antigravityIcon
 	}
 	return lucide.Wallet
 }

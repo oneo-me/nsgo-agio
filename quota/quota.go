@@ -2,8 +2,9 @@
 // their own CLIs read them: Claude's subscription windows from
 // api.anthropic.com with Claude Code's or pi's OAuth token, ChatGPT's Codex
 // windows from the ChatGPT backend and xAI's included usage from its billing
-// endpoint, each for a CLI's and pi's logins as separate accounts, and
-// DeepSeek's balance with pi's or the environment's API key. Credentials are
+// endpoint, each for a CLI's and pi's logins as separate accounts,
+// Antigravity's model quotas from Google's Code Assist backend with agy's
+// keychain login, and DeepSeek's balance with pi's or the environment's API key. Credentials are
 // only read, never refreshed or written. Everything blocks on files and the
 // network and must run off the UI thread.
 package quota
@@ -38,10 +39,12 @@ const (
 	// from Codex's, which may sign in to another account.
 	PiCodex Provider = "pi-codex"
 	PiXAI   Provider = "pi-xai"
+	// Antigravity is the Google account agy signs in to.
+	Antigravity Provider = "antigravity"
 )
 
 // Providers lists the readable accounts in presentation order.
-var Providers = []Provider{Claude, Codex, PiCodex, PiXAI, DeepSeek}
+var Providers = []Provider{Claude, Codex, PiCodex, PiXAI, Antigravity, DeepSeek}
 
 // Name is the account's product name.
 func (p Provider) Name() string {
@@ -54,13 +57,16 @@ func (p Provider) Name() string {
 		return "Codex (pi)"
 	case PiXAI:
 		return "xAI (pi)"
+	case Antigravity:
+		return "Antigravity"
 	case DeepSeek:
 		return "DeepSeek"
 	}
 	return string(p)
 }
 
-// UsagePage is the provider's web page showing the account's usage.
+// UsagePage is the provider's web page showing the account's usage; empty
+// when it has none, as Antigravity shows its quotas only in the app.
 func (p Provider) UsagePage() string {
 	switch p {
 	case Claude:
@@ -177,6 +183,8 @@ func (s Source) Fetch(ctx context.Context, p Provider) (Usage, error) {
 		return s.codex(ctx, p, s.piCodexTokens())
 	case PiXAI:
 		return s.xai(ctx, p, s.piXAITokens())
+	case Antigravity:
+		return s.antigravity(ctx)
 	case DeepSeek:
 		return s.deepSeek(ctx)
 	}
@@ -233,13 +241,25 @@ func (s Source) piAuth(provider string) map[string]any {
 
 // get requests url and decodes a 200 JSON body into out.
 func (s Source) get(ctx context.Context, url string, headers map[string]string, out any) error {
+	return s.do(ctx, http.MethodGet, url, headers, nil, out)
+}
+
+// post sends a JSON body to url and decodes a 200 JSON body into out.
+func (s Source) post(ctx context.Context, url string, headers map[string]string, body string, out any) error {
+	return s.do(ctx, http.MethodPost, url, headers, strings.NewReader(body), out)
+}
+
+func (s Source) do(ctx context.Context, method, url string, headers map[string]string, body io.Reader, out any) error {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Accept", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
@@ -375,6 +395,8 @@ func For(m agent.Model) (Provider, bool) {
 		return Claude, true
 	case agent.Codex:
 		return Codex, true
+	case agent.Antigravity:
+		return Antigravity, true
 	case agent.Pi:
 		switch m.Provider {
 		case "anthropic":

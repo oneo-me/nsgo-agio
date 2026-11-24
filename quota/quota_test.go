@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/oneo-me/nsgo-agio/agent"
 )
 
 var now = time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)
@@ -309,8 +311,102 @@ func jwt(claims map[string]any) string {
 
 func TestUsagePages(t *testing.T) {
 	for _, p := range Providers {
+		if p == Antigravity {
+			if p.UsagePage() != "" {
+				t.Errorf("%s usage page = %q", p, p.UsagePage())
+			}
+			continue
+		}
 		if !strings.HasPrefix(p.UsagePage(), "https://") {
 			t.Errorf("%s usage page = %q", p, p.UsagePage())
 		}
+	}
+}
+
+// antigravitySummaryBody is trimmed from a live AICode response captured
+// on 2026-11-24.
+const antigravitySummaryBody = `{"summary": {"response": {"groups": [
+	{"displayName": "Gemini Models", "buckets": [
+		{"bucketId": "gemini-weekly", "window": "weekly", "resetTime": "2026-08-14T09:00:00Z", "remainingFraction": 0.75},
+		{"bucketId": "gemini-5h", "window": "5h", "resetTime": "2026-08-07T14:00:00Z"}]},
+	{"displayName": "Claude and GPT models", "buckets": [
+		{"bucketId": "3p-5h", "window": "5h", "resetTime": "2026-08-07T15:00:00Z", "remainingFraction": 1}]}
+]}}}`
+
+func antigravityKeychain(payload string) func(string) (string, error) {
+	return func(service string) (string, error) {
+		if service != "gemini" {
+			return "", errors.New("missing")
+		}
+		return "go-keyring-base64:" + base64.StdEncoding.EncodeToString([]byte(payload)), nil
+	}
+}
+
+func TestAntigravityReadsGroupLimitsAndPlan(t *testing.T) {
+	base, headers := server(t, map[string]func(http.ResponseWriter){
+		"/v1alpha/remote:getUserQuotaSummary": reply(200, antigravitySummaryBody),
+		"/v1internal:loadCodeAssist":          reply(200, `{"currentTier":{"name":"Antigravity"},"paidTier":{"name":"Google AI Pro"}}`),
+	})
+	s := source(t, Antigravity, base)
+	s.Keychain = antigravityKeychain(`{"token":{"access_token":"agy-token","expiry":"2026-08-07T14:00:00+01:00"},"auth_method":"consumer"}`)
+	u, err := s.Fetch(context.Background(), Antigravity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := headers.Get("Authorization"); got != "Bearer agy-token" {
+		t.Fatalf("authorization %q", got)
+	}
+	if headers.Get("User-Agent") != "antigravity" {
+		t.Fatalf("user agent %q", headers.Get("User-Agent"))
+	}
+	if u.Plan != "Google AI Pro" {
+		t.Fatalf("plan %q", u.Plan)
+	}
+	want := []Window{
+		{Minutes: week, Scope: "Gemini", Percent: 25, ResetsAt: time.Date(2026, 8, 14, 9, 0, 0, 0, time.UTC)},
+		{Minutes: fiveHours, Scope: "Gemini", Percent: 100, ResetsAt: time.Date(2026, 8, 7, 14, 0, 0, 0, time.UTC)},
+		{Minutes: fiveHours, Scope: "Claude and GPT", Percent: 0, ResetsAt: time.Date(2026, 8, 7, 15, 0, 0, 0, time.UTC)},
+	}
+	if len(u.Windows) != len(want) {
+		t.Fatalf("windows %+v", u.Windows)
+	}
+	for i, w := range want {
+		if got := u.Windows[i]; got != w {
+			t.Fatalf("window %d = %+v, want %+v", i, got, w)
+		}
+	}
+}
+
+func TestAntigravityFallsBackToCodeAssist(t *testing.T) {
+	base, _ := server(t, map[string]func(http.ResponseWriter){
+		"/v1alpha/remote:getUserQuotaSummary": reply(403, `{"error":{"message":"not routed"}}`),
+		"/v1internal:retrieveUserQuotaSummary": reply(200, `{"groups":[{"displayName":"Claude and GPT models",
+			"buckets":[{"window":"weekly","resetTime":"2026-08-14T09:00:00Z","remainingFraction":0.5}]}]}`),
+	})
+	s := source(t, Antigravity, base)
+	s.Keychain = antigravityKeychain(`{"token":{"access_token":"agy-token","expiry":"2026-08-07T14:00:00+01:00"}}`)
+	u, err := s.Fetch(context.Background(), Antigravity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(u.Windows) != 1 || u.Windows[0].Scope != "Claude and GPT" || u.Windows[0].Minutes != week || u.Windows[0].Percent != 50 || u.Plan != "" {
+		t.Fatalf("usage %+v", u)
+	}
+}
+
+func TestAntigravityReportsMissingAndExpiredLogins(t *testing.T) {
+	s := source(t, Antigravity, "http://127.0.0.1:1")
+	if _, err := s.Fetch(context.Background(), Antigravity); !errors.Is(err, ErrNoCredentials) {
+		t.Fatalf("no keychain: %v", err)
+	}
+	s.Keychain = antigravityKeychain(`{"token":{"access_token":"old","expiry":"2026-08-07T11:59:00Z"}}`)
+	if _, err := s.Fetch(context.Background(), Antigravity); !errors.Is(err, ErrExpired) {
+		t.Fatalf("expired: %v", err)
+	}
+}
+
+func TestAntigravityModelsUseItsAccount(t *testing.T) {
+	if p, ok := For(agent.Model{Tool: agent.Antigravity, ID: "claude-opus-5-5-low"}); !ok || p != Antigravity {
+		t.Fatalf("For = %q, %v", p, ok)
 	}
 }
