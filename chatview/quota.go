@@ -111,7 +111,13 @@ func quotaNote(msgs locales.Messages, q *agio.Quota) string {
 	return msgs.QuotaFailed(q.Err)
 }
 
+// quotaWindowLabel names a window by its length and scope; a scoped window
+// of unknown length, such as one of Antigravity's per-model quotas, by its
+// scope alone, so the model's name fits beside its reset.
 func quotaWindowLabel(msgs locales.Messages, w quota.Window) string {
+	if w.Minutes <= 0 && w.Scope != "" {
+		return w.Scope
+	}
 	var label string
 	switch {
 	case w.Minutes <= 0:
@@ -314,7 +320,7 @@ func quotaLine(cx *core.Scope, m *Model, msgs locales.Messages, p quota.Provider
 			return s
 		},
 		Trigger:    column(6, children...),
-		PopupStyle: core.Style{Width: core.Pt(320), MaxWidth: core.Pct(100), Padding: core.All(14), Gap: 14},
+		PopupStyle: core.Style{Width: core.Pt(340), MaxWidth: core.Pct(100), Padding: core.All(14), Gap: 14},
 		PopupStyleFunc: func() core.Style {
 			return ui.FinOf(cx).Menu().Over(core.Style{CornerRadius: ui.RadiusCard, BorderWidth: 1, Color: colors.Text()})
 		},
