@@ -323,22 +323,15 @@ func TestUsagePages(t *testing.T) {
 	}
 }
 
-// antigravityModelsBody is trimmed from a live response captured on
-// 2026-11-24.
-const antigravityModelsBody = `{
-	"models": {
-		"claude-opus-5-5-low": {"displayName": "Claude Opus 5.5 (Low)", "recommended": true,
-			"quotaInfo": {"remainingFraction": 0.8, "resetTime": "2026-08-07T13:53:19Z"}},
-		"claude-opus-5-5-high": {"displayName": "Claude Opus 5.5 (High)", "recommended": true,
-			"quotaInfo": {"remainingFraction": 0.6, "resetTime": "2026-08-07T13:53:19Z"}},
-		"gemini-3-flash": {"displayName": "Gemini 3 Flash", "recommended": true,
-			"quotaInfo": {"resetTime": "2026-08-07T15:00:00Z"}},
-		"gemini-3.1-flash-image": {"displayName": "Gemini 3.1 Flash Image",
-			"quotaInfo": {"remainingFraction": 1, "resetTime": "2026-08-07T13:53:19Z"}},
-		"tab_flash_lite_preview": {"quotaInfo": {"remainingFraction": 1}}
-	},
-	"groupedModels": {"claude-opus-5-5": {"displayName": "Claude Opus 5.5"}}
-}`
+// antigravitySummaryBody is trimmed from a live AICode response captured
+// on 2026-11-24.
+const antigravitySummaryBody = `{"summary": {"response": {"groups": [
+	{"displayName": "Gemini Models", "buckets": [
+		{"bucketId": "gemini-weekly", "window": "weekly", "resetTime": "2026-08-14T09:00:00Z", "remainingFraction": 0.75},
+		{"bucketId": "gemini-5h", "window": "5h", "resetTime": "2026-08-07T14:00:00Z"}]},
+	{"displayName": "Claude and GPT models", "buckets": [
+		{"bucketId": "3p-5h", "window": "5h", "resetTime": "2026-08-07T15:00:00Z", "remainingFraction": 1}]}
+]}}}`
 
 func antigravityKeychain(payload string) func(string) (string, error) {
 	return func(service string) (string, error) {
@@ -349,10 +342,10 @@ func antigravityKeychain(payload string) func(string) (string, error) {
 	}
 }
 
-func TestAntigravityReadsModelQuotasAndPlan(t *testing.T) {
+func TestAntigravityReadsGroupLimitsAndPlan(t *testing.T) {
 	base, headers := server(t, map[string]func(http.ResponseWriter){
-		"/v1internal:fetchAvailableModels": reply(200, antigravityModelsBody),
-		"/v1internal:loadCodeAssist":       reply(200, `{"currentTier":{"name":"Antigravity"},"paidTier":{"name":"Google AI Pro"}}`),
+		"/v1alpha/remote:getUserQuotaSummary": reply(200, antigravitySummaryBody),
+		"/v1internal:loadCodeAssist":          reply(200, `{"currentTier":{"name":"Antigravity"},"paidTier":{"name":"Google AI Pro"}}`),
 	})
 	s := source(t, Antigravity, base)
 	s.Keychain = antigravityKeychain(`{"token":{"access_token":"agy-token","expiry":"2026-08-07T14:00:00+01:00"},"auth_method":"consumer"}`)
@@ -363,26 +356,41 @@ func TestAntigravityReadsModelQuotasAndPlan(t *testing.T) {
 	if got := headers.Get("Authorization"); got != "Bearer agy-token" {
 		t.Fatalf("authorization %q", got)
 	}
-	if !strings.HasPrefix(headers.Get("User-Agent"), "antigravity") {
+	if headers.Get("User-Agent") != "antigravity" {
 		t.Fatalf("user agent %q", headers.Get("User-Agent"))
 	}
 	if u.Plan != "Google AI Pro" {
 		t.Fatalf("plan %q", u.Plan)
 	}
-	// Thinking levels share their group's window, keeping the most used;
-	// unrecommended and unnamed models have none.
 	want := []Window{
-		{Scope: "Claude Opus 5.5", Percent: 40, ResetsAt: time.Date(2026, 8, 7, 13, 53, 19, 0, time.UTC)},
-		{Scope: "Gemini 3 Flash", Percent: 100, ResetsAt: time.Date(2026, 8, 7, 15, 0, 0, 0, time.UTC)},
+		{Minutes: week, Scope: "Gemini", Percent: 25, ResetsAt: time.Date(2026, 8, 14, 9, 0, 0, 0, time.UTC)},
+		{Minutes: fiveHours, Scope: "Gemini", Percent: 100, ResetsAt: time.Date(2026, 8, 7, 14, 0, 0, 0, time.UTC)},
+		{Minutes: fiveHours, Scope: "Claude and GPT", Percent: 0, ResetsAt: time.Date(2026, 8, 7, 15, 0, 0, 0, time.UTC)},
 	}
 	if len(u.Windows) != len(want) {
 		t.Fatalf("windows %+v", u.Windows)
 	}
 	for i, w := range want {
-		got := u.Windows[i]
-		if got.Scope != w.Scope || got.Minutes != 0 || got.Percent-w.Percent > 1e-9 || w.Percent-got.Percent > 1e-9 || !got.ResetsAt.Equal(w.ResetsAt) {
+		if got := u.Windows[i]; got != w {
 			t.Fatalf("window %d = %+v, want %+v", i, got, w)
 		}
+	}
+}
+
+func TestAntigravityFallsBackToCodeAssist(t *testing.T) {
+	base, _ := server(t, map[string]func(http.ResponseWriter){
+		"/v1alpha/remote:getUserQuotaSummary": reply(403, `{"error":{"message":"not routed"}}`),
+		"/v1internal:retrieveUserQuotaSummary": reply(200, `{"groups":[{"displayName":"Claude and GPT models",
+			"buckets":[{"window":"weekly","resetTime":"2026-08-14T09:00:00Z","remainingFraction":0.5}]}]}`),
+	})
+	s := source(t, Antigravity, base)
+	s.Keychain = antigravityKeychain(`{"token":{"access_token":"agy-token","expiry":"2026-08-07T14:00:00+01:00"}}`)
+	u, err := s.Fetch(context.Background(), Antigravity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(u.Windows) != 1 || u.Windows[0].Scope != "Claude and GPT" || u.Windows[0].Minutes != week || u.Windows[0].Percent != 50 || u.Plan != "" {
+		t.Fatalf("usage %+v", u)
 	}
 }
 

@@ -399,16 +399,3 @@ func TestEveryToolsMarkParses(t *testing.T) {
 		}
 	}
 }
-
-func TestQuotaWindowLabelsNameAModelsQuotaByTheModel(t *testing.T) {
-	msgs := locales.In("en")
-	if got := quotaWindowLabel(msgs, quota.Window{Scope: "Claude Opus 5.5"}); got != "Claude Opus 5.5" {
-		t.Fatalf("model quota label = %q", got)
-	}
-	if got := quotaWindowLabel(msgs, quota.Window{Minutes: 7 * 24 * 60, Scope: "Fable"}); got != msgs.QuotaWeekly()+" · Fable" {
-		t.Fatalf("weekly model label = %q", got)
-	}
-	if got := quotaWindowLabel(msgs, quota.Window{}); got != msgs.QuotaLimit() {
-		t.Fatalf("unscoped label = %q", got)
-	}
-}

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Show the limits of the Google account Antigravity signs in to, per model, on macOS (#4 by @oneo-me).
+- Show the weekly and five-hour limits of the Google account Antigravity signs in to, per model group, on macOS (#4 by @oneo-me).
 
 ## [0.3.0] - 2026-11-24
 

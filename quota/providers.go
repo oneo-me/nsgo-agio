@@ -6,10 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"maps"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
@@ -22,6 +20,7 @@ const (
 	grokOrigin       = "https://cli-chat-proxy.grok.com"
 	deepSeekOrigin   = "https://api.deepseek.com"
 	codeAssistOrigin = "https://daily-cloudcode-pa.googleapis.com"
+	aicodeOrigin     = "https://aicode.googleapis.com"
 	// The usage endpoint rejects requests without this beta header.
 	oauthBeta = "oauth-2025-04-20"
 	// Claude Code stores its OAuth credential under this keychain service.
@@ -418,22 +417,31 @@ func (s Source) deepSeekKey() string {
 	return strings.TrimSpace(s.env("DEEPSEEK_API_KEY"))
 }
 
-// antigravity reads the quota of each model agy offers, which Google's Code
-// Assist backend reports only to clients naming themselves Antigravity. agy
-// reads the daily endpoint, which alone groups models by thinking level.
+// antigravity reads the weekly and five-hour limits each group of models
+// shares, as agy's /usage shows them. Accounts routed to AICode read them
+// there; the others from Code Assist, which knows only some groups. Both
+// answer only clients naming themselves Antigravity.
 func (s Source) antigravity(ctx context.Context) (Usage, error) {
 	t, err := s.pick(s.antigravityTokens())
 	if err != nil {
 		return Usage{}, err
 	}
 	headers := map[string]string{"Authorization": "Bearer " + t.access, "User-Agent": "antigravity"}
-	var body antigravityModels
-	if err := s.post(ctx, s.url(Antigravity, codeAssistOrigin, "/v1internal:fetchAvailableModels"), headers, `{}`, &body); err != nil {
-		return Usage{}, err
+	var aicode struct {
+		Summary struct {
+			Response antigravitySummary `json:"response"`
+		} `json:"summary"`
 	}
-	u := body.usage()
+	summary := &aicode.Summary.Response
+	if err := s.get(ctx, s.url(Antigravity, aicodeOrigin, "/v1alpha/remote:getUserQuotaSummary"), headers, &aicode); err != nil || len(summary.Groups) == 0 {
+		*summary = antigravitySummary{}
+		if err := s.post(ctx, s.url(Antigravity, codeAssistOrigin, "/v1internal:retrieveUserQuotaSummary"), headers, `{}`, summary); err != nil {
+			return Usage{}, err
+		}
+	}
+	u := summary.usage()
 	if len(u.Windows) == 0 {
-		return Usage{}, errors.New("no quotas reported")
+		return Usage{}, errors.New("no limits reported")
 	}
 	var assist struct {
 		Current struct {
@@ -480,48 +488,50 @@ func (s Source) antigravityTokens() []token {
 	return []token{{access: v.Token.Access, expires: parseTime(v.Token.Expiry)}}
 }
 
-type antigravityModels struct {
-	Models map[string]struct {
-		DisplayName string `json:"displayName"`
-		Recommended bool   `json:"recommended"`
-		Quota       *struct {
+type antigravitySummary struct {
+	Groups []struct {
+		Name    string `json:"displayName"`
+		Buckets []struct {
+			Window    string   `json:"window"`
 			Remaining *float64 `json:"remainingFraction"`
 			ResetTime string   `json:"resetTime"`
-		} `json:"quotaInfo"`
-	} `json:"models"`
-	Groups map[string]struct {
-		DisplayName string `json:"displayName"`
-	} `json:"groupedModels"`
+		} `json:"buckets"`
+	} `json:"groups"`
 }
 
-// usage has a window for each model offered in the model picker, its
-// thinking levels and aliases sharing their name's, which keeps the most
-// used.
-func (b antigravityModels) usage() Usage {
-	byName := map[string]Window{}
-	for id, m := range b.Models {
-		if !m.Recommended || m.DisplayName == "" || m.Quota == nil {
-			continue
-		}
-		name := m.DisplayName
-		for group, g := range b.Groups {
-			if g.DisplayName != "" && strings.HasPrefix(id, group+"-") {
-				name = g.DisplayName
-			}
-		}
-		// The backend omits a remaining fraction of zero.
-		remaining := 0.0
-		if m.Quota.Remaining != nil {
-			remaining = *m.Quota.Remaining
-		}
-		w := Window{Scope: name, Percent: clamp((1 - remaining) * 100), ResetsAt: parseTime(m.Quota.ResetTime)}
-		if old, ok := byName[name]; !ok || w.Percent > old.Percent {
-			byName[name] = w
-		}
-	}
+// usage has a window for each group's bucket, scoped by the group's name
+// without its trailing "models".
+func (b antigravitySummary) usage() Usage {
 	var u Usage
-	for _, name := range slices.Sorted(maps.Keys(byName)) {
-		u.Windows = append(u.Windows, byName[name])
+	for _, g := range b.Groups {
+		scope := strings.TrimSpace(g.Name)
+		if len(scope) > len(" models") && strings.EqualFold(scope[len(scope)-len(" models"):], " models") {
+			scope = scope[:len(scope)-len(" models")]
+		}
+		for _, bucket := range g.Buckets {
+			// Protobuf's JSON omits a remaining fraction of zero.
+			remaining := 0.0
+			if bucket.Remaining != nil {
+				remaining = *bucket.Remaining
+			}
+			u.Windows = append(u.Windows, Window{Minutes: antigravityMinutes(bucket.Window), Scope: scope,
+				Percent: clamp((1 - remaining) * 100), ResetsAt: parseTime(bucket.ResetTime)})
+		}
 	}
 	return u
+}
+
+// antigravityMinutes reads a bucket's window, such as "5h" or "weekly";
+// 0 when unknown.
+func antigravityMinutes(window string) int {
+	switch window = strings.ToLower(strings.TrimSpace(window)); window {
+	case "weekly":
+		return week
+	case "daily":
+		return 24 * 60
+	}
+	if d, err := time.ParseDuration(window); err == nil && d > 0 {
+		return int(d / time.Minute)
+	}
+	return 0
 }
