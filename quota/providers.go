@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -338,11 +339,15 @@ func (s Source) xai(ctx context.Context, p Provider, tokens []token) (Usage, err
 	if err := s.get(ctx, s.url(p, grokOrigin, "/v1/billing?format=credits"), headers, &body); err != nil {
 		return Usage{}, err
 	}
-	if body.Config.Percent == nil {
+	start, end := parseTime(body.Config.Period.Start), parseTime(body.Config.Period.End)
+	// Protobuf's JSON omits creditUsagePercent when it is zero.
+	percent := 0.0
+	if body.Config.Percent != nil {
+		percent = clamp(*body.Config.Percent)
+	} else if start.IsZero() && end.IsZero() {
 		return Usage{}, errors.New("no usage reported")
 	}
-	start, end := parseTime(body.Config.Period.Start), parseTime(body.Config.Period.End)
-	u := Usage{Windows: []Window{{Minutes: periodMinutes(start, end), Percent: clamp(*body.Config.Percent), ResetsAt: end}}}
+	u := Usage{Windows: []Window{{Minutes: periodMinutes(start, end), Percent: percent, ResetsAt: end}}}
 	var settings struct {
 		Tier string `json:"subscription_tier_display"`
 	}
@@ -355,6 +360,69 @@ func (s Source) xai(ctx context.Context, p Provider, tokens []token) (Usage, err
 type xaiPeriod struct {
 	Start string `json:"start"`
 	End   string `json:"end"`
+}
+
+// grokTokens lists Grok Build's logins from its auth file, newest first.
+func (s Source) grokTokens() []token {
+	path := filepath.Join(s.dir("GROK_HOME", ".grok"), "auth.json")
+	if v := s.env("GROK_AUTH_PATH"); v != "" {
+		if rest, ok := strings.CutPrefix(v, "~"); ok {
+			path = filepath.Join(s.Home, rest)
+		} else {
+			path = v
+		}
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var raw map[string]json.RawMessage
+	if json.Unmarshal(data, &raw) != nil {
+		return nil
+	}
+	type candidate struct {
+		name    string
+		created time.Time
+		token   token
+	}
+	var candidates []candidate
+	for name, item := range raw {
+		var entry struct {
+			Key        string `json:"key"`
+			ExpiresAt  string `json:"expires_at"`
+			CreateTime string `json:"create_time"`
+		}
+		if json.Unmarshal(item, &entry) != nil {
+			continue
+		}
+		access := strings.TrimSpace(entry.Key)
+		if access == "" {
+			continue
+		}
+		expires := parseTime(strings.TrimSpace(entry.ExpiresAt))
+		if expires.IsZero() {
+			expires = jwtExpiry(access)
+		}
+		candidates = append(candidates, candidate{
+			name:    name,
+			created: parseTime(strings.TrimSpace(entry.CreateTime)),
+			token:   token{access: access, expires: expires},
+		})
+	}
+	slices.SortFunc(candidates, func(a, b candidate) int {
+		if c := b.created.Compare(a.created); c != 0 {
+			return c
+		}
+		if c := b.token.expires.Compare(a.token.expires); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.name, b.name)
+	})
+	tokens := make([]token, len(candidates))
+	for i, c := range candidates {
+		tokens[i] = c.token
+	}
+	return tokens
 }
 
 // piXAITokens lists pi's xAI login.

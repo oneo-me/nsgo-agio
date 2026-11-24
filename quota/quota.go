@@ -34,9 +34,10 @@ type Provider string
 const (
 	Claude   Provider = "claude"
 	Codex    Provider = "codex"
+	Grok     Provider = "grok"
 	DeepSeek Provider = "deepseek"
 	// PiCodex and PiXAI are pi's own ChatGPT and xAI logins, read apart
-	// from Codex's, which may sign in to another account.
+	// from Codex's and Grok Build's, which may sign in to other accounts.
 	PiCodex Provider = "pi-codex"
 	PiXAI   Provider = "pi-xai"
 	// Antigravity is the Google account agy signs in to.
@@ -44,7 +45,7 @@ const (
 )
 
 // Providers lists the readable accounts in presentation order.
-var Providers = []Provider{Claude, Codex, PiCodex, PiXAI, Antigravity, DeepSeek}
+var Providers = []Provider{Claude, Codex, PiCodex, Grok, PiXAI, Antigravity, DeepSeek}
 
 // Name is the account's product name.
 func (p Provider) Name() string {
@@ -55,6 +56,8 @@ func (p Provider) Name() string {
 		return "Codex"
 	case PiCodex:
 		return "Codex (pi)"
+	case Grok:
+		return "Grok Build"
 	case PiXAI:
 		return "xAI (pi)"
 	case Antigravity:
@@ -73,7 +76,7 @@ func (p Provider) UsagePage() string {
 		return "https://claude.ai/new#settings/usage"
 	case Codex, PiCodex:
 		return "https://chatgpt.com/settings/usage?tab=overview"
-	case PiXAI:
+	case Grok, PiXAI:
 		return "https://grok.com/?_s=usage"
 	case DeepSeek:
 		return "https://platform.deepseek.com/usage"
@@ -181,6 +184,8 @@ func (s Source) Fetch(ctx context.Context, p Provider) (Usage, error) {
 		return s.codex(ctx, p, s.codexTokens())
 	case PiCodex:
 		return s.codex(ctx, p, s.piCodexTokens())
+	case Grok:
+		return s.xai(ctx, p, s.grokTokens())
 	case PiXAI:
 		return s.xai(ctx, p, s.piXAITokens())
 	case Antigravity:
@@ -395,6 +400,8 @@ func For(m agent.Model) (Provider, bool) {
 		return Claude, true
 	case agent.Codex:
 		return Codex, true
+	case agent.Grok:
+		return Grok, true
 	case agent.Antigravity:
 		return Antigravity, true
 	case agent.Pi:

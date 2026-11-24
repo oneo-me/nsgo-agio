@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -289,6 +290,135 @@ func TestPiXAIReadsOnlyPiCredential(t *testing.T) {
 	}
 	if u.Plan != "SuperGrok" || len(u.Windows) != 1 || u.Windows[0].Percent != 37.5 {
 		t.Fatalf("usage %+v", u)
+	}
+}
+
+func TestGrokReadsCredentialPathsAndEntries(t *testing.T) {
+	base, headers := server(t, map[string]func(http.ResponseWriter){
+		"/v1/billing":  reply(200, xaiBody),
+		"/v1/settings": reply(200, `{"subscription_tier_display":"SuperGrok"}`),
+	})
+	s := source(t, Grok, base)
+	s.BaseURLs[PiXAI] = base
+	// pi's xAI login is a separate account.
+	write(t, filepath.Join(s.Home, ".pi", "agent", "auth.json"),
+		`{"xai":{"type":"oauth","access":"pi-xai-token","expires":`+jsonMillis(now.Add(time.Hour))+`}}`)
+	if _, err := s.Fetch(context.Background(), Grok); !errors.Is(err, ErrNoCredentials) {
+		t.Fatalf("err = %v, want no credentials", err)
+	}
+	// Default ~/.grok/auth.json picks the newest unexpired entry.
+	write(t, filepath.Join(s.Home, ".grok", "auth.json"), `{
+		"https://accounts.x.ai/sign-in": {"key":"legacy-token","expires_at":"2026-08-07T14:00:00Z","create_time":"2026-08-01T00:00:00Z"},
+		"https://auth.x.ai::client-123": {"key":"oidc-token","expires_at":"2026-08-07T14:00:00Z","create_time":"2026-08-07T10:00:00Z"}
+	}`)
+	u, err := s.Fetch(context.Background(), Grok)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if headers.Get("Authorization") != "Bearer oidc-token" {
+		t.Fatalf("default path authorization %q", headers.Get("Authorization"))
+	}
+	wantReset := time.Date(2026, 8, 13, 11, 39, 26, 268000000, time.UTC)
+	if u.Plan != "SuperGrok" || len(u.Windows) != 1 || u.Windows[0].Minutes != week || u.Windows[0].Percent != 37.5 || !u.Windows[0].ResetsAt.Equal(wantReset) {
+		t.Fatalf("usage %+v", u)
+	}
+	// PiXAI stays independent of ~/.grok/auth.json.
+	if _, err := s.Fetch(context.Background(), PiXAI); err != nil || headers.Get("Authorization") != "Bearer pi-xai-token" {
+		t.Fatalf("err = %v, PiXAI authorization %q", err, headers.Get("Authorization"))
+	}
+	// GROK_HOME overrides ~/.grok.
+	s.Env = []string{"GROK_HOME=~/custom-grok"}
+	write(t, filepath.Join(s.Home, "custom-grok", "auth.json"),
+		`{"https://auth.x.ai::home":{"key":"home-token","expires_at":"2026-08-07T14:00:00Z"}}`)
+	if _, err := s.Fetch(context.Background(), Grok); err != nil || headers.Get("Authorization") != "Bearer home-token" {
+		t.Fatalf("GROK_HOME err = %v, authorization %q", err, headers.Get("Authorization"))
+	}
+	// GROK_AUTH_PATH takes precedence over GROK_HOME.
+	authFile := filepath.Join(s.Home, "override", "my-auth.json")
+	write(t, authFile, `{"https://auth.x.ai::override":{"key":"override-token","expires_at":"2026-08-07T14:00:00Z"}}`)
+	s.Env = append(s.Env, "GROK_AUTH_PATH="+authFile)
+	if _, err := s.Fetch(context.Background(), Grok); err != nil || headers.Get("Authorization") != "Bearer override-token" {
+		t.Fatalf("GROK_AUTH_PATH err = %v, authorization %q", err, headers.Get("Authorization"))
+	}
+}
+
+func TestGrokReportsMissingExpiredAndJWTExpiry(t *testing.T) {
+	base, headers := server(t, map[string]func(http.ResponseWriter){
+		"/v1/billing":  reply(200, xaiBody),
+		"/v1/settings": reply(200, `{}`),
+	})
+	s := source(t, Grok, base)
+	path := filepath.Join(s.Home, ".grok", "auth.json")
+	if _, err := s.Fetch(context.Background(), Grok); !errors.Is(err, ErrNoCredentials) {
+		t.Fatalf("missing file: %v", err)
+	}
+	write(t, path, `{"https://auth.x.ai::empty":{"key":""}}`)
+	if _, err := s.Fetch(context.Background(), Grok); !errors.Is(err, ErrNoCredentials) {
+		t.Fatalf("empty key: %v", err)
+	}
+	// Expired expires_at returns ErrExpired.
+	write(t, path, `{"https://auth.x.ai::client":{"key":"old","expires_at":"2026-08-07T11:59:00Z"}}`)
+	if _, err := s.Fetch(context.Background(), Grok); !errors.Is(err, ErrExpired) {
+		t.Fatalf("expired expires_at: %v", err)
+	}
+	// Missing expires_at falls back to JWT exp.
+	expiredJWT := jwt(map[string]any{"exp": now.Add(-time.Minute).Unix()})
+	write(t, path, `{"https://auth.x.ai::client":{"key":"`+expiredJWT+`"}}`)
+	if _, err := s.Fetch(context.Background(), Grok); !errors.Is(err, ErrExpired) {
+		t.Fatalf("expired JWT exp: %v", err)
+	}
+	validJWT := jwt(map[string]any{"exp": now.Add(time.Hour).Unix()})
+	write(t, path, `{
+		"https://auth.x.ai::expired":{"key":"old","expires_at":"2026-08-07T11:59:00Z","create_time":"2026-08-07T11:00:00Z"},
+		"https://accounts.x.ai/sign-in":{"key":"`+validJWT+`","create_time":"2026-08-01T00:00:00Z"}
+	}`)
+	if _, err := s.Fetch(context.Background(), Grok); err != nil {
+		t.Fatalf("valid JWT fallback: %v", err)
+	}
+	if headers.Get("Authorization") != "Bearer "+validJWT {
+		t.Fatalf("authorization %q", headers.Get("Authorization"))
+	}
+}
+
+func TestXAIOmittedCreditUsagePercentIsZeroWhenPeriodPresent(t *testing.T) {
+	body := `{"config":{"currentPeriod":{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-08-06T11:39:26.268+00:00","end":"2026-08-13T11:39:26.268+00:00"}}}`
+	base, _ := server(t, map[string]func(http.ResponseWriter){
+		"/v1/billing":  func(w http.ResponseWriter) { reply(200, body)(w) },
+		"/v1/settings": reply(200, `{"subscription_tier_display":"SuperGrok"}`),
+	})
+	s := source(t, Grok, base)
+	write(t, filepath.Join(s.Home, ".grok", "auth.json"),
+		`{"https://auth.x.ai::client":{"key":"grok-token","expires_at":"2026-08-07T14:00:00Z"}}`)
+	u, err := s.Fetch(context.Background(), Grok)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantReset := time.Date(2026, 8, 13, 11, 39, 26, 268000000, time.UTC)
+	if len(u.Windows) != 1 || u.Windows[0].Percent != 0 || u.Windows[0].Minutes != week || !u.Windows[0].ResetsAt.Equal(wantReset) {
+		t.Fatalf("usage %+v", u)
+	}
+	// Neither creditUsagePercent nor currentPeriod still reports an error.
+	body = `{"config":{}}`
+	if _, err := s.Fetch(context.Background(), Grok); err == nil {
+		t.Fatal("expected error when neither creditUsagePercent nor currentPeriod is present")
+	}
+}
+
+func TestGrokProviderAndModelMapping(t *testing.T) {
+	if !slices.Contains(Providers, Grok) {
+		t.Fatalf("Providers %v does not contain Grok", Providers)
+	}
+	if Grok.Name() != "Grok Build" {
+		t.Fatalf("Name = %q", Grok.Name())
+	}
+	if Grok.UsagePage() != "https://grok.com/?_s=usage" {
+		t.Fatalf("UsagePage = %q", Grok.UsagePage())
+	}
+	if p, ok := For(agent.Model{Tool: agent.Grok, ID: "grok-4"}); !ok || p != Grok {
+		t.Fatalf("For(agent.Grok) = %q, %v", p, ok)
+	}
+	if p, ok := For(agent.Model{Tool: agent.Pi, Provider: "xai", ID: "grok-4"}); !ok || p != PiXAI {
+		t.Fatalf("For(agent.Pi xai) = %q, %v", p, ok)
 	}
 }
 
