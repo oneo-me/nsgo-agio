@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Show the limits of the Google account Antigravity signs in to, per model, on macOS (#4 by @oneo-me).
+
 ## [0.3.0] - 2026-11-24
 
 - Let apps set environment variables for an agent and the commands it runs with `agio.Create.Env`.
