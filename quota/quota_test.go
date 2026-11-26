@@ -441,15 +441,12 @@ func jwt(claims map[string]any) string {
 
 func TestUsagePages(t *testing.T) {
 	for _, p := range Providers {
-		if p == Antigravity {
-			if p.UsagePage() != "" {
-				t.Errorf("%s usage page = %q", p, p.UsagePage())
-			}
-			continue
-		}
 		if !strings.HasPrefix(p.UsagePage(), "https://") {
 			t.Errorf("%s usage page = %q", p, p.UsagePage())
 		}
+	}
+	if got := Antigravity.UsagePage(); got != "https://gemini.google.com/usage" {
+		t.Errorf("Antigravity usage page = %q", got)
 	}
 }
 
