@@ -68,8 +68,7 @@ func (p Provider) Name() string {
 	return string(p)
 }
 
-// UsagePage is the provider's web page showing the account's usage; empty
-// when it has none, as Antigravity shows its quotas only in the app.
+// UsagePage is the provider's web page showing the account's usage.
 func (p Provider) UsagePage() string {
 	switch p {
 	case Claude:
@@ -78,6 +77,8 @@ func (p Provider) UsagePage() string {
 		return "https://chatgpt.com/settings/usage?tab=overview"
 	case Grok, PiXAI:
 		return "https://grok.com/?_s=usage"
+	case Antigravity:
+		return "https://gemini.google.com/usage"
 	case DeepSeek:
 		return "https://platform.deepseek.com/usage"
 	}
